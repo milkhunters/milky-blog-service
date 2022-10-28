@@ -1,6 +1,7 @@
 from tortoise import fields, models
-from ..role import Role, MainRole as M, AdditionalRole as A
-from ..state import UserStates as S
+from models.role import AdditionalRole as A
+from models.role import MainRole as M, UserStates as S
+from models.role import Role
 
 
 class User(models.Model):
@@ -11,10 +12,13 @@ class User(models.Model):
     id = fields.IntField(pk=True)
     username = fields.CharField(max_length=30, unique=True)
     email = fields.CharField(max_length=100, unique=True)
+    articles: fields.ReverseRelation["Article"]
     first_name = fields.CharField(max_length=50, null=True)
     last_name = fields.CharField(max_length=50, null=True)
+    comments: fields.ReverseRelation["Comment"]
+    notifications: fields.ReverseRelation["Notification"]
     role_id = fields.IntField(default=Role(M.user, A.one))
-    state_id = fields.IntField(default=S.not_confirmed.value)
+    state = fields.IntField(default=S.not_confirmed)
     hashed_password = fields.CharField(max_length=255)
     create_time = fields.DatetimeField(auto_now_add=True)
     update_time = fields.DatetimeField(auto_now=True, null=True)

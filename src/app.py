@@ -4,17 +4,18 @@ import urllib.parse
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.openapi.utils import get_openapi
 from tortoise.contrib.fastapi import register_tortoise
 
 from middleware import JWTMiddleware
-from src.config import load_config
-from src.exceptions.api import APIError
-from src.exceptions.api import not_found_exception_handler
-from src.exceptions.api import validation_exception_handler
-from src.exceptions.api import api_exception_handler
+from config import load_config
+from exceptions.api import APIError
+from exceptions.api import not_found_exception_handler
+from exceptions.api import validation_exception_handler
+from exceptions.api import api_exception_handler
 
-from src.router import root_api_router
-from src.utils import RedisClient, AiohttpClient
+from router import root_api_router
+from utils import RedisClient, AiohttpClient
 
 config = load_config()
 log = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ app = FastAPI(
     debug=config.debug,
     version=config.base.vers,
     description=config.base.description,
-    root_path="/api" if not config.debug else "/",
+    root_path="/api/v1" if not config.debug else "",
     docs_url="/api/docs" if config.debug else "/docs",
     redoc_url="/api/redoc" if config.debug else "/redoc",
     contact={
@@ -66,6 +67,32 @@ async def on_shutdown():
         await RedisClient.close_redis_client()
     await AiohttpClient.close_aiohttp_client()
 
+
+# custom OpenApi
+def custom_openapi():
+    if not app.openapi_schema:
+        app.openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            openapi_version=app.openapi_version,
+            description=app.description,
+            terms_of_service=app.terms_of_service,
+            contact=app.contact,
+            license_info=app.license_info,
+            routes=app.routes,
+            tags=app.openapi_tags,
+            servers=app.servers,
+        )
+        for _, method_item in app.openapi_schema.get('paths').items():
+            for _, param in method_item.items():
+                responses = param.get('responses')
+                # remove 422 response, also can remove other status code
+                if '422' in responses:
+                    del responses['422']
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 log.debug("Добавление маршрутов приложения.")
 app.include_router(root_api_router)
