@@ -42,6 +42,7 @@ async def upload_file(file: UploadFile, request: Request):
     except ValueError:
         return {"error": "Unsupported file type"}  # todo: add error handler
 
+    # TODO: Обернуть в логический блок + подумать над проксированием
     chunk_size = 256000
 
     buffer = b''

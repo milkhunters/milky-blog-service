@@ -9,7 +9,7 @@ from fastapi import BackgroundTasks
 from models.state import UserStates
 from exceptions import APIError
 
-import utils
+from utils import validators
 from models import schemas
 from services import UserService
 
@@ -25,7 +25,7 @@ TODO:
 
 @router.post("/send/")
 async def send_email(email: str, request: Request, background_tasks: BackgroundTasks):
-    if not utils.is_valid_email(email):
+    if not validators.is_valid_email(email):
         raise APIError(902)
 
     user_service = UserService()
@@ -54,12 +54,12 @@ async def send_email(email: str, request: Request, background_tasks: BackgroundT
 
 @router.post("/confirm/")
 async def confirm_email(email: str, code: int, request: Request):
-    if not utils.is_valid_email(email):
+    if not validators.is_valid_email(email):
         raise APIError(902)
 
     user_service = UserService()
 
-    user = await user_service.get_user(email=email)
+    user = await user_service.get(email=email)
     if not user:
         raise APIError(904)
 
@@ -83,6 +83,7 @@ async def confirm_email(email: str, code: int, request: Request):
         await request.app.state.redis.set(f"""{data_key[0]}:{int(data_key[1])}:{int(data_key[2]) + 1}""", code)
         raise APIError(911)
 
+    # Todo: Перенести в сервис
     user.state = UserStates.active
     await user.save()
     await request.app.state.redis.delete(keys[0])
