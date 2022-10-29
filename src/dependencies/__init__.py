@@ -1,2 +1,2 @@
-from .auth_bearer import JWTCookie
-from .role_filter import MinRoleFilter
+from .jwt_barrier import JWTCookie
+from .role_filter import RoleFilter

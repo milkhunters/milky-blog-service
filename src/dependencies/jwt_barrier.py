@@ -1,9 +1,9 @@
 from fastapi import Request, Response
 
-from ..models.state import UserStates
+from models.state import UserStates
 from fastapi.openapi.models import SecurityBase as SecurityBaseModel
 
-from ..exceptions.api import APIError
+from exceptions.api import APIError
 
 
 class JWTCookie:

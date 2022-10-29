@@ -1,7 +1,10 @@
 import json
 import typing
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.responses import JSONResponse
+
+from pydantic import ValidationError
+from fastapi.exceptions import HTTPException as StarletteHTTPException
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
 
 from views import ErrorAPIResponse, Error
 
@@ -22,14 +25,16 @@ class APIError(StarletteHTTPException):
     def __init__(
             self,
             api_code: int,
+            message: str = None,
             headers: typing.Optional[dict] = None
     ) -> None:
         self.api_code = api_code
         super().__init__(status_code=400, headers=headers)
 
 
-async def validation_exception_handler(request, exc):
+async def validation_exception_handler(request: Request, exc: ValidationError):
     data = get_error_data(900)
+    # TODO: стандартизировать ошибки
     return JSONResponse(
         status_code=data["http_status_code"],
         content=ErrorAPIResponse(

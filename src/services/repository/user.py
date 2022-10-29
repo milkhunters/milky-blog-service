@@ -1,35 +1,36 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from tortoise.expressions import Q
 
+from models import schemas
 from src.models import tables
-from src.models import Role, A, M
-from src.models import UserStates
-from src.utils import get_hashed_password
 
 
-async def get_user(*args, **kwargs) -> Optional[tables.User]:
-    return await tables.User.filter(*args, **kwargs).first()
+class UserRepo:
+    def __init__(self):
+        self.table = tables.User
+
+    async def get(self, *args, **kwargs) -> Union[List[schemas.User], schemas.User, None]:
+        pass
+
+    async def insert(self, **kwargs) -> schemas.User:
+        return await self.table.create(**kwargs)
+
+    async def update(self, user_id: int, **kwargs) -> None:
+        await self.table.filter(id=user_id).update(**kwargs)
+
+    async def delete(self, user_id: int) -> None:
+        await self.table.filter(id=user_id).delete()
 
 
-async def get_users(*args, **kwargs) -> Optional[List[tables.User]]:
-    return await tables.User.filter(*args, **kwargs)
+class DeletedUserRepo:
+    def __init__(self):
+        self.table = tables.UserDeleted
 
+    async def get(self) -> Union[List[tables.UserDeleted], tables.UserDeleted, None]:
+        pass
 
-async def create_user(**kwargs) -> tables.User:
-    return await tables.User.create(
-        role_id=Role(M.user, A.one).value(),
-        state_id=UserStates.active.value,
-        hashed_password=get_hashed_password(kwargs.pop("password")),
-        **kwargs
-    )
+    async def insert(self, user_id: int) -> tables.UserDeleted:  # Todo: изменить возвращаемый тип на схему
+        return await self.table.create(id=user_id)
 
-
-async def update_user(user_id: int, **kwargs) -> tables.User:
-    user = await tables.User.update_from_dict(await get_user(id=user_id), kwargs)
-    await user.save()
-    return user
-
-
-async def delete(user_id: int) -> None:
-    await update_user(user_id, state_id=UserStates.deleted.value)
-    await tables.UserDeleted.create(id=user_id)
+    async def delete(self, user_id: int) -> None:
+        await self.table.filter(id=user_id).delete()

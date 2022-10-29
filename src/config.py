@@ -1,11 +1,10 @@
-import configparser
 import os
+import configparser
 from typing import Optional
-
-from version import __version__
+from dataclasses import dataclass
 
 import consul
-from dataclasses import dataclass
+from version import __version__
 
 c = consul.Consul()
 
@@ -28,9 +27,20 @@ class PostgresConfig:
 
 
 @dataclass
+class S3Config:
+    bucket: str
+    endpoint_url: str
+    region_name: str
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    service_name: str = "s3"
+
+
+@dataclass
 class DbConfig:
     postgresql: PostgresConfig
     redis: Optional[RedisConfig]
+    s3: Optional[S3Config]
 
 
 @dataclass
@@ -69,6 +79,10 @@ class Base:
 class Config:
     debug: bool
     mode: str
+    build: Optional[int]
+    build_date: Optional[str]
+    branch: Optional[str]
+    commit_hash: Optional[str]
     is_secure_cookie: bool
     base: Base
     email: Email
@@ -79,7 +93,7 @@ class KVManager:
 
     def __init__(self, kv):
         self.config = kv
-        self.path_list = ["haha-ton"]
+        self.path_list = ["milk-back"]
 
     def __getitem__(self, node: str):
         self.path_list.append(node)
@@ -97,9 +111,17 @@ def load_config() -> Config:
     config = consul.Consul(host="192.168.3.41").kv
     mode = os.getenv('MODE')
     debug = os.getenv('DEBUG')
+    build = os.getenv('VERSION_BUILD')
+    build_date = os.getenv('VERSION_BUILD_DATE')
+    branch = os.getenv('VERSION_BRANCH')
+    commit_hash = os.getenv('VERSION_COMMIT_HASH')
     return Config(
         debug=bool(int(debug)),
         mode=mode,
+        build=None if not build else int(build),
+        build_date=build_date,
+        branch=branch,
+        commit_hash=commit_hash,
         is_secure_cookie=bool(int(KVManager(config)[mode]["is_secure_cookie"].value())),
         base=Base(
             name=KVManager(config)["base"]["name"].value(),
@@ -128,6 +150,13 @@ def load_config() -> Config:
                 username=None,
                 password=KVManager(config)[mode]["database"]["redis"]["password"].value(),
                 port=int(KVManager(config)[mode]["database"]["redis"]["port"].value())
+            ),
+            s3=S3Config(
+                endpoint_url=KVManager(config)[mode]["database"]["s3"]["endpoint_url"].value(),
+                region_name=KVManager(config)[mode]["database"]["s3"]["region_name"].value(),
+                aws_access_key_id=KVManager(config)[mode]["database"]["s3"]["aws_access_key_id"].value(),
+                aws_secret_access_key=KVManager(config)[mode]["database"]["s3"]["aws_secret_access_key"].value(),
+                bucket=KVManager(config)[mode]["database"]["s3"]["bucket"].value()
             )
         ),
         email=Email(

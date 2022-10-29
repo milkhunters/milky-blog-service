@@ -1,2 +1,3 @@
 """Db abstraction layer"""
-from . import user
+from .user import UserRepo
+from .user import DeletedUserRepo

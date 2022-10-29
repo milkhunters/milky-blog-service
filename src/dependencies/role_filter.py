@@ -1,10 +1,12 @@
+from typing import Optional
+
 from fastapi import Request
 
 from exceptions.api import APIError
 from models import Role
 
 
-class MinRoleFilter:
+class RoleFilter:
     """
     Зависимость должна быть использована
     только в авторизованном пространстве
@@ -22,10 +24,10 @@ class MinRoleFilter:
         self._role: Role = role
         self._auto_error = auto_error
 
-    def __call__(self, request: Request) -> None:
+    def __call__(self, request: Request) -> Optional[bool]:
         user_role: Role = request.user.role
-        if user_role.value() >= self._role.value(): # todo после дополнения роли, исправить
-            return
+        if user_role.value() >= self._role.value():
+            return True
 
         if self._auto_error:
             raise APIError(909)

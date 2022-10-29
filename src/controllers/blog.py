@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi import Request
 
-from dependencies.auth_bearer import JWTCookie
+from dependencies.jwt_barrier import JWTCookie
 from dependencies.role_filter import MinRoleFilter
 from models.data.articles import ArticleState
 from models.data.comment import CommentState

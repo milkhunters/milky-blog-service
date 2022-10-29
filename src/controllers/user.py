@@ -8,7 +8,6 @@ from models import schemas
 from src.config import load_docs
 from src.dependencies import JWTCookie
 from src.exceptions.api import APIError
-from src import utils
 from src.services.auth import logout
 from views import ErrorAPIResponse
 from views import UserResponse
@@ -17,12 +16,14 @@ from views import UserOutResponse
 from src.services import repository
 
 router = APIRouter(responses={"400": {"model": ErrorAPIResponse}})
-docs = load_docs("auth.ini")
+docs = load_docs("user.ini")
 
 
 @router.get("/current", dependencies=[Depends(JWTCookie())], response_model=UserResponse)
 async def get_current_user(request: Request):
-    user = await repository.user.get_user(id=request.user.id)
+    user_repo = repository.UserRepo()
+
+    user = await user_repo.get(id=request.user.id)
     if not user:
         raise APIError(api_code=404)
     return user
@@ -30,7 +31,9 @@ async def get_current_user(request: Request):
 
 @router.get("/{user_id}", response_model=UserOutResponse)
 async def get_user(user_id: int):
-    user = await repository.user.get_user(id=user_id)
+    user_repo = repository.UserRepo()
+
+    user = await user_repo.get(id=user_id)
     if not user:
         raise APIError(api_code=904)
     return user
@@ -38,11 +41,15 @@ async def get_user(user_id: int):
 
 @router.post("/update", dependencies=[Depends(JWTCookie())], response_model=UserResponse)
 async def update_user(data: schemas.UserUpdate, request: Request):
-    user = await repository.user.update_user(request.user.id, **data.dict(exclude_unset=True))
-    return user
+    user_repo = repository.UserRepo()
+
+    await user_repo.update(request.user.id, **data.dict(exclude_unset=True))
+    return await user_repo.get(id=request.user.id)
 
 
 @router.delete("/delete", dependencies=[Depends(JWTCookie())])
 async def delete_user(request: Request, response: Response):
+    user_repo = repository.UserRepo()
+
     await logout(request, response)
-    await repository.user.delete(request.user.id)
+    await user_repo.delete(request.user.id)

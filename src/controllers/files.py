@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, UploadFile, Depends
 from fastapi import Request
 from fastapi import Response
 
-from dependencies.auth_bearer import JWTCookie
+from dependencies.jwt_barrier import JWTCookie
 from dependencies.role_filter import MinRoleFilter
 from models.role import Role
 from models.role import MainRole as M

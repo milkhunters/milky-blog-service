@@ -63,15 +63,20 @@ class Role:
     def __repr__(self):
         return f"{self.main_role.name} {self.additional_role.name}"
 
+    def __eq__(self, other):
+        return self.value() == other.value()
+
     @classmethod
-    def from_int(cls, role_int: int):
+    def from_int(cls, value: int):
         """
         Преобразует целое число в класс Role
-        :param role_int:
+        :param value:
 
         :return: self
         """
-        assert 100 > role_int > 10, "Неверный формат роли"
-        main_role = role_int // 10
-        additional_role = role_int % 10
+        if value not in range(10, 40):
+            raise ValueError("Значение роли должно быть в диапазоне 10-39")
+
+        main_role = value // 10
+        additional_role = value % 10
         return cls(MainRole(main_role), AdditionalRole(additional_role))

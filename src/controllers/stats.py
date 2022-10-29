@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from src.config import load_config
+from config import load_config
 
 import utils
 from views import ErrorAPIResponse
@@ -17,12 +17,12 @@ async def version(details: bool = False):
     if details:
         info.update(
             {
-                "name": None,
+                "name": config.base.name,
                 "mode": config.mode,
-                "build": None,
-                "build_date": None,
-                "branch": None,
-                "commit_hash": None,
+                "build": config.build,
+                "build_date": config.build_date,
+                "branch": config.branch,
+                "commit_hash": config.commit_hash,
             }
         )
     return info
