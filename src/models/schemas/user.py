@@ -54,7 +54,7 @@ class User(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
     role_id: int
-    state: int
+    state: int  # TODO: перейти на enum
     create_time: datetime
     update_time: datetime
 

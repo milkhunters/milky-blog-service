@@ -6,24 +6,32 @@ from fastapi import Request
 from fastapi import Response
 from fastapi import BackgroundTasks
 
-from models.role import UserStates
-from utils.exceptions import APIError
+from models.state import UserStates
+from exceptions import APIError
 
-from utils.mail import MailManager
-from database import crud
+import utils
 from models import schemas
-from utils.validations import is_valid_email
+from services import UserService
 
-router = APIRouter(prefix="/email", tags=["Email"], responses={"4xx": {"model": schemas.ExceptionsAPIModel}})
+router = APIRouter(responses={"4xx": {"model": schemas.ExceptionsAPIModel}})
+
+"""
+TODO:
+    1. Оставить только бизнес-логику
+    2. Перенести в сервисы
+    3. Стандартизировать ответы
+"""
 
 
 @router.post("/send/")
 async def send_email(email: str, request: Request, background_tasks: BackgroundTasks):
-    if not is_valid_email(email):
+    if not utils.is_valid_email(email):
         raise APIError(902)
 
+    user_service = UserService()
+
     # Check if email exists
-    user = await crud.get_user(email=email)
+    user = await user_service.get(email__iexact=email)
     if user is None:
         raise APIError(904)
 
@@ -31,7 +39,7 @@ async def send_email(email: str, request: Request, background_tasks: BackgroundT
     if user.state != UserStates.not_confirmed:
         raise APIError(912)
 
-    keys = await request.app.state.redis.keys(pattern=f'{email}*')
+    keys = await request.app.state.redis.keys(pattern=f'{email}*')  # Todo: использовать RedisClient
     if keys:
         data_key = keys[0].split(':')
         if int(data_key[1]) > int(time.time()) - 120:
@@ -40,16 +48,18 @@ async def send_email(email: str, request: Request, background_tasks: BackgroundT
 
     code = randint(100000, 999900)
     await request.app.state.redis.set(f"""{email}:{int(time.time())}:0""", code)
-    background_tasks.add_task(MailManager().send_confirm_code, email, code)
+    background_tasks.add_task(utils.MailManager().send_confirm_code, email, code)
     return {"message": "Сообщение отправлено"}
 
 
 @router.post("/confirm/")
 async def confirm_email(email: str, code: int, request: Request):
-    if not is_valid_email(email):
+    if not utils.is_valid_email(email):
         raise APIError(902)
 
-    user = await crud.get_user(email=email)
+    user_service = UserService()
+
+    user = await user_service.get_user(email=email)
     if not user:
         raise APIError(904)
 

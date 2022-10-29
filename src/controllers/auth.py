@@ -3,8 +3,8 @@ import logging
 from fastapi import APIRouter, Depends
 from fastapi.requests import Request
 from fastapi.responses import Response
-from tortoise.functions import Upper
 
+from services import UserService
 from src.config import load_docs
 from src.dependencies import JWTCookie
 from src.exceptions.api import APIError
@@ -28,13 +28,15 @@ async def sign_up(
         user: schemas.UserSignUp,
         is_auth=Depends(JWTCookie(auto_error=False)),
 ):
+    user_service = UserService()
+
     if is_auth:
         raise APIError(920)
-    if await repository.user.get_user(username__iexact=user.username):
+    if await user_service.get(username__iexact=user.username):
         raise APIError(903)
-    elif await repository.user.get_user(email__iexact=user.email):
+    if await user_service.get(email__iexact=user.email):
         raise APIError(922)
-    return await repository.user.create_user(**user.dict())
+    return await user_service.create(**user.dict())
 
 
 @router.post(
@@ -50,9 +52,7 @@ async def sign_in(
 ):
     if is_auth:
         raise APIError(920)
-
     return await authenticate(user.username, user.password, response)
-
 
 
 @router.post(

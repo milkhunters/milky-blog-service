@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from fastapi import Request
 
 from dependencies.jwt_barrier import JWTCookie
-from services.notification import NotificationService
-from utils.exceptions import APIError
+from services import NotificationService
+from exceptions import APIError
 
 from models.schemas import ExceptionsAPIModel
 from models import schemas

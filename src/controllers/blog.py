@@ -2,14 +2,13 @@ from fastapi import APIRouter, Depends
 from fastapi import Request
 
 from dependencies.jwt_barrier import JWTCookie
-from dependencies.role_filter import MinRoleFilter
-from models.data.articles import ArticleState
-from models.data.comment import CommentState
-from src.services.article import ArticleService
+from dependencies.role_filter import RoleFilter
+from models.state import ArticleState
+from models.state import CommentState
+from src.services import ArticleService
 from services.comment import CommentService
-from utils.exceptions import APIError
+from exceptions import APIError
 
-from src.database import crud
 from models import schemas
 
 router = APIRouter(
