@@ -1,5 +1,6 @@
 import math
 
+import views
 from models import schemas
 from models.state import ArticleState
 from services.repository import ArticleRepo, CommentRepo
@@ -22,7 +23,7 @@ class ArticleService:
             per_page: int = 10,
             order_by: str = "id",
             queryset: str = None
-    ) -> schemas.ArticlesOutMenu:
+    ) -> views.ArticlesResponse:
         """
         Получить список статей
         (для меню)
@@ -56,7 +57,7 @@ class ArticleService:
         next_page = (page + 1) if page < total_pages else page
         previous_page = (page - 1) if page > 1 else page
 
-        return schemas.ArticlesOutMenu(
+        return views.ArticlesResponse(
             items=[schemas.ArticleOutMenu.from_orm(article) for article in articles],
             current_page=page,
             total_pages=total_pages,

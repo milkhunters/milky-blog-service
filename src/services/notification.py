@@ -1,13 +1,13 @@
 import math
 
-
 from models import schemas
+import views
 from services.repository import NotificationRepo
 
 
 class NotificationService:
 
-    # Переписать
+    # TODO: Переписать
 
     def __init__(
             self,
@@ -15,10 +15,7 @@ class NotificationService:
     ):
         self._repo = notify_repo
 
-        # Todo: упаковать
-        self.per_page = 10
-
-    async def get_notifications(self, user_id: int, page: int) -> schemas.Notifications:
+    async def get(self, user_id: int, page: int) -> views.NotificationsResponse:
         """
         Получить уведомления
 
@@ -26,44 +23,35 @@ class NotificationService:
         :param page: целое положительное число >=1
         :return:
         """
+        per_page = 10
+
         # Подготовка входных данных
-        limit = page * self.per_page
-        skip = (page - 1) * self.per_page
-        # Выполнение
-        raw_notifications = await self._db.get_notifications(limit, skip, owner_id=user_id)
-        # Подготовка выходных данных
-        total_notifications = await self.get_total_notifications(user_id)
-        total_pages = math.ceil(max(total_notifications, 1)/self.per_page)
+        limit = page * per_page
+        skip = (page - 1) * per_page
+
+        # Подготовка выходных данных # TODO: перенести в модель все 3 последние строки
+        total_notifications = await self.get_total(user_id)
+        total_pages = math.ceil(max(total_notifications, 1) / per_page)
         next_page = (page + 1) if page < total_pages else page
         previous_page = (page - 1) if page > 1 else page
-        return schemas.Notifications(
-            items=[schemas.Notification.from_orm(notification) for notification in raw_notifications],
-            current_page=page,
-            total_pages=total_pages,
-            next_page=next_page,
-            previous_page=previous_page
+        return views.NotificationsResponse(
+            items=await self._repo.get(limit, skip, owner_id=user_id),  # TODO: Модифицировать репозиторий
+            current=page,
+            total=total_pages,
+            next=next_page,
+            previous=previous_page
         )
 
-    async def get_notification(self, notification_id: int):
-        """
-        Получить информацию об уведомлении
-
-        :param notification_id:
-        :return:
-        """
-        notification = await self._db.get_notification(notification_id)
-        return notification
-
-    async def get_total_notifications(self, user_id: int) -> int:
+    async def get_total(self, user_id: int) -> int:
         """
         Количество уведомлений пользователя
 
         :param user_id:
         :return:
         """
-        return await self._db.get_count_of_notifications(user_id)
+        return await self._repo.count(owner_id=user_id)
 
-    async def create_notification(self, user_id: int, notification_type: int, data: int):
+    async def create(self, user_id: int, notification_type: int, data: int):
         """
         Создать уведомление
 
@@ -72,22 +60,24 @@ class NotificationService:
         :param data:
         :return:
         """
-        return await self._db.create_notification(user_id, notification_type, data)
+        return await self._repo.insert(user_id, notification_type, data)  # Todo: реализовать
 
-    async def delete_notification(self, notification_id: int) -> None:
+    async def delete(self, notification_id: int) -> None:
         """
         Удалить уведомление
 
         :param notification_id:
         :return:
-        """
-        await self._db.delete_notification(notification_id)
 
-    async def make_read_notification(self, notification_id: int) -> None:
+        # TODO: возможно не используемо и следует удалить
+        """
+        await self._repo.delete(id=notification_id)
+
+    async def make_read(self, notification_id: int) -> None:
         """
         Сделать уведомление прочитанным
 
         :param notification_id:
         :return:
         """
-        await self._db.update_notification(notification_id, is_read=True)
+        await self._repo.update(notification_id, is_read=True)

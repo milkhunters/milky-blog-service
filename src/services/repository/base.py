@@ -12,6 +12,9 @@ class BaseRepo(Generic[T, S]):
     async def get(self, *args, **kwargs) -> Union[List[S], S, None]:
         pass
 
+    async def count(self, **kwargs) -> int:
+        return await self.table.filter(**kwargs).count()
+
     async def insert(self, **kwargs) -> S:
         return await self.table.create(**kwargs)
 
