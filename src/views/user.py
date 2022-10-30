@@ -4,14 +4,21 @@ from models.schemas import User
 
 
 class UserResponse(User):
+    """
+    Модель пользователя для ответа
+    (подробная информация)
+    """
     pass
 
 
 class UserOutResponse(BaseModel):
-
+    """
+    Модель пользователя для ответа
+    (публичная информация)
+    """
     id: int
     role_id: int
-    state_id: int
+    state: int  # TODO: перейти на enum
     username: str
     full_name: str
 

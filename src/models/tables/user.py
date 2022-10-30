@@ -1,7 +1,6 @@
 from tortoise import fields, models
-from models.role import AdditionalRole as A
-from models.role import MainRole as M, UserStates as S
-from models.role import Role
+from models.role import Role, MainRole as M, AdditionalRole as A
+from models.state import UserStates
 
 
 class User(models.Model):
@@ -18,7 +17,7 @@ class User(models.Model):
     comments: fields.ReverseRelation["Comment"]
     notifications: fields.ReverseRelation["Notification"]
     role_id = fields.IntField(default=Role(M.user, A.one))
-    state = fields.IntField(default=S.not_confirmed)
+    state = fields.IntEnumField(UserStates)
     hashed_password = fields.CharField(max_length=255)
     create_time = fields.DatetimeField(auto_now_add=True)
     update_time = fields.DatetimeField(auto_now=True, null=True)

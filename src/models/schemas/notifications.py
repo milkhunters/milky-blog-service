@@ -3,12 +3,12 @@ from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-from models.schemas.pagination import PaginationPage
+from models.schemas.pagination import BasePaginationModel
 
 
 class Notification(BaseModel):
     """
-    Одно уведомление
+    Базовая модель уведомления
 
     """
     id: int
@@ -20,11 +20,3 @@ class Notification(BaseModel):
 
     class Config:
         orm_mode = True
-
-
-class Notifications(PaginationPage):
-    """
-    Несколько уведомлений
-
-    """
-    items: Optional[list[Notification]]

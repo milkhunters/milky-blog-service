@@ -93,7 +93,7 @@ class KVManager:
 
     def __init__(self, kv):
         self.config = kv
-        self.path_list = ["milk-back"]
+        self.path_list = ["haha-ton"]  # TODO: сменить на 'milk-back'
 
     def __getitem__(self, node: str):
         self.path_list.append(node)

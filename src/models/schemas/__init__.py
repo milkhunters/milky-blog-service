@@ -1,6 +1,6 @@
 from .jwt import *
 from .user import *
-from .responses import *
+from .error import *
 from .article import *
 from .notifications import *
 from .pagination import *
