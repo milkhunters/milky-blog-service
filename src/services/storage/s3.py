@@ -27,8 +27,8 @@ class S3(AbstractStorage):
         self.service_name = service_name
         self.endpoint_url = endpoint_url
 
-        self.aws_access_key_id=aws_access_key_id
-        self.aws_secret_access_key=aws_secret_access_key
+        self.aws_access_key_id = aws_access_key_id
+        self.aws_secret_access_key = aws_secret_access_key
         self.region_name = region_name
 
         self._exit_stack = AsyncExitStack()

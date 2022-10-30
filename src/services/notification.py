@@ -1,16 +1,21 @@
 import math
 
-from database.notification import NotificationManager
+
 from models import schemas
+from services.repository import NotificationRepo
 
 
 class NotificationService:
 
     # Переписать
 
-    def __init__(self):
-        self._db = NotificationManager()
-        # Установки
+    def __init__(
+            self,
+            notify_repo: NotificationRepo = NotificationRepo()
+    ):
+        self._repo = notify_repo
+
+        # Todo: упаковать
         self.per_page = 10
 
     async def get_notifications(self, user_id: int, page: int) -> schemas.Notifications:

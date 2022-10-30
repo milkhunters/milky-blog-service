@@ -2,10 +2,19 @@ import math
 
 from models import schemas
 from models.state import ArticleState
-from services.repository import ArticleRepo
+from services.repository import ArticleRepo, CommentRepo
 
 
-class ArticleService(ArticleRepo):
+class ArticleService:
+
+    def __init__(
+            self,
+            article_repo: ArticleRepo = ArticleRepo(),
+            comment_repo: CommentRepo = CommentRepo()
+
+    ):
+        self._db = article_repo
+        self._comment_db = comment_repo
 
     async def get_articles(
             self,

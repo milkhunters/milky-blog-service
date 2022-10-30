@@ -1,14 +1,17 @@
 from typing import Optional
 
-from database.comment import CommentManager
-from models.data.comment import CommentState
-from models.data.notification import NotificationTypes
+from models.state import CommentState
+from models.state import NotificationTypes
 from services.notification import NotificationService
+from services.repository import CommentRepo
 
 
 class CommentService:
-    def __init__(self):
-        self._db = CommentManager()
+    def __init__(
+            self,
+            comment_repo: CommentRepo = CommentRepo()
+    ):
+        self._repo = comment_repo
 
     async def add_comment(self, article_id: int, content: str, owner_id: int, parent_id: int = 0):
         """
@@ -23,9 +26,9 @@ class CommentService:
         # TODO: переписать
 
         """
-        new_comment = await self._db.create_comment(
+        new_comment = await self._repo.insert(
             content=content,
-            owner_id=owner_id,
+            owner_id=owner_id, # TODO: изменено
         )
 
         parent_level = -1
