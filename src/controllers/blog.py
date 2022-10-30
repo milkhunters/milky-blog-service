@@ -67,7 +67,7 @@ async def get_article(id: int, request: Request, auth: JWTCookie = Depends(JWTCo
 @router.post(
     "/createArticle",
     response_model=schemas.ArticleOut,
-    dependencies=[Depends(JWTCookie()), Depends(MinRoleFilter(21))],
+    dependencies=[Depends(JWTCookie()), Depends(RoleFilter(21))],
     summary="Создание публикации")
 async def create_article(article: schemas.ArticleCreate, request: Request):
     """
@@ -84,7 +84,7 @@ async def create_article(article: schemas.ArticleCreate, request: Request):
 @router.post(
     "/updateArticle",
     response_model=schemas.ArticleOut,
-    dependencies=[Depends(JWTCookie()), Depends(MinRoleFilter(21))],
+    dependencies=[Depends(JWTCookie()), Depends(RoleFilter(21))],
     summary="Обновление публикации")
 async def update_article(id: int, data: schemas.ArticleUpdate):
     """

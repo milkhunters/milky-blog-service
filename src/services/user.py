@@ -19,5 +19,5 @@ class UserService(UserRepo):
         return user
 
     async def delete(self, user_id: int, dur=DeletedUserRepo()) -> None:
-        await dur.insert(user_id)  # TODO: возможно, стоит сделать транзакцию
+        await dur.insert(user_id)  # TODO: возможно, стоит сделать транзакцию; возможно, стоит разделить
         await self.update(user_id, state_id=UserStates.deleted.value)  # TODO: сделать поле бд ENUM

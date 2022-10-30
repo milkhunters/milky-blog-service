@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends
 from fastapi.requests import Request
 from fastapi.responses import Response
 
-from models import schemas
+import services
+from models import schemas, UserStates
 from src.config import load_docs
 from src.dependencies import JWTCookie
 from src.exceptions.api import APIError
@@ -49,7 +50,7 @@ async def update_user(data: schemas.UserUpdate, request: Request):
 
 @router.delete("/delete", dependencies=[Depends(JWTCookie())])
 async def delete_user(request: Request, response: Response):
-    user_repo = repository.UserRepo()
+    user_service = services.UserService()
 
     await logout(request, response)
-    await user_repo.delete(request.user.id)
+    await user_service.delete(request.user.id)
