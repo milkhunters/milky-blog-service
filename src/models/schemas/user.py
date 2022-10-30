@@ -1,10 +1,10 @@
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel, validator
 from tortoise import fields
-from tortoise.contrib.pydantic import pydantic_model_creator
 from datetime import datetime
 
 from exceptions import APIError
+from models import UserStates
 from utils import validators
 
 
@@ -20,7 +20,7 @@ class User(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
     role_id: int
-    state: int  # TODO: перейти на enum
+    state: UserStates
     create_time: datetime
     update_time: datetime
 

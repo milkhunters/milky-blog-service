@@ -1,9 +1,5 @@
-from typing import Optional
-
 from pydantic import BaseModel
 from datetime import datetime
-
-from models.schemas.pagination import BasePaginationModel
 
 
 class Notification(BaseModel):
