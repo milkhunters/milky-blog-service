@@ -2,7 +2,7 @@ from typing import List, Optional, Union
 from tortoise.expressions import Q
 
 from models import schemas
-from src.models import tables
+from models import tables
 from .base import BaseRepo
 
 
@@ -34,7 +34,7 @@ class CommentRepo(BaseRepo[tables.Comment, schemas.Comment]):
 
 class CommentTreeRepo(BaseRepo[tables.CommentTree, schemas.CommentBranch]):
 
-    async def insert(self, parent_id: int, new_comment_id: int, article_id: int, parent_level: int):
+    async def create_branch(self, parent_id: int, new_comment_id: int, article_id: int, parent_level: int):
         sql_raw = """
             INSERT INTO comment_tree (ancestor_id, descendant_id, nearest_ancestor_id, article_id, level)
              SELECT ancestor_id, $1::int, $2::int, $3::int, $4::int

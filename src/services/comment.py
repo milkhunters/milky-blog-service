@@ -46,7 +46,7 @@ class CommentService:
                     data=new_comment.id
                 )
 
-        await self._db.create_branch(
+        await self._tree_repo.create_branch(
             parent_id=parent_id,
             new_comment_id=new_comment.id,
             article_id=article_id,
