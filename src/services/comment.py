@@ -4,14 +4,17 @@ from models.state import CommentState
 from models.state import NotificationTypes
 from services.notification import NotificationService
 from services.repository import CommentRepo
+from services.repository import CommentTreeRepo
 
 
 class CommentService:
     def __init__(
             self,
-            comment_repo: CommentRepo = CommentRepo()
+            comment_repo: CommentRepo = CommentRepo(),
+            comment_tree_repo: CommentTreeRepo = CommentTreeRepo()
     ):
         self._repo = comment_repo
+        self._tree_repo = comment_tree_repo
 
     async def add_comment(self, article_id: int, content: str, owner_id: int, parent_id: int = 0):
         """
@@ -28,12 +31,13 @@ class CommentService:
         """
         new_comment = await self._repo.insert(
             content=content,
-            owner_id=owner_id, # TODO: изменено
+            owner_id=owner_id,  # TODO: изменено
         )
 
         parent_level = -1
         if parent_id != 0:
-            parent_level = await self._db.get_comment_level(parent_id)
+            parent = await self._repo.get(id=parent_id) # Допустить вложенность в дерево комментариев, чтобы получить уровень вложенности
+            parent_level = parent.level
             parent_owner_id = (await self.get_comment(parent_id))["owner_id"]
             if parent_owner_id != new_comment.owner_id:
                 await NotificationService().create_notification(
@@ -74,7 +78,7 @@ class CommentService:
         self._normalize(raw_data)
         return raw_data
 
-    async def delete_comment(self, comment_id):
+    async def delete(self, comment_id):
         """
         Удалить комментарий
         (Изменить состояние - deleted)
@@ -83,16 +87,6 @@ class CommentService:
         :return:
         """
         await self._db.change_comment_state(comment_id, CommentState.deleted)
-
-    async def update_comment(self, id: int, content: str) -> None:
-        """
-        Обновить комментарий
-
-        :param id: id комментария
-        :param content: текст
-        :return:
-        """
-        await self._db.update_comment(id, content)
 
     async def delete_all_comments(self, article_id: int) -> None:
         """
@@ -103,8 +97,8 @@ class CommentService:
         :return:
         """
         comment_ids = await self._db.get_id_comments_in_article(article_id)
-        await self._db.delete_all_branches(article_id)
-        await self._db.delete_comments(comment_ids)
+        await self._tree_repo.delete_all_branches(article_id)
+        await self._repo.delete_comments(comment_ids)
 
     @staticmethod
     def _normalize(raw_data: list[dict]) -> None:

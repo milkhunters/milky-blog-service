@@ -4,7 +4,6 @@ from typing import Any, Optional, List
 from pydantic import BaseModel, validator
 from tortoise import fields
 
-
 from .user import User
 
 
@@ -58,6 +57,19 @@ class Comment(BaseModel):
     class Config:
         orm_mode = True
         extra = 'ignore'
+
+
+class CommentBranch(BaseModel):
+    """
+    Модель ветки комментария
+
+    """
+    ancestor_id: int
+    descendant_id: int
+    nearest_ancestor_id: int
+    article: Article
+    level: int
+    create_time: datetime
 
 
 class Tag(BaseModel):
