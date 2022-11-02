@@ -1,5 +1,5 @@
 from .user import User
-from .user import UserDeleted
+from .user import DeletedUser
 from .article import Article
 from .comment import Comment
 from .comment import CommentTree

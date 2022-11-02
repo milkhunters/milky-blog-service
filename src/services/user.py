@@ -19,7 +19,7 @@ class UserService:
     async def create(self, user: schemas.UserCreate) -> schemas.User:
         user = await self._repo.insert(
             role_id=Role(M.user, A.one).value(),
-            state_id=UserStates.active.value,  # TODO: сделать поле бд ENUM
+            state=UserStates.not_confirmed,  # TODO: сделать поле бд ENUM
             hashed_password=utils.get_hashed_password(user.password),
             username=user.username,
             email=user.email,
@@ -27,5 +27,5 @@ class UserService:
         return user
 
     async def delete(self, user_id: int) -> None:
-        await self._du_repo.insert(user_id)  # TODO: возможно, стоит сделать транзакцию;
-        await self._repo.update(user_id, state_id=UserStates.deleted.value)  # TODO: сделать поле бд ENUM
+        await self._du_repo.insert(id=user_id)  # TODO: возможно, стоит сделать транзакцию;
+        await self._repo.update(user_id, state=UserStates.deleted)  # TODO: сделать поле бд ENUM

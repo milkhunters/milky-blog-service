@@ -2,7 +2,7 @@ import textwrap
 
 from tortoise import fields, models
 
-from models.data.articles import ArticleState
+from models.state import ArticleState
 
 
 class Article(models.Model):

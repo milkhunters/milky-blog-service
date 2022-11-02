@@ -1,5 +1,7 @@
 from tortoise import fields, models
 
+from models.state import CommentState
+
 
 class Comment(models.Model):
     """
@@ -9,7 +11,7 @@ class Comment(models.Model):
     id = fields.IntField(pk=True)
     content = fields.TextField(max_length=1000, min_length=1)
     owner = fields.ForeignKeyField('models.User', related_name="comments")
-    state = fields.IntField(default=1)
+    state = fields.IntEnumField(CommentState, default=CommentState.active)  # TODO: возможна ошибка из-за default=...
     create_time = fields.DatetimeField(auto_now_add=True)
     update_time = fields.DatetimeField(auto_now=True, null=True)
 

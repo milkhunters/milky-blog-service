@@ -40,7 +40,7 @@ class CommentService:
             parent_level = parent.level
             parent_owner_id = (await self.get_comment(parent_id))["owner_id"]
             if parent_owner_id != new_comment.owner_id:
-                await NotificationService().create_notification(
+                await NotificationService().create(
                     user_id=parent_owner_id,
                     notification_type=NotificationTypes.comment_answer,
                     data=new_comment.id
@@ -86,7 +86,7 @@ class CommentService:
         :param comment_id:
         :return:
         """
-        await self._db.change_comment_state(comment_id, CommentState.deleted)
+        await self._repo.update(id=comment_id, state=CommentState.deleted)
 
     async def delete_all_comments(self, article_id: int) -> None:
         """
@@ -96,7 +96,7 @@ class CommentService:
         :param article_id:
         :return:
         """
-        comment_ids = await self._db.get_id_comments_in_article(article_id)
+        comment_ids = await self._repo.get_id_comments_in_article(article_id)
         await self._tree_repo.delete_all_branches(article_id)
         await self._repo.delete_comments(comment_ids)
 

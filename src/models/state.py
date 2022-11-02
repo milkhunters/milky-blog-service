@@ -17,10 +17,10 @@ class ArticleState(Enum):
 
     PS: было переписано с dataclass на enum
     """
-    draft: int = 0
-    published: int = 1
-    archived: int = 2
-    deleted: int = 3
+    DRAFT: int = 0
+    PUBLISHED: int = 1
+    ARCHIVED: int = 2
+    DELETED: int = 3
 
 
 @unique

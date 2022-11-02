@@ -32,9 +32,9 @@ class User(models.Model):
         exclude = ["hashed_password"]
 
 
-class UserDeleted(models.Model):
+class DeletedUser(models.Model):
     id = fields.IntField(pk=True)
     delete_time = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
-        table = "user_deleted"
+        table = "deleted_user"

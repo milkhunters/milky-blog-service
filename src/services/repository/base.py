@@ -3,6 +3,8 @@ from typing import TypeVar, Generic, List, Union, Optional
 from tortoise.expressions import Q
 from tortoise.fields import CharField, IntField
 
+from utils import formators
+
 T = TypeVar('T')
 S = TypeVar('S')
 
@@ -49,7 +51,7 @@ class BaseRepo(Generic[T, S]):
         queries: list[Q] = []
         kwargs_queries = [Q(**{f"{key}": value}) for key, value in kwargs.items()]
         if query:
-            queryset = query.split(' ')  # Todo: нормалайзер
+            queryset = formators.tokenize(query)
 
             if not fields:
                 fields = [f.model_field_name for f in self.table._meta.fields_map.values() if isinstance(f, CharField)]
@@ -78,7 +80,7 @@ class BaseRepo(Generic[T, S]):
         return await self.table.filter(**kwargs).count()
 
     async def insert(self, **kwargs) -> S:
-        return await self.table.create(**kwargs)
+        return S.from_orm(await self.table.create(**kwargs))
 
     async def update(self, id: int, **kwargs) -> None:
         await self.table.filter(id=id).update(**kwargs)

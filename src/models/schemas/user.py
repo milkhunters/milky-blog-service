@@ -91,6 +91,6 @@ class UserUpdate(BaseModel):
         return value
 
 
-class UserDelete(BaseModel):
+class DeletedUser(BaseModel):
     id: int
     delete_time: datetime
