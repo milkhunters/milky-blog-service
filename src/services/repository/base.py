@@ -13,8 +13,14 @@ class BaseRepo(Generic[T, S]):
     def __init__(self):
         self.table = T
 
-    async def get(self, query: str = None, *args, **kwargs) -> Optional[S]:
-        return await self.table.get_or_none(**kwargs)
+    async def get(self, fetch_related_fields: Optional[list[str]] = None, **kwargs) -> Optional[S]:
+        """
+        :param fetch_related_fields: список полей, являющихся связными, которые будут загружены
+        """
+        rows = await self.table.get_or_none(**kwargs)
+        if rows and fetch_related_fields:
+            await rows.fetch_related(*fetch_related_fields)
+        return S.from_orm(rows) if rows else None
 
     async def search(
             self,

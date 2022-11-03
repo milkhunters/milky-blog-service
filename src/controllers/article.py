@@ -10,80 +10,68 @@ from services.comment import CommentService
 from exceptions import APIError
 
 from models import schemas
+from models.role import Role, MainRole as M, AdditionalRole as A
+import views
 
-router = APIRouter(
-    tags=["Blog"],
-    prefix="/blog",
-    responses={"4xx": {"model": schemas.ExceptionsAPIModel}}
-)
+router = APIRouter(tags=["Article"], prefix="/article")
 
 
-@router.get("/getArticles", response_model=schemas.ArticlesOutMenu, summary="Получение публикаций",
-            description="Используется для получения списка публикаций для меню (меньше данных)")
-async def get_articles(page: int = 1, per_page: int = 10, order_by: str = "id", search: str = None):
+@router.get("/get_list", response_model=views.ArticlesResponse, summary="Получение публикаций")
+async def get_list(page: int = 1, per_page: int = 10, order_by: str = "id", search: str = None):
     """
-    Получение публикаций по средством генератора или постранично.
-    Используется для представления в меню.
-
-    :param page:
-    :param per_page:
-    :param order_by:
-    :param search:
-    :return:
+    Получение списка публикаций
+    (меньше данных)
     """
-    # Подготовка входных данных
-    page = max(page, 1)
-    per_page = max(per_page, 1)
-    order_by = order_by if order_by in ["id", "title", "create_time"] else "id"
-    # Проверки
-    if per_page > 100:
-        raise APIError(918)
     return await ArticleService().get_articles(page, per_page, order_by, search)
 
 
-@router.get("/getArticle", response_model=schemas.ArticleOut, summary="Получение публикации",
-            description="Используется для получения полных данных публикации, включая комментарии")
-async def get_article(id: int, request: Request, auth: JWTCookie = Depends(JWTCookie(auto_error=False))):
+@router.get(
+    "/get",
+    summary="Получение публикации",
+    description="Используется для получения полных данных публикации, включая комментарии",
+    response_model=views.ArticleResponse,
+)
+async def get_article(
+        id: int,
+        request: Request,
+        auth=Depends(JWTCookie(auto_error=False))
+):
     """
     Получение данных одной публикации.
     :param id: Идентификатор публикации
+    :param auth
     :param request:
-    :param auth: Если авторизован, то request.user хранит данные о пользователе.
     :return:
+
+    TODO: возможно стоит вынести логику проверок
     """
-    article = await crud.get_article(id=id)
-    if not article:
-        raise APIError(917)
-    # Проверка доступа к статье
+    article = await ArticleService().get_article(id)
     if article.state != ArticleState.published:
-        if not auth:
-            raise APIError(910)
-        if request.user.id != article.owner_id:
-            if not (request.user.role_id >= 31):
-                raise APIError(909)
-    return schemas.ArticleOut.from_orm(article)
+        if auth and request.user.id != article.owner.id:
+            raise APIError(918)
+        return article
+    return article
 
 
 @router.post(
-    "/createArticle",
-    response_model=schemas.ArticleOut,
-    dependencies=[Depends(JWTCookie()), Depends(RoleFilter(21))],
-    summary="Создание публикации")
-async def create_article(article: schemas.ArticleCreate, request: Request):
+    "/create",
+    summary="Создание публикации",
+    response_model=views.ArticleResponse,
+    dependencies=[Depends(JWTCookie()), Depends(RoleFilter(Role(M.moderator, A.one)))],
+)
+async def create_article(article: schemas.ArticleCreate):
     """
     Создание публикации.
 
-    :param article: объект типа schemas.ArticleCreate
-    :param request: используется для получения user_id
+    :param article:
     :return:
     """
-    article_obj = await crud.create_article(article, request.user.id)
-    return schemas.ArticleOut.from_orm(article_obj)
+    return await ArticleService().create_article(article)
 
 
 @router.post(
-    "/updateArticle",
-    response_model=schemas.ArticleOut,
+    "/update",
+    response_model=views.ArticleResponse,
     dependencies=[Depends(JWTCookie()), Depends(RoleFilter(21))],
     summary="Обновление публикации")
 async def update_article(id: int, data: schemas.ArticleUpdate):
@@ -93,6 +81,8 @@ async def update_article(id: int, data: schemas.ArticleUpdate):
     :param id ид публикации
     :param data:
     :return:
+
+    TODO: реализовать
     """
     article = await crud.get_article(id=id)
     if not article:
@@ -112,6 +102,8 @@ async def delete_article(id: int):
     Ветка комментариев и сами комментарии удаляются.
     :param id: id публикации
     :return:
+
+    TODO: реализовать
     """
     # Логика удаления статьи
     article = await crud.get_article(id=id)
@@ -135,6 +127,7 @@ async def create_comment(article_id: int, content: str, request: Request, answer
     :param request:
     :param answer_to: ответ
     :return: int - id созданного комментария
+
     """
     cs = CommentService()
     # Проверка получателя

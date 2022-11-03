@@ -1,5 +1,6 @@
 import math
 
+from exceptions import APIError
 from models import schemas
 import views
 from services.repository import NotificationRepo
@@ -15,31 +16,35 @@ class NotificationService:
     ):
         self._repo = notify_repo
 
-    async def get(self, user_id: int, page: int) -> views.NotificationsResponse:
+    async def get(self, user_id: int, page_num: int, per_page: int = 10) -> views.NotificationsResponse:
         """
         Получить уведомления
 
         :param user_id:
-        :param page: целое положительное число >=1
+        :param page_num: целое положительное число >= 1
+        :param per_page: целое положительное число >= 1
         :return:
+
+        # TODO: проверка входных данных, что int32
+
         """
-        per_page = 10
+        if page_num < 1:
+            raise APIError(919, "Номер страницы не может быть меньше 1")
+
+        per_page_limit = 40
 
         # Подготовка входных данных
-        limit = page * per_page
-        skip = (page - 1) * per_page
+        per_page = max(min(per_page, per_page_limit, 2147483646), 1)
+        limit = min(page_num * per_page, 2147483646)
+        skip = min((page_num - 1) * per_page, 2147483646)
 
-        # Подготовка выходных данных # TODO: перенести в модель все 3 последние строки
-        total_notifications = await self.get_total(user_id)
-        total_pages = math.ceil(max(total_notifications, 1) / per_page)
-        next_page = (page + 1) if page < total_pages else page
-        previous_page = (page - 1) if page > 1 else page
+        # Подготовка выходных данных
+        notifications = await self._repo.search(limit=limit + 1, offset=skip, owner_id=user_id)
         return views.NotificationsResponse(
-            items=await self._repo.get(limit, skip, owner_id=user_id),  # TODO: Модифицировать репозиторий
-            current=page,
-            total=total_pages,
-            next=next_page,
-            previous=previous_page
+            items=[views.NotificationResponse.from_orm(notification) for notification in notifications[:per_page]],
+            current=page_num,
+            next=(page_num + 1) if len(notifications) > per_page else page_num,
+            previous=(page_num - 1) if page_num > 1 else page_num
         )
 
     async def get_total(self, user_id: int) -> int:

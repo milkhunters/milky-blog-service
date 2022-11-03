@@ -16,7 +16,7 @@ class Article(models.Model):
     content = fields.TextField()
     tags = fields.ManyToManyField('models.Tag', related_name="articles")
     owner = fields.ForeignKeyField('models.User', related_name="articles")
-    state = fields.IntField(default=ArticleState.draft)
+    state = fields.IntEnumField(ArticleState)
     create_time = fields.DatetimeField(auto_now_add=True)
     update_time = fields.DatetimeField(auto_now=True, null=True)
 

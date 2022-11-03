@@ -5,4 +5,4 @@ from . import files
 from . import admin
 from . import notifications
 from . import email
-from . import blog
+from . import article

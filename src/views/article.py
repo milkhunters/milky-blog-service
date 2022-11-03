@@ -6,6 +6,7 @@ from tortoise import fields
 
 from models.schemas import BasePaginationModel
 from models.schemas import Tag, User
+from models.state import ArticleState
 
 
 class ArticleResponse(BaseModel):
@@ -18,8 +19,8 @@ class ArticleResponse(BaseModel):
     """
     id: int
     title: str
-    poster_url: str = None
-    state: int
+    poster_url: Optional[str]
+    state: ArticleState
     description: str
     tags: Optional[list[Tag]]
     owner: User

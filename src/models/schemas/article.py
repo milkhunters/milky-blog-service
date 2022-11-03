@@ -5,6 +5,7 @@ from pydantic import BaseModel, validator
 from tortoise import fields
 
 from .user import User
+from ..state import ArticleState
 
 
 class Article(BaseModel):
@@ -15,7 +16,7 @@ class Article(BaseModel):
     id: int
     title: str
     poster_url: Optional[str]
-    state: int  # TODO: перейти на enum
+    state: ArticleState  # TODO: перейти на enum
     description: str
     content: str
     tags: Optional[list['Tag']]
@@ -82,18 +83,18 @@ class Tag(BaseModel):
 
 
 class ArticleCreate(BaseModel):
-    # todo: добавить poster_url
+    poster_url: Optional[str]
     title: str
     content: str
-    state: int  # TODO: перейти на enum
+    state: ArticleState
     tags: list[str]
 
 
 class ArticleUpdate(BaseModel):
-    # todo: добавить poster_url
+    poster_url: Optional[str]
     title: Optional[str]
     content: Optional[str]
-    state: Optional[int]
+    state: Optional[ArticleState]
     tags: Optional[list[str]]
 
     class Config:
