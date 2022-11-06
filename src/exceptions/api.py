@@ -6,7 +6,7 @@ from fastapi.exceptions import HTTPException as StarletteHTTPException
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 
-from views import ErrorAPIResponse, Error
+from .models import ErrorAPIResponse, Error
 
 with open("error_list.json", "r", encoding="utf-8") as file:
     error_list = json.load(file)

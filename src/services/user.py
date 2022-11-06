@@ -1,4 +1,5 @@
-from models import schemas, UserStates
+from models import schemas
+from models.state import UserStates
 from models.role import Role, MainRole as M, AdditionalRole as A
 
 import utils

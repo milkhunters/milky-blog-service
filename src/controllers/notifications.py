@@ -12,22 +12,22 @@ router = APIRouter(
     tags=["Notifications"],
     prefix="/notifications",
     dependencies=[Depends(JWTCookie())],
-    responses={"4xx": {"model": ExceptionsAPIModel}}
+    # responses={"4xx": {"model": ExceptionsAPIModel}}
 )
 
 
-@router.get("/", response_model=schemas.Notifications)
+@router.get("/", response_model=schemas.Notification)
 async def get_notifications(page: int, request: Request):
     page = max(page, 1)
     if page > 2 ** 31:
         raise APIError(900)
-    return await NotificationService().get_notifications(request.user.id, page)
+    return await NotificationService().get(request.user.id, page)
 
 
 @router.post("/read")
 async def read_notification(id: int, request: Request):
     ns = NotificationService()
-    notification = await ns.get_notification(id)
+    notification = await ns.get(id)
     if not notification:
         raise APIError(919)
     if notification.owner_id != request.user.id:

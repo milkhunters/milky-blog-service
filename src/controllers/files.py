@@ -12,7 +12,7 @@ from services.storage.s3 import S3
 from src.config import load_config
 
 import utils
-from views import ErrorAPIResponse
+from exceptions.models import ErrorAPIResponse
 
 router = APIRouter(responses={"400": {"model": ErrorAPIResponse}})
 config = load_config()

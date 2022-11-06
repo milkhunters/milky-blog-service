@@ -6,6 +6,7 @@ from fastapi import Request
 from fastapi import Response
 from fastapi import BackgroundTasks
 
+import utils
 from models.state import UserStates
 from exceptions import APIError
 
@@ -13,7 +14,9 @@ from utils import validators
 from models import schemas
 from services import UserService
 
-router = APIRouter(responses={"4xx": {"model": schemas.ExceptionsAPIModel}})
+router = APIRouter(
+    # responses={"4xx": {"model": schemas.ExceptionsAPIModel}}
+)
 
 """
 TODO:

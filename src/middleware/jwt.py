@@ -4,7 +4,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import Response
 from fastapi.requests import Request
 
-from models import schemas, Role, UserStates
+from models import schemas, Role
+from models.state import UserStates
 from services.auth import JWTManager
 from services.auth import SessionManager
 from services import repository

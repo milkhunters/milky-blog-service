@@ -5,7 +5,7 @@ from pydantic import BaseModel, validator
 from tortoise import fields
 
 from .user import User
-from ..state import ArticleState
+from models.state import ArticleState
 
 
 class Article(BaseModel):

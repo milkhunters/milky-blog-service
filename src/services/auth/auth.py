@@ -1,10 +1,11 @@
 from starlette.requests import Request
 from starlette.responses import Response
 
-from src import utils
-from src.exceptions.api import APIError
-from src.models import UserStates, schemas
-from src.services import repository
+import utils
+from exceptions.api import APIError
+from models import schemas
+from models.state import UserStates
+from services.repository import UserRepo
 from . import JWTManager, SessionManager
 
 
@@ -26,7 +27,7 @@ async def authenticate(
     :return:
     """
 
-    user = await repository.user.get_user(username=login)
+    user = await UserRepo().get(username=login)
     if not user:
         raise APIError(904)
     if not utils.verify_password(password, user.hashed_password):
@@ -82,7 +83,7 @@ async def refresh_tokens(
     """
     current_tokens = jwt.get_jwt_cookie(request)
     session_id = session.get_session_id(request)
-    user = await repository.user.get_user(id=jwt.decode_refresh_token(current_tokens.refresh_token).id)
+    user = await UserRepo().get(id=jwt.decode_refresh_token(current_tokens.refresh_token).id)
 
     if not (UserStates(user.state_id) == UserStates.active):
         raise APIError(906)

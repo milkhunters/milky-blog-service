@@ -11,7 +11,7 @@ class Comment(models.Model):
     id = fields.IntField(pk=True)
     content = fields.TextField(max_length=1000, min_length=1)
     owner = fields.ForeignKeyField('models.User', related_name="comments")
-    state = fields.IntEnumField(CommentState, default=CommentState.active)  # TODO: возможна ошибка из-за default=...
+    state = fields.IntEnumField(CommentState)
     create_time = fields.DatetimeField(auto_now_add=True)
     update_time = fields.DatetimeField(auto_now=True, null=True)
 

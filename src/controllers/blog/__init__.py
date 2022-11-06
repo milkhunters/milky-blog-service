@@ -8,11 +8,10 @@ from models.role import AdditionalRole as A
 
 from exceptions.models import ErrorAPIResponse
 
-from . import moderator
+from . import article
+from . import comments
 
-router = APIRouter(
-    responses={"400": {"model": ErrorAPIResponse}},
-    dependencies=[Depends(JWTCookie())]
-)
+router = APIRouter(responses={"400": {"model": ErrorAPIResponse}})
 
-router.include_router(moderator.router, dependencies=[Depends(RoleFilter(Role(M.moderator, A.one)))])
+router.include_router(article.router, prefix="/article")
+router.include_router(comments.router, prefix="/comment")

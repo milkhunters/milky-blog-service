@@ -7,7 +7,17 @@ from .base import BaseRepo
 
 
 class ArticleRepo(BaseRepo[tables.Article, schemas.Article]):
-    pass
+
+    async def add_tag(self, article_id: int, tag_id: int) -> None:
+        """
+        Добавляет запись в m2m колонку связи.
+
+        TODO: возможно стоит переосмыслить
+
+        """
+        obj = await self.table.get(id=article_id)
+        obj.tags.add(tables.Tag.get(id=tag_id))
+        obj.save()
 
 
 class CommentRepo(BaseRepo[tables.Comment, schemas.Comment]):
@@ -54,3 +64,7 @@ class CommentTreeRepo(BaseRepo[tables.CommentTree, schemas.CommentBranch]):
         :return:
         """
         await self.table.filter(article_id=article_id).delete()
+
+
+class TagRepo(BaseRepo[tables.Tag, schemas.Tag]):
+    pass

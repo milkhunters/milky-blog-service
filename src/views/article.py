@@ -6,7 +6,7 @@ from tortoise import fields
 
 from models.schemas import BasePaginationModel
 from models.schemas import Tag, User
-from models.state import ArticleState
+from models.state import ArticleState, CommentState
 
 
 class ArticleResponse(BaseModel):
@@ -46,3 +46,25 @@ class ArticlesResponse(BasePaginationModel):
     Используется для вывода списка статей
     """
     items: Optional[list[ArticleResponse]]
+
+
+class CommentResponse(BaseModel):
+    id: int
+    content: str
+    owner: User
+    state: CommentState
+    create_time: datetime
+    update_time: Optional[datetime]
+
+    @validator("*", pre=True, each_item=False)
+    def _tortoise_convert(cls, value):
+        # Computed fields
+        if callable(value):
+            return value()
+        # Convert ManyToManyRelation to list
+        if isinstance(value, (fields.ManyToManyRelation, fields.ReverseRelation)):
+            return list(value)
+        return value
+
+    class Config:
+        orm_mode = True

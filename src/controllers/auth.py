@@ -5,14 +5,15 @@ from fastapi.requests import Request
 from fastapi.responses import Response
 
 from services import UserService
-from src.config import load_docs
-from src.dependencies import JWTCookie
-from src.exceptions.api import APIError
-from src import utils
-from src.services.auth import authenticate, logout, refresh_tokens
-from src.views import ErrorAPIResponse, LoginResponse, RegisterResponse
-from src.models import schemas
-from src.services import repository
+from config import load_docs
+from dependencies import JWTCookie
+from exceptions.api import APIError
+
+from services.auth import authenticate, logout, refresh_tokens
+from views import LoginResponse, RegisterResponse
+from exceptions.models import ErrorAPIResponse
+from models import schemas
+
 
 router = APIRouter(responses={"400": {"model": ErrorAPIResponse}})
 docs = load_docs("auth.ini")
@@ -25,7 +26,7 @@ docs = load_docs("auth.ini")
     description=docs["signUp"]["description"]
 )
 async def sign_up(
-        user: schemas.UserSignUp,
+        user: schemas.UserCreate,
         is_auth=Depends(JWTCookie(auto_error=False)),
 ):
     user_service = UserService()
@@ -46,7 +47,7 @@ async def sign_up(
     description=docs["signIn"]["description"]
 )
 async def sign_in(
-        user: schemas.UserSignIn,
+        user: schemas.UserAuth,
         response: Response,
         is_auth=Depends(JWTCookie(auto_error=False))
 ):

@@ -4,7 +4,7 @@ from tortoise import fields
 from datetime import datetime
 
 from exceptions import APIError
-from models import UserStates
+from models.state import UserStates
 from utils import validators
 
 

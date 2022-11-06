@@ -1,9 +1,9 @@
 """Redis client class utility."""
 import logging
 
-import aioredis
-import aioredis.sentinel
-from aioredis.exceptions import RedisError
+from redis import asyncio as aioredis
+
+from redis.exceptions import RedisError
 from config import load_config
 
 config = load_config()
