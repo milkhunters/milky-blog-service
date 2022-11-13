@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends
 from fastapi import Request
 from fastapi import Response
 
-from dependencies.jwt_barrier import JWTCookie
-from dependencies.role_filter import RoleFilter
 from exceptions.api import APIError
 
 from models import schemas
@@ -22,7 +20,7 @@ async def get_user(user_id: int):
     """
     user_service = UserService()
 
-    user = await user_service.get(id=user_id)
+    user = await user_service.get_user(user_id)
     if not user:
         raise APIError(904)
     return user

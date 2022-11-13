@@ -26,18 +26,14 @@ docs = load_docs("auth.ini")
     description=docs["signUp"]["description"]
 )
 async def sign_up(
-        user: schemas.UserCreate,
+        data: schemas.UserCreate,
         is_auth=Depends(JWTCookie(auto_error=False)),
 ):
     user_service = UserService()
 
     if is_auth:
         raise APIError(920)
-    if await user_service.get(username__iexact=user.username):
-        raise APIError(903)
-    if await user_service.get(email__iexact=user.email):
-        raise APIError(922)
-    return await user_service.create(**user.dict())
+    return await user_service.create_user(data)
 
 
 @router.post(

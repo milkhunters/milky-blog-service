@@ -29,7 +29,7 @@ class User(models.Model):
 
     class PydanticMeta:
         computed = ["full_name"]
-        exclude = ["hashed_password"]
+        # exclude = ["hashed_password"]
 
 
 class DeletedUser(models.Model):

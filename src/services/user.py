@@ -1,3 +1,4 @@
+from exceptions import APIError
 from models import schemas
 from models.state import UserStates
 from models.role import Role, MainRole as M, AdditionalRole as A
@@ -14,19 +15,36 @@ class UserService:
             user_repo: UserRepo = UserRepo(),
             du_repo: DeletedUserRepo = DeletedUserRepo(),
     ):
-        self._repo = user_repo
+        self._user_repo = user_repo
         self._du_repo = du_repo
 
-    async def create(self, user: schemas.UserCreate) -> schemas.User:
-        user = await self._repo.insert(
+    async def create_user(self, user: schemas.UserCreate) -> schemas.User:
+        if await self.get_user(username=user.username):
+            raise APIError(903)
+        if await self.get_user(email=user.email):
+            raise APIError(922)
+
+        user = await self._user_repo.insert(
             role_id=Role(M.user, A.one).value(),
-            state=UserStates.not_confirmed,  # TODO: сделать поле бд ENUM
+            state=UserStates.not_confirmed,
             hashed_password=utils.get_hashed_password(user.password),
             username=user.username,
             email=user.email,
         )
         return user
 
-    async def delete(self, user_id: int) -> None:
+    async def get_user(self, user_id: int = None, username: str = None, email: str = None) -> schemas.User:
+        user = await self._user_repo.get(
+            **{"id": user_id} if user_id else {"username__iexact": username} if username else {"email__iexact": email},
+        )
+        return schemas.User.from_orm(user)
+
+    async def update_user(self, user_id: int, data: schemas.UserUpdate) -> None:
+        article = await self._user_repo.get(id=user_id)
+        if not article:
+            raise APIError(919)
+        await self._user_repo.update(user_id, **data.dict(exclude_unset=True))
+
+    async def delete_user(self, user_id: int) -> None:
         await self._du_repo.insert(id=user_id)  # TODO: возможно, стоит сделать транзакцию;
-        await self._repo.update(user_id, state=UserStates.deleted)  # TODO: сделать поле бд ENUM
+        await self._user_repo.update(user_id, state=UserStates.deleted)

@@ -1,18 +1,17 @@
 from typing import List, Optional, Union
 from tortoise.expressions import Q
 
-from models import schemas
 from models import tables
 from .base import BaseRepo
 
 
-class ArticleRepo(BaseRepo[tables.Article, schemas.Article]):
+class ArticleRepo(BaseRepo[tables.Article]):
 
     async def add_tag(self, article_id: int, tag_id: int) -> None:
         """
         Добавляет запись в m2m колонку связи.
 
-        TODO: возможно стоит переосмыслить
+        TODO: вынести в сервис
 
         """
         obj = await self.table.get(id=article_id)
@@ -20,10 +19,10 @@ class ArticleRepo(BaseRepo[tables.Article, schemas.Article]):
         obj.save()
 
 
-class CommentRepo(BaseRepo[tables.Comment, schemas.Comment]):
+class CommentRepo(BaseRepo[tables.Comment]):
     # todo: проверить работоспособность и использовать для других repo
 
-    async def get(self, *args, **kwargs) -> Union[List[schemas.Comment], schemas.Comment, None]:
+    async def get(self, *args, **kwargs) -> Union[List[tables.Comment], tables.Comment, None]:
         # TODO: переписать
         return await self.table.filter(*args, **kwargs).prefetch_related("user").all()
 
@@ -42,7 +41,7 @@ class CommentRepo(BaseRepo[tables.Comment, schemas.Comment]):
         ).delete()
 
 
-class CommentTreeRepo(BaseRepo[tables.CommentTree, schemas.CommentBranch]):
+class CommentTreeRepo(BaseRepo[tables.CommentTree]):
 
     async def create_branch(self, parent_id: int, new_comment_id: int, article_id: int, parent_level: int):
         sql_raw = """
@@ -66,5 +65,5 @@ class CommentTreeRepo(BaseRepo[tables.CommentTree, schemas.CommentBranch]):
         await self.table.filter(article_id=article_id).delete()
 
 
-class TagRepo(BaseRepo[tables.Tag, schemas.Tag]):
+class TagRepo(BaseRepo[tables.Tag]):
     pass

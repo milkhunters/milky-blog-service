@@ -1,26 +1,27 @@
-from typing import TypeVar, Generic, List, Union, Optional
+from typing import TypeVar, Generic, List, Optional
 
 from tortoise.expressions import Q
-from tortoise.fields import CharField, IntField
+from tortoise.fields import CharField
 
 from utils import formators
 
 T = TypeVar('T')
-S = TypeVar('S')
 
 
-class BaseRepo(Generic[T, S]):
+class BaseRepo(Generic[T]):
     def __init__(self):
         self.table = T
 
-    async def get(self, fetch_related_fields: Optional[list[str]] = None, **kwargs) -> Optional[S]:
+    async def get(self, fetch_related_fields: Optional[list[str]] = None, **kwargs) -> Optional[T]:
         """
+        Получает запись по условию
+
         :param fetch_related_fields: список полей, являющихся связными, которые будут загружены
         """
-        rows = await self.table.get_or_none(**kwargs)
-        if rows and fetch_related_fields:
-            await rows.fetch_related(*fetch_related_fields)
-        return S.from_orm(rows) if rows else None
+        row = await self.table.get_or_none(**kwargs)
+        if row and fetch_related_fields:
+            await row.fetch_related(*fetch_related_fields)
+        return row
 
     async def search(
             self,
@@ -31,7 +32,7 @@ class BaseRepo(Generic[T, S]):
             order_by: Optional[str] = "id",
             fetch_related_fields: Optional[list[str]] = None,
             **kwargs
-    ) -> Optional[List[S]]:
+    ) -> Optional[List[T]]:
         """
         :param query: поисковый запрос
         :param fields: список полей, по которым будет производиться поиск
@@ -80,13 +81,13 @@ class BaseRepo(Generic[T, S]):
         if fetch_related_fields:
             await self.table.fetch_for_list(result, *fetch_related_fields)
 
-        return S.from_orm(result)  # TODO: протестировать
+        return result  # TODO: протестировать
 
     async def count(self, **kwargs) -> int:
         return await self.table.filter(**kwargs).count()
 
-    async def insert(self, **kwargs) -> S:
-        return S.from_orm(await self.table.create(**kwargs))
+    async def insert(self, **kwargs) -> T:
+        return await self.table.create(**kwargs)
 
     async def update(self, id: int, **kwargs) -> None:
         await self.table.filter(id=id).update(**kwargs)

@@ -21,6 +21,7 @@ class User(BaseModel):
     last_name: Optional[str]
     role_id: int
     state: UserStates
+    hashed_password: str
     create_time: datetime
     update_time: datetime
 

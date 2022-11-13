@@ -67,12 +67,23 @@ class JWT:
 
 
 @dataclass
+class AMQP:
+    host: str
+    port: int
+    username: str
+    password: str
+    virtualhost: str
+    queue: str
+
+
+@dataclass
 class Base:
     name: str
     description: str
     vers: str
     jwt: JWT
     contact: Contact
+    amqp: AMQP
 
 
 @dataclass
@@ -135,6 +146,14 @@ def load_config() -> Config:
             jwt=JWT(
                 JWT_ACCESS_SECRET_KEY=KVManager(config)[mode]["jwt"]["JWT_ACCESS_SECRET_KEY"].value(),
                 JWT_REFRESH_SECRET_KEY=KVManager(config)[mode]["jwt"]["JWT_REFRESH_SECRET_KEY"].value()
+            ),
+            amqp=AMQP(
+                host=KVManager(config)["base"]["amqp"]["host"].value(),
+                port=KVManager(config)["base"]["amqp"]["port"].value(),
+                username=KVManager(config)["base"]["amqp"]["username"].value(),
+                password=KVManager(config)["base"]["amqp"]["password"].value(),
+                virtualhost=KVManager(config)["base"]["amqp"]["virtualhost"].value(),
+                queue=KVManager(config)["base"]["amqp"]["queue"].value(),
             )
         ),
         db=DbConfig(

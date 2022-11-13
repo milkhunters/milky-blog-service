@@ -108,7 +108,7 @@ class JWTManager:
             value=tokens.access_token,
             secure=config.is_secure_cookie,
             httponly=True,
-            samesite="Strict",
+            samesite="strict",
             max_age=self.COOKIE_EXP,
             path=self.COOKIE_PATH,
             domain=self.COOKIE_DOMAIN
@@ -118,7 +118,7 @@ class JWTManager:
             value=tokens.refresh_token,
             secure=config.is_secure_cookie,
             httponly=True,
-            samesite="Strict",
+            samesite="strict",
             max_age=self.COOKIE_EXP,
             path=self.COOKIE_PATH,
             domain=self.COOKIE_DOMAIN

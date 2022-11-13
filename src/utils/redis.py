@@ -1,6 +1,7 @@
 """Redis client class utility."""
 import logging
 
+import redis
 from redis import asyncio as aioredis
 
 from redis.exceptions import RedisError
@@ -232,6 +233,20 @@ class RedisClient(object):
         except RedisError as ex:
             cls.log.exception(
                 "Команда Redis DELETE завершена с исключением",
+                exc_info=(type(ex), ex, ex.__traceback__),
+            )
+            raise ex
+
+    @classmethod
+    async def keys(cls, pattern: str) -> list[str]:
+        redis_client = cls.redis_client
+
+        cls.log.debug(f"Сформирована Redis KEYS команда, pattern: {pattern}")
+        try:
+            return await redis_client.keys(pattern=pattern)
+        except RedisError as ex:
+            cls.log.exception(
+                "Команда Redis KEYS завершена с исключением",
                 exc_info=(type(ex), ex, ex.__traceback__),
             )
             raise ex

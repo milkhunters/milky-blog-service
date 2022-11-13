@@ -3,10 +3,10 @@ from fastapi import Request
 
 from dependencies.jwt_barrier import JWTCookie
 from services import NotificationService
-from exceptions import APIError
+import views
 
 from models.schemas import ExceptionsAPIModel
-from models import schemas
+
 
 router = APIRouter(
     tags=["Notifications"],
@@ -16,32 +16,17 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=schemas.Notification)
+@router.get("/get", response_model=views.NotificationsResponse)
 async def get_notifications(page: int, request: Request):
-    page = max(page, 1)
-    if page > 2 ** 31:
-        raise APIError(900)
-    return await NotificationService().get(request.user.id, page)
+    return await NotificationService().get_notifications(request.user.id, page)
 
 
-@router.post("/read")
-async def read_notification(id: int, request: Request):
-    ns = NotificationService()
-    notification = await ns.get(id)
-    if not notification:
-        raise APIError(919)
-    if notification.owner_id != request.user.id:
-        raise APIError(909)
-    if not notification.is_read:
-        await ns.make_read_notification(id)
+@router.post("/read", dependencies=[Depends(JWTCookie())])
+async def read_notification(id: int):
+    await NotificationService().make_read(id)
 
 
 @router.delete("/delete")
-async def delete_notification(id: int, request: Request):
-    ns = NotificationService()
-    notification = await ns.get_notification(id)
-    if not notification:
-        raise APIError(919)
-    if notification.owner_id != request.user.id:
-        raise APIError(909)
-    await ns.delete_notification(id)
+async def delete_notification(id: int):
+    # TODO: подумать над надобностью
+    await NotificationService().delete_notification(id)

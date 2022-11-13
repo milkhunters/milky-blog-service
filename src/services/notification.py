@@ -16,7 +16,7 @@ class NotificationService:
     ):
         self._repo = notify_repo
 
-    async def get(self, user_id: int, page_num: int, per_page: int = 10) -> views.NotificationsResponse:
+    async def get_notifications(self, user_id: int, page_num: int, per_page: int = 10) -> views.NotificationsResponse:
         """
         Получить уведомления
 
@@ -30,6 +30,9 @@ class NotificationService:
         """
         if page_num < 1:
             raise APIError(919, "Номер страницы не может быть меньше 1")
+
+        if page_num > 2 ** 31:
+            raise APIError(900, "Номер страницы не может быть больше 2**31 (int32)")
 
         per_page_limit = 40
 
@@ -67,14 +70,16 @@ class NotificationService:
         """
         return await self._repo.insert(user_id, notification_type, data)  # Todo: реализовать
 
-    async def delete(self, notification_id: int) -> None:
+    async def delete_notification(self, notification_id: int) -> None:
         """
         Удалить уведомление
 
         :param notification_id:
         :return:
 
-        # TODO: возможно не используемо и следует удалить
+        TODO:
+            1. Возможно нужны проверки на существование уведомления
+            2. Возможно стоит обсудить надобность: удалять по мере заполнения
         """
         await self._repo.delete(id=notification_id)
 
@@ -84,5 +89,7 @@ class NotificationService:
 
         :param notification_id:
         :return:
+
+        TODO: возможно нужны проверки на существование уведомления
         """
         await self._repo.update(notification_id, is_read=True)
