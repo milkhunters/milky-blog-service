@@ -16,6 +16,7 @@ from exceptions.api import api_exception_handler
 
 from router import root_api_router
 from utils import RedisClient, AiohttpClient
+from utils.rabbitmq import RabbitMQ
 
 config = load_config()
 log = logging.getLogger(__name__)
@@ -55,7 +56,8 @@ register_tortoise(
 async def on_startup():
     log.debug("Выполнение обработчика события старта FastAPI.")
     if config.db.redis:
-        await RedisClient.open_redis_client()
+        await RedisClient.open_redis_client()  # TODO: в скоуп
+    app.state.rabbitmq = await RabbitMQ.open_connection()
     AiohttpClient.get_aiohttp_client()
 
 
@@ -65,6 +67,7 @@ async def on_shutdown():
     # Gracefully close utilities.
     if config.db.redis:
         await RedisClient.close_redis_client()
+    await app.state.rabbitmq.close_connection()
     await AiohttpClient.close_aiohttp_client()
 
 

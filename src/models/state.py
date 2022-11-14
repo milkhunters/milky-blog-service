@@ -2,7 +2,7 @@ from enum import Enum, unique
 
 
 @unique
-class UserStates(Enum):
+class UserStates(int, Enum):
     not_confirmed = 0
     active = 1
     blocked = 2
@@ -10,7 +10,7 @@ class UserStates(Enum):
 
 
 @unique
-class ArticleState(Enum):
+class ArticleState(int, Enum):
     """
     Статус публикации
     не является pydantic моделью
@@ -24,7 +24,7 @@ class ArticleState(Enum):
 
 
 @unique
-class CommentState(Enum):
+class CommentState(int, Enum):
     """
     Статус комментария
 
@@ -35,7 +35,7 @@ class CommentState(Enum):
 
 
 @unique
-class NotificationTypes(Enum):
+class NotificationTypes(int, Enum):
     """
     Типы уведомлений
 

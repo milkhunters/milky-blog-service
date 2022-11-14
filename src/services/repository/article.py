@@ -6,6 +6,7 @@ from .base import BaseRepo
 
 
 class ArticleRepo(BaseRepo[tables.Article]):
+    table = tables.Article
 
     async def add_tag(self, article_id: int, tag_id: int) -> None:
         """
@@ -16,10 +17,11 @@ class ArticleRepo(BaseRepo[tables.Article]):
         """
         obj = await self.table.get(id=article_id)
         obj.tags.add(tables.Tag.get(id=tag_id))
-        obj.save()
+        await obj.save()
 
 
 class CommentRepo(BaseRepo[tables.Comment]):
+    table = tables.Comment
     # todo: проверить работоспособность и использовать для других repo
 
     async def get(self, *args, **kwargs) -> Union[List[tables.Comment], tables.Comment, None]:
@@ -42,6 +44,7 @@ class CommentRepo(BaseRepo[tables.Comment]):
 
 
 class CommentTreeRepo(BaseRepo[tables.CommentTree]):
+    table = tables.CommentTree
 
     async def create_branch(self, parent_id: int, new_comment_id: int, article_id: int, parent_level: int):
         sql_raw = """
@@ -66,4 +69,4 @@ class CommentTreeRepo(BaseRepo[tables.CommentTree]):
 
 
 class TagRepo(BaseRepo[tables.Tag]):
-    pass
+    table = tables.Tag

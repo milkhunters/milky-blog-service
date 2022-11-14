@@ -7,8 +7,8 @@ from src.models import tables
 
 
 class UserRepo(BaseRepo[tables.User]):
-    pass
+    table = tables.User
 
 
 class DeletedUserRepo(BaseRepo[tables.DeletedUser]):
-    pass
+    table = tables.DeletedUser

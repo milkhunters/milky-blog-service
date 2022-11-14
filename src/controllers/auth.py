@@ -10,7 +10,7 @@ from dependencies import JWTCookie
 from exceptions.api import APIError
 
 from services.auth import authenticate, logout, refresh_tokens
-from views import LoginResponse, RegisterResponse
+from views import UserResponse
 from exceptions.models import ErrorAPIResponse
 from models import schemas
 
@@ -21,7 +21,7 @@ docs = load_docs("auth.ini")
 
 @router.post(
     "/signUp",
-    response_model=RegisterResponse,
+    response_model=UserResponse,
     summary=docs["signUp"]["summary"],
     description=docs["signUp"]["description"]
 )
@@ -38,7 +38,7 @@ async def sign_up(
 
 @router.post(
     "/signIn",
-    response_model=LoginResponse,
+    response_model=UserResponse,
     summary=docs["signIn"]["summary"],
     description=docs["signIn"]["description"]
 )
@@ -49,6 +49,7 @@ async def sign_in(
 ):
     if is_auth:
         raise APIError(920)
+    print(is_auth, "Не авторизован")
     return await authenticate(user.username, user.password, response)
 
 

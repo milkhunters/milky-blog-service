@@ -1,6 +1,7 @@
 import logging
 
 import aio_pika
+import aiormq
 
 from config import load_config
 
@@ -16,14 +17,14 @@ class RabbitMQ:
     async def open_connection(cls):
         if cls.connection is None:
             cls.log.debug("Инициализация клиента RabbitMQ.")
-            cls.connection = await aio_pika.connect(
+            cls.connection = await aio_pika.connect_robust(
                 host=config.base.amqp.host,
                 port=config.base.amqp.port,
                 login=config.base.amqp.username,
                 password=config.base.amqp.password,
                 virtualhost=config.base.amqp.virtualhost
             )
-        return cls.connection
+        return cls
 
     @classmethod
     async def close_connection(cls):
@@ -37,18 +38,21 @@ class RabbitMQ:
 
         cls.log.debug(f"Отправка сообщения в очередь {routing_key}.")
         try:
-            async with connection:
-                channel = await connection.channel()
-                queue = await channel.declare_queue(routing_key, durable=True)
 
-                await channel.default_exchange.publish(
-                    aio_pika.Message(
-                        headers=headers,
-                        body=body.encode(),
-                        content_type=content_type
-                    ),
-                    routing_key=queue.name,
-                )
+            if connection.is_closed:
+                await connection.connect()
+
+            channel = await connection.channel()
+            queue = await channel.declare_queue(routing_key, durable=True)
+
+            await channel.default_exchange.publish(
+                aio_pika.Message(
+                    headers=headers,
+                    body=body.encode(),
+                    content_type=content_type
+                ),
+                routing_key=queue.name,
+            )
         except aio_pika.exceptions.AMQPException as ex:
             cls.log.exception(
                 f"Ошибка при отправке сообщения в очередь {routing_key}: {ex}",

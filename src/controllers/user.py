@@ -24,7 +24,7 @@ async def get_current_user(request: Request):
 
     user = await user_service.get_user(request.user.id)
     if not user:
-        raise APIError(api_code=404)
+        raise APIError(api_code=919)
     return user
 
 

@@ -1,14 +1,23 @@
+from typing import Optional
+
 from pydantic import BaseModel, validator
 from tortoise import fields
-from models.schemas import User
+from models.state import UserStates
 
 
-class UserResponse(User):
+class UserResponse(BaseModel):
     """
     Модель пользователя для ответа
     (подробная информация)
     """
-    pass
+    id: int
+    username: str
+    email: str
+    full_name: str
+    first_name: Optional[str]
+    last_name: Optional[str]
+    role_id: int
+    state: UserStates
 
 
 class UserOutResponse(BaseModel):
@@ -17,10 +26,12 @@ class UserOutResponse(BaseModel):
     (публичная информация)
     """
     id: int
-    role_id: int
-    state: int  # TODO: перейти на enum
     username: str
     full_name: str
+    first_name: Optional[str]
+    last_name: Optional[str]
+    role_id: int
+    state: UserStates
 
     @validator("*", pre=True, each_item=False)
     def _tortoise_convert(cls, value):

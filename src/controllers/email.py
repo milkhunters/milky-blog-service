@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends
+from starlette.requests import Request
+
 from exceptions import APIError
 from services.auth.auth import send_verify_code, verify_email
 
@@ -16,10 +18,11 @@ TODO:
 
 
 @router.post("/send/", responses={200: {"message": "Сообщение отправлено"}})
-async def send_email(email: str):
+async def send_email(email: str, request: Request):
     if not validators.is_valid_email(email):
         raise APIError(902)
-    await send_verify_code(email)
+    rabbitmq = request.app.state.rabbitmq
+    await send_verify_code(rabbitmq, email)
     return {"message": "Сообщение отправлено"}
     # TODO: подумать над ответом пользователю
 

@@ -9,8 +9,7 @@ T = TypeVar('T')
 
 
 class BaseRepo(Generic[T]):
-    def __init__(self):
-        self.table = T
+    table = T
 
     async def get(self, fetch_related_fields: Optional[list[str]] = None, **kwargs) -> Optional[T]:
         """

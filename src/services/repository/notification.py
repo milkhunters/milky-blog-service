@@ -3,5 +3,4 @@ from services.repository.base import BaseRepo
 
 
 class NotificationRepo(BaseRepo[tables.Notification]):
-    pass
-
+    table = tables.Notification

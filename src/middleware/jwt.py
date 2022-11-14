@@ -8,7 +8,7 @@ from models import schemas, Role
 from models.state import UserStates
 from services.auth import JWTManager
 from services.auth import SessionManager
-from services import repository
+from services.user import UserService
 
 
 class JWTMiddleware(BaseHTTPMiddleware):
@@ -23,7 +23,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
         self.jwt = jwt
         self.session = session
-        self.UserRepo = repository.user
+        self.user_service = UserService()
 
     async def dispatch(self, request: Request, call_next):
         session_id = self.session.get_session_id(request)
@@ -49,13 +49,13 @@ class JWTMiddleware(BaseHTTPMiddleware):
         # Обновление токенов
         if is_need_update:
             user_id = self.jwt.decode_refresh_token(current_tokens.refresh_token).id
-            user = await self.UserRepo.get_user(id=user_id)
+            user = await self.user_service.get_user(user_id=user_id)
             if user:
                 new_payload = schemas.TokenPayload(
                     id=user.id,
                     username=user.username,
                     role_id=user.role_id,
-                    state_id=user.state_id,
+                    state_id=user.state.value,
                     exp=0
                 )  # exp не используется, но нужно для составления модели
                 new_tokens = schemas.Tokens(

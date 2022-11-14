@@ -1,3 +1,5 @@
+from typing import Optional, Union
+
 from exceptions import APIError
 from models import schemas
 from models.state import UserStates
@@ -33,17 +35,17 @@ class UserService:
         )
         return user
 
-    async def get_user(self, user_id: int = None, username: str = None, email: str = None) -> schemas.User:
+    async def get_user(self, user_id: int = None, username: str = None, email: str = None) -> Optional[schemas.User]:
         user = await self._user_repo.get(
             **{"id": user_id} if user_id else {"username__iexact": username} if username else {"email__iexact": email},
         )
-        return schemas.User.from_orm(user)
+        return schemas.User.from_orm(user) if user else None
 
-    async def update_user(self, user_id: int, data: schemas.UserUpdate) -> None:
+    async def update_user(self, user_id: int, **kwargs) -> None:
         article = await self._user_repo.get(id=user_id)
         if not article:
             raise APIError(919)
-        await self._user_repo.update(user_id, **data.dict(exclude_unset=True))
+        await self._user_repo.update(user_id, **kwargs)
 
     async def delete_user(self, user_id: int) -> None:
         await self._du_repo.insert(id=user_id)  # TODO: возможно, стоит сделать транзакцию;

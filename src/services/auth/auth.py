@@ -11,8 +11,9 @@ from models.state import UserStates
 from services.repository import UserRepo
 from utils import RedisClient
 from . import JWTManager, SessionManager
-from .. import UserService
+from ..user import UserService
 from ..email import EmailService
+# TODO: исправить импорты
 
 
 async def authenticate(
@@ -118,6 +119,7 @@ async def refresh_tokens(
 
 
 async def send_verify_code(
+        rabbitmq,
         email: str,
         user_service: UserService = UserService(),
         email_service: EmailService = EmailService(),
@@ -127,6 +129,7 @@ async def send_verify_code(
     Отправляет код подтверждения email
     Сам код генерируется внутри метода
 
+    :param rabbitmq:
     :param email: почта пользователя.
     :param user_service: пользовательский сервис.
     :param email_service: сервис отправки почты.
@@ -153,7 +156,7 @@ async def send_verify_code(
     code = random.randint(100000, 999990)
     await redis.set(f"""{email}:{int(time.time())}:0""", str(code), expire=1000)
     # TODO: подгружать html шаблон из файла
-    await email_service.send_mail(email, 'Подтверждение почты', f'Ваш код подтверждения: {code}')
+    await email_service.send_mail(rabbitmq, email, 'Подтверждение почты', f'Ваш код подтверждения: {code}')
 
 
 async def verify_email(
@@ -201,7 +204,7 @@ async def verify_email(
         await redis.set(f"{email}:{create_time}:{attempts + 1}", str(code_in_redis))
         raise APIError(911)
 
-    await user_service.update_user(user.id, schemas.UserUpdate(state=UserStates.active))
+    await user_service.update_user(user.id, state=UserStates.active)
     await redis.delete(keys[0])
 
 
