@@ -44,7 +44,7 @@ async def get_article(
     return article
 
 
-@router.get("/get_list", response_model=views.ArticlesResponse, summary="Получение публикаций")
+@router.get("/list", response_model=views.ArticlesResponse, summary="Получение публикаций")
 async def get_list(page: int = 1, per_page: int = 10, order_by: str = "id", query: str = None):
     """
     Получение списка публикаций
@@ -54,12 +54,12 @@ async def get_list(page: int = 1, per_page: int = 10, order_by: str = "id", quer
 
 
 @router.get(
-    "/get_me",
+    "/my",
     response_model=views.ArticlesResponse,
     summary="Получение публикаций пользователя",
     dependencies=[Depends(JWTCookie())]
 )
-async def get_me(
+async def my(
         request: Request,
         page: int = 1,
         per_page: int = 10,

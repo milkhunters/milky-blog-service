@@ -5,6 +5,7 @@ import urllib.parse
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
+from fastapi.requests import Request
 from tortoise.contrib.fastapi import register_tortoise
 
 from middleware import JWTMiddleware

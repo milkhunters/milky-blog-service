@@ -5,8 +5,9 @@ from pydantic import BaseModel, validator
 from tortoise import fields
 
 from models.schemas import BasePaginationModel
-from models.schemas import Tag, User
+from models.schemas import Tag
 from models.state import ArticleState, CommentState
+from .user import UserOutResponse
 
 
 class ArticleResponse(BaseModel):
@@ -23,7 +24,7 @@ class ArticleResponse(BaseModel):
     state: ArticleState
     description: str
     tags: Optional[list[Tag]]
-    owner: User
+    owner: UserOutResponse
     create_time: datetime
     update_time: Optional[datetime]
 
@@ -51,7 +52,7 @@ class ArticlesResponse(BasePaginationModel):
 class CommentResponse(BaseModel):
     id: int
     content: str
-    owner: User
+    owner: UserOutResponse
     state: CommentState
     create_time: datetime
     update_time: Optional[datetime]

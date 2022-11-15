@@ -9,8 +9,6 @@ from models.schemas import ExceptionsAPIModel
 
 
 router = APIRouter(
-    tags=["Notifications"],
-    prefix="/notifications",
     dependencies=[Depends(JWTCookie())],
     # responses={"4xx": {"model": ExceptionsAPIModel}}
 )
