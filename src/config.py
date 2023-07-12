@@ -1,201 +1,158 @@
 import os
-import configparser
-from typing import Optional
 from dataclasses import dataclass
+from src.version import __version__
 
 import consul
-from version import __version__
-
-c = consul.Consul()
 
 
 @dataclass
 class RedisConfig:
-    host: str
-    password: str
-    username: Optional[str]
-    port: int
+    HOST: str
+    PASSWORD: str
+    USERNAME: str
+    PORT: int = 6379
 
 
 @dataclass
 class PostgresConfig:
-    database: str
-    host: str
-    port: int
-    username: str
-    password: str
+    DATABASE: str
+    USERNAME: str
+    PASSWORD: str
+    HOST: str
+    PORT: int = 5432
 
 
 @dataclass
 class S3Config:
-    bucket: str
-    endpoint_url: str
-    region_name: str
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    service_name: str = "s3"
+    BUCKET: str
+    ENDPOINT_URL: str
+    REGION_NAME: str
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    SERVICE_NAME: str = "s3"
 
 
 @dataclass
 class DbConfig:
-    postgresql: PostgresConfig
-    redis: Optional[RedisConfig]
-    s3: Optional[S3Config]
+    POSTGRESQL: PostgresConfig = None
+    REDIS: RedisConfig = None
+    S3: S3Config = None
 
 
 @dataclass
 class Contact:
-    name: str
-    url: str
-    email: str
-
-
-@dataclass
-class Email:
-    isTLS: bool
-    isSSL: bool
-    host: str
-    password: str
-    user: str
-    port: int
+    NAME: str = None
+    URL: str = None
+    EMAIL: str = None
 
 
 @dataclass
 class JWT:
-    JWT_ACCESS_SECRET_KEY: str
-    JWT_REFRESH_SECRET_KEY: str
-
-
-@dataclass
-class AMQP:
-    host: str
-    port: int
-    username: str
-    password: str
-    virtualhost: str
-    queue: str
+    ACCESS_SECRET_KEY: str
+    REFRESH_SECRET_KEY: str
 
 
 @dataclass
 class Base:
-    name: str
-    description: str
-    vers: str
-    jwt: JWT
-    contact: Contact
-    amqp: AMQP
+    TITLE: str
+    DESCRIPTION: str
+    VERSION: str
+    JWT: JWT
+    CONTACT: Contact
 
 
 @dataclass
 class Config:
-    debug: bool
-    mode: str
-    build: Optional[int]
-    build_date: Optional[str]
-    branch: Optional[str]
-    commit_hash: Optional[str]
-    is_secure_cookie: bool
-    base: Base
-    email: Email
-    db: DbConfig
+    DEBUG: bool
+    IS_SECURE_COOKIE: bool
+    BASE: Base
+    DB: DbConfig
+
+
+def str_to_bool(value: str) -> bool:
+    return value.strip().lower() in ("yes", "true", "t", "1")
 
 
 class KVManager:
-
-    def __init__(self, kv):
+    def __init__(self, kv, *, root_name: str):
         self.config = kv
-        self.path_list = ["haha-ton"]  # TODO: сменить на 'milk-back'
+        self.root_name = root_name
 
-    def __getitem__(self, node: str):
-        self.path_list.append(node)
-        return self
-
-    def value(self):
-        path = "/".join(self.path_list)
-        value = self.config.get(path)[1]["Value"]
-        if value:
-            return value.decode("utf-8")
+    def __call__(self, *args: str) -> int | str | None:
+        """
+        :param args: list of nodes
+        """
+        path = "/".join([self.root_name, *args])
+        encode_value = self.config.get(path)[1]
+        if encode_value:
+            value: str = encode_value['Value'].decode("utf-8")
+            if value.isdigit():
+                return int(value)
+            return value
         return None
 
 
-def load_config() -> Config:
-    config = consul.Consul(host="192.168.3.41").kv
-    mode = os.getenv('MODE')
-    debug = os.getenv('DEBUG')
-    build = os.getenv('VERSION_BUILD')
-    build_date = os.getenv('VERSION_BUILD_DATE')
-    branch = os.getenv('VERSION_BRANCH')
-    commit_hash = os.getenv('VERSION_COMMIT_HASH')
-    return Config(
-        debug=bool(int(debug)),
-        mode=mode,
-        build=None if not build else int(build),
-        build_date=build_date,
-        branch=branch,
-        commit_hash=commit_hash,
-        is_secure_cookie=bool(int(KVManager(config)[mode]["is_secure_cookie"].value())),
-        base=Base(
-            name=KVManager(config)["base"]["name"].value(),
-            description=KVManager(config)["base"]["description"].value(),
-            vers=__version__,
-            contact=Contact(
-                name=KVManager(config)["base"]["contact"]["name"].value(),
-                url=KVManager(config)["base"]["contact"]["url"].value(),
-                email=KVManager(config)["base"]["contact"]["email"].value()
-            ),
-            jwt=JWT(
-                JWT_ACCESS_SECRET_KEY=KVManager(config)[mode]["jwt"]["JWT_ACCESS_SECRET_KEY"].value(),
-                JWT_REFRESH_SECRET_KEY=KVManager(config)[mode]["jwt"]["JWT_REFRESH_SECRET_KEY"].value()
-            ),
-            amqp=AMQP(
-                host=KVManager(config)["base"]["amqp"]["host"].value(),
-                port=KVManager(config)["base"]["amqp"]["port"].value(),
-                username=KVManager(config)["base"]["amqp"]["username"].value(),
-                password=KVManager(config)["base"]["amqp"]["password"].value(),
-                virtualhost=KVManager(config)["base"]["amqp"]["virtualhost"].value(),
-                queue=KVManager(config)["base"]["amqp"]["queue"].value(),
-            )
-        ),
-        db=DbConfig(
-            postgresql=PostgresConfig(
-                host=KVManager(config)[mode]["database"]["postgresql"]["host"].value(),
-                port=int(KVManager(config)[mode]["database"]["postgresql"]["port"].value()),
-                username=KVManager(config)[mode]["database"]["postgresql"]["username"].value(),
-                password=KVManager(config)[mode]["database"]["postgresql"]["password"].value(),
-                database=KVManager(config)[mode]["database"]["postgresql"]["name"].value()
-            ),
-            redis=RedisConfig(
-                host=KVManager(config)[mode]["database"]["redis"]["host"].value(),
-                username=None,
-                password=KVManager(config)[mode]["database"]["redis"]["password"].value(),
-                port=int(KVManager(config)[mode]["database"]["redis"]["port"].value())
-            ),
-            s3=S3Config(
-                endpoint_url=KVManager(config)[mode]["database"]["s3"]["endpoint_url"].value(),
-                region_name=KVManager(config)[mode]["database"]["s3"]["region_name"].value(),
-                aws_access_key_id=KVManager(config)[mode]["database"]["s3"]["aws_access_key_id"].value(),
-                aws_secret_access_key=KVManager(config)[mode]["database"]["s3"]["aws_secret_access_key"].value(),
-                bucket=KVManager(config)[mode]["database"]["s3"]["bucket"].value()
-            )
-        ),
-        email=Email(
-            isTLS=bool(int(KVManager(config)["base"]["email"]["isTLS"].value())),
-            isSSL=bool(int(KVManager(config)["base"]["email"]["isSSL"].value())),
-            host=KVManager(config)["base"]["email"]["host"].value(),
-            port=int(KVManager(config)["base"]["email"]["port"].value()),
-            user=KVManager(config)["base"]["email"]["user"].value(),
-            password=KVManager(config)["base"]["email"]["password"].value()
-        )
+def load_consul_config(
+        root_name: str,
+        *,
+        host='127.0.0.1',
+        port=8500,
+        token=None,
+        scheme='http',
+        **kwargs
+) -> Config:
+    """
+    Load config from consul
+
+    """
+
+    config = KVManager(
+        consul.Consul(
+            host=host,
+            port=port,
+            token=token,
+            scheme=scheme,
+            **kwargs
+        ).kv,
+        root_name=root_name
     )
-
-
-def load_docs(filename: str) -> 'configparser.ConfigParser':
-    """
-    Загружает документацию из docs файла
-
-    :param filename: *.ini
-    :return:
-    """
-    docs = configparser.ConfigParser()
-    docs.read(filenames=f"./docs/{filename}", encoding="utf-8")
-    return docs
+    return Config(
+        DEBUG=str_to_bool(os.getenv('DEBUG', 1)),
+        IS_SECURE_COOKIE=str_to_bool(config("IS_SECURE_COOKIE")),
+        BASE=Base(
+            TITLE=config("BASE", "TITLE"),
+            DESCRIPTION=config("BASE", "DESCRIPTION"),
+            VERSION=__version__,
+            CONTACT=Contact(
+                NAME=config("BASE", "CONTACT", "NAME"),
+                URL=config("BASE", "CONTACT", "URL"),
+                EMAIL=config("BASE", "CONTACT", "EMAIL")
+            ),
+            JWT=JWT(
+                ACCESS_SECRET_KEY=config("JWT", "ACCESS_SECRET_KEY"),
+                REFRESH_SECRET_KEY=config("JWT", "REFRESH_SECRET_KEY")
+            )
+        ),
+        DB=DbConfig(
+            POSTGRESQL=PostgresConfig(
+                HOST=config("DATABASE", "POSTGRESQL", "HOST"),
+                PORT=config("DATABASE", "POSTGRESQL", "PORT"),
+                USERNAME=config("DATABASE", "POSTGRESQL", "USERNAME"),
+                PASSWORD=config("DATABASE", "POSTGRESQL", "PASSWORD"),
+                DATABASE=config("DATABASE", "POSTGRESQL", "DATABASE")
+            ) if str_to_bool(config("DATABASE", "POSTGRESQL", "is_used")) else None,
+            REDIS=RedisConfig(
+                HOST=config("DATABASE", "REDIS", "HOST"),
+                USERNAME=config("DATABASE", "REDIS", "USERNAME"),
+                PASSWORD=config("DATABASE", "REDIS", "PASSWORD"),
+                PORT=config("DATABASE", "REDIS", "PORT")
+            ) if str_to_bool(config("DATABASE", "REDIS", "is_used")) else None,
+            S3=S3Config(
+                ENDPOINT_URL=config("DATABASE", "S3", "ENDPOINT_URL"),
+                REGION_NAME=config("DATABASE", "S3", "REGION_NAME"),
+                AWS_ACCESS_KEY_ID=config("DATABASE", "S3", "AWS_ACCESS_KEY_ID"),
+                AWS_SECRET_ACCESS_KEY=config("DATABASE", "S3", "AWS_SECRET_ACCESS_KEY"),
+                BUCKET=config("DATABASE", "S3", "BUCKET")
+            ) if str_to_bool(config("DATABASE", "S3", "is_used")) else None
+        ),
+    )
