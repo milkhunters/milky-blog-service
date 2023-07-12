@@ -1,9 +1,11 @@
+import typing
 from enum import Enum, unique
 from typing import Tuple
 
 
 @unique
 class MainRole(Enum):
+    GUEST = 0
     USER = 1
     MODER = 2
     ADMIN = 3
@@ -23,10 +25,22 @@ class AdditionalRole(Enum):
 
 
 class RoleRange:
-    def __init__(self, left: 'Role', operator: 'RoleOperationType', right: 'Role'):
-        self.left = left
-        self.operator = operator
-        self.right = right
+    def __init__(
+            self,
+            *,
+            super_symbol: typing.Literal['*'] = None,
+            left: 'Role' = None,
+            operator: 'RoleOperationType' = None,
+            right: 'Role' = None
+    ):
+        if super_symbol == "*":
+            self.left = Role(MainRole.GUEST, AdditionalRole.ONE)
+            self.operator = RoleOperationType.GE
+            self.right = Role(MainRole.ADMIN, AdditionalRole.NINE)
+        else:
+            self.left = left
+            self.operator = operator
+            self.right = right
 
     def __eq__(self, other):
         if isinstance(other, Role):

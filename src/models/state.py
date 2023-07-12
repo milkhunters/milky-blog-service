@@ -2,10 +2,10 @@ from enum import Enum
 
 
 class UserStates(int, Enum):
-    not_confirmed = 0
-    active = 1
-    blocked = 2
-    deleted = 3
+    NOT_CONFIRMED = 0
+    ACTIVE = 1
+    BLOCKED = 2
+    DELETED = 3
 
 
 class ArticleState(int, Enum):
