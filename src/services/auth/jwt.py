@@ -1,28 +1,32 @@
 import time
+import uuid
 from typing import Optional
 
-from jose import jwt, JWTError
-from pydantic import ValidationError
+import jwt
 from fastapi import Response, Request
+from fastapi.websockets import WebSocket
 
-from config import load_config
-from models import schemas
-
-config = load_config()
+from src.config import Config
+from src.models import schemas
 
 
 class JWTManager:
     ALGORITHM = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
+    ACCESS_TOKEN_EXPIRE_MINUTES = 15  # 15 minutes
     REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
-    JWT_ACCESS_SECRET_KEY = config.base.jwt.JWT_ACCESS_SECRET_KEY
-    JWT_REFRESH_SECRET_KEY = config.base.jwt.JWT_REFRESH_SECRET_KEY
 
     COOKIE_EXP = 31536000
     COOKIE_PATH = "/api"
     COOKIE_DOMAIN = None
     COOKIE_ACCESS_KEY = "access_token"
     COOKIE_REFRESH_KEY = "refresh_token"
+
+    def __init__(self, config: Config, debug: bool = False):
+        self._config = config
+        self._debug = debug
+
+        self.JWT_ACCESS_SECRET_KEY = config.BASE.JWT.ACCESS_SECRET_KEY
+        self.JWT_REFRESH_SECRET_KEY = config.BASE.JWT.REFRESH_SECRET_KEY
 
     def is_valid_refresh_token(self, token: str) -> bool:
         """
@@ -56,44 +60,51 @@ class JWTManager:
         """
         return self._decode_jwt(token, self.JWT_REFRESH_SECRET_KEY)
 
-    def generate_access_token(self, id: int, username: str, role_id: int, state_id: int, **kwargs) -> str:
+    def generate_access_token(self, id: str, username: str, role_value: int) -> str:
         """
         Генерирует access-токен
         на основе payload:
         :param id: ид пользователя
         :param username: имя пользователя
-        :param role_id: ид роли
-        :param state_id: ид состояния
-        :param kwargs:
+        :param role_value: целочисленное значение роли
         :return:
         """
         return self._generate_token(
-            id,
-            username,
-            role_id,
-            state_id,
             exp_minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES,
-            secret_key=self.JWT_ACCESS_SECRET_KEY
+            secret_key=self.JWT_ACCESS_SECRET_KEY,
+            id=id,
+            username=username,
+            role_value=role_value,
         )
 
-    def generate_refresh_token(self, id: int, username: str, role_id: int, state_id: int, **kwargs) -> str:
+    def generate_refresh_token(self, id: str, username: str, role_value: int) -> str:
         """
         Генерирует refresh-токен
         на основе payload:
         :param id: ид пользователя
         :param username: имя пользователя
-        :param role_id: ид роли
-        :param state_id: ид состояния
-        :param kwargs:
+        :param role_value: целочисленное значение роли
         :return:
         """
         return self._generate_token(
-            id,
-            username,
-            role_id,
-            state_id,
             exp_minutes=self.REFRESH_TOKEN_EXPIRE_MINUTES,
-            secret_key=self.JWT_REFRESH_SECRET_KEY
+            secret_key=self.JWT_REFRESH_SECRET_KEY,
+            id=id,
+            username=username,
+            role_value=role_value,
+        )
+
+    def generate_tokens(self, id: str, username: str, role_value: int) -> schemas.Tokens:
+        """
+        Генерирует access- и refresh-токены
+        :param id:
+        :param username:
+        :param role_value:
+        :return:
+        """
+        return schemas.Tokens(
+            access_token=self.generate_access_token(id, username, role_value),
+            refresh_token=self.generate_refresh_token(id, username, role_value)
         )
 
     def set_jwt_cookie(self, response: Response, tokens: schemas.Tokens) -> None:
@@ -106,7 +117,7 @@ class JWTManager:
         response.set_cookie(
             key=self.COOKIE_ACCESS_KEY,
             value=tokens.access_token,
-            secure=config.is_secure_cookie,
+            secure=self._config.IS_SECURE_COOKIE,
             httponly=True,
             samesite="strict",
             max_age=self.COOKIE_EXP,
@@ -116,7 +127,7 @@ class JWTManager:
         response.set_cookie(
             key=self.COOKIE_REFRESH_KEY,
             value=tokens.refresh_token,
-            secure=config.is_secure_cookie,
+            secure=self._config.IS_SECURE_COOKIE,
             httponly=True,
             samesite="strict",
             max_age=self.COOKIE_EXP,
@@ -124,14 +135,14 @@ class JWTManager:
             domain=self.COOKIE_DOMAIN
         )
 
-    def get_jwt_cookie(self, request: Request) -> Optional[schemas.Tokens]:
+    def get_jwt_cookie(self, req_obj: Request | WebSocket) -> Optional[schemas.Tokens]:
         """
         Получает из кук access и refresh-токены
-        :param request:
-        :return:
+        :param req_obj:
+        :return: None или Tokens
         """
-        access_token = request.cookies.get(self.COOKIE_ACCESS_KEY)
-        refresh_token = request.cookies.get(self.COOKIE_REFRESH_KEY)
+        access_token = req_obj.cookies.get(self.COOKIE_ACCESS_KEY)
+        refresh_token = req_obj.cookies.get(self.COOKIE_REFRESH_KEY)
         if not access_token or not refresh_token:
             return None
         return schemas.Tokens(access_token=access_token, refresh_token=refresh_token)
@@ -147,33 +158,30 @@ class JWTManager:
 
     def _is_valid_jwt(self, token: str, secret_key: str) -> bool:
         try:
-            payload = self._decode_jwt(token, secret_key)
-        except JWTError:
-            return False
-        except ValidationError:
-            return False
-
-        if payload.exp < int(time.time()):
+            jwt.decode(token, secret_key, algorithms=self.ALGORITHM)
+        except (jwt.exceptions.InvalidTokenError, jwt.exceptions.ExpiredSignatureError, jwt.exceptions.DecodeError):
             return False
         return True
 
-    def _generate_token(
-            self,
-            user_id: int,
-            username: str,
-            role_id: int,
-            state_id: int,
-            exp_minutes: int,
-            secret_key: str
-    ) -> str:
-        payload = schemas.TokenPayload(
-            id=user_id,
-            username=username,
-            role_id=role_id,
-            state_id=state_id,
-            exp=int(time.time() + exp_minutes * 60)
-        )
-        return jwt.encode(payload.dict(), secret_key, self.ALGORITHM)
+    def _generate_token(self, exp_minutes: int, secret_key: str, **kwargs) -> str:
+        """
+        param: exp_minutes: время жизни токена в минутах
+        param: secret_key: секретный ключ
+        param: kwargs: параметры для payload
+        :return: токен
+        """
+        payload = schemas.TokenPayload(**kwargs, exp=int(time.time() + exp_minutes * 60))
+        return jwt.encode(payload.dict(), secret_key, algorithm=self.ALGORITHM)
 
     def _decode_jwt(self, token: str, secret_key: str) -> schemas.TokenPayload:
-        return schemas.TokenPayload.parse_obj(jwt.decode(token, secret_key, algorithms=[self.ALGORITHM]))
+        """
+        param: token: токен
+        param: secret_key: секретный ключ
+        :return: payload
+        """
+        return schemas.TokenPayload.parse_obj(jwt.decode(
+            token,
+            secret_key,
+            algorithms=self.ALGORITHM,
+            options={"verify_signature": False}
+        ))

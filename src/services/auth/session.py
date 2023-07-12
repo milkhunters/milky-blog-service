@@ -2,10 +2,9 @@ import uuid
 from typing import Optional
 
 from fastapi import Request, Response
-from config import load_config
-import utils
+from starlette.websockets import WebSocket
 
-config = load_config()
+from src.utils import RedisClient
 
 
 class SessionManager:
@@ -15,19 +14,20 @@ class SessionManager:
     COOKIE_DOMAIN = None
     COOKIE_SESSION_KEY = "session_id"
 
-    def __init__(self):
-        if not utils.RedisClient.redis_client:
-            utils.RedisClient.open_redis_client()
+    def __init__(self, redis_client: RedisClient, config, debug: bool = False):
+        self._redis_client = redis_client
+        self._config = config
+        self._debug = debug
 
-    def get_session_id(self, request: Request) -> Optional[int]:
+    def get_session_id(self, req_obj: Request | WebSocket) -> Optional[int]:
         """
-        Выдает идентификатор сессии из куков
+        Получить идентификатор сессии из куков
 
-        :param request:
+        :param req_obj:
         :return: session_id
         """
 
-        str_cookie_session_id = request.cookies.get(self.COOKIE_SESSION_KEY)
+        str_cookie_session_id = req_obj.cookies.get(self.COOKIE_SESSION_KEY)
         try:
             cookie_session_id = int(str_cookie_session_id)
         except (ValueError, TypeError):
@@ -41,7 +41,7 @@ class SessionManager:
             session_id: int = None
     ) -> int:
         """
-        Генерирует и устанавливает сессию в redis и в куки
+        Генерирует (если не передано) и устанавливает сессию в redis и в куки
 
         :param response: 
         :param refresh_token: 
@@ -53,40 +53,41 @@ class SessionManager:
         response.set_cookie(
             key=self.COOKIE_SESSION_KEY,
             value=str(session_id),
-            secure=config.is_secure_cookie,
+            secure=self._config.IS_SECURE_COOKIE,
             httponly=True,
             samesite="strict",
             max_age=self.COOKIE_EXP,
             path=self.COOKIE_PATH
         )
-        await utils.RedisClient.set(str(session_id), refresh_token, expire=self.REDIS_EXP)
+        await self._redis_client.set(str(session_id), refresh_token, expire=self.REDIS_EXP)
         return session_id
 
     async def delete_session_id(self, session_id: int, response: Response) -> None:
         """
         Удаляет сессию из куков и из redis
 
-        :param
+        :param session_id
+        :param response
         """
-        await utils.RedisClient.delete(str(session_id))
+        await self._redis_client.delete(str(session_id))
         response.delete_cookie(
             key=self.COOKIE_SESSION_KEY,
-            secure=config.is_secure_cookie,
+            secure=self._config.IS_SECURE_COOKIE,
             httponly=True,
             samesite="strict",
             path=self.COOKIE_PATH
         )
 
-    async def is_valid_session(self, session_id: int, cookie_refresh_token: str) -> bool:
+    async def is_valid_session(self, session_id: int | str, cookie_refresh_token: str) -> bool:
         """
         Проверяет валидность сессии
         :param session_id:
         :param cookie_refresh_token:
         :return: True or False
         """
-        redis_refresh_token = await utils.RedisClient.get(str(session_id))
-        if not redis_refresh_token:
+        refresh_token_from_redis = await self._redis_client.get(str(session_id))
+        if not refresh_token_from_redis:
             return False
-        if redis_refresh_token != cookie_refresh_token:
+        if refresh_token_from_redis != cookie_refresh_token:
             return False
         return True
