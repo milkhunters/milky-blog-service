@@ -1,15 +1,16 @@
 from functools import wraps
 
 from src.exceptions import AccessDenied
-from src.models.role import Role
+from src.models.role import Role, RoleRange
 
 
-def role_filter(*roles: Role):
+def role_filter(*roles: Role | RoleRange, exclude: list[Role | RoleRange] = None):
     """
     Role Filter decorator for ApplicationServices
     It is necessary that the class of the method being decorated has a field '_current_user'
 
     :param roles: user roles
+    :param exclude: exclude roles
     :return: decorator
     """
 
@@ -22,7 +23,7 @@ def role_filter(*roles: Role):
             if not current_user:
                 raise ValueError('AuthMiddleware not found')
 
-            if current_user.role in roles:
+            if current_user.role in roles and current_user.role not in exclude:
                 return await func(*args, **kwargs)
             else:
                 raise AccessDenied('У вас нет прав для выполнения этого действия')

@@ -22,6 +22,41 @@ class AdditionalRole(Enum):
     NINE = 9
 
 
+class RoleRange:
+    def __init__(self, left: 'Role', operator: 'RoleOperationType', right: 'Role'):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+    def __eq__(self, other):
+        if isinstance(other, Role):
+            return self.is_include(other)
+        elif isinstance(other, RoleRange):
+            return self.left == other.left and self.right == other.right and self.operator == other.operator
+        else:
+            raise ValueError("Неверный тип данных")
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def is_include(self, role: 'Role') -> bool:
+        if self.operator == RoleOperationType.LT:
+            return role.value() < self.right.value()
+        elif self.operator == RoleOperationType.GT:
+            return role.value() > self.right.value()
+        elif self.operator == RoleOperationType.LE:
+            return role.value() <= self.right.value()
+        elif self.operator == RoleOperationType.GE:
+            return role.value() >= self.right.value()
+
+
+class RoleOperationType(str, Enum):
+    LT = "<"
+    GT = ">"
+    LE = "<="
+    GE = ">="
+
+
 class Role:
     """
     Класс для работы с ролями пользователей
@@ -42,6 +77,7 @@ class Role:
     :param additional_role:
 
     """
+
     def __init__(self, main_role: MainRole, additional_role: AdditionalRole):
         self.main_role = main_role
         self.additional_role = additional_role
@@ -58,11 +94,36 @@ class Role:
     def __int__(self) -> int:
         return self.value()
 
+    def __eq__(self, other):
+        if isinstance(other, Role):
+            return self.value() == other.value()
+        elif isinstance(other, int):
+            return self.value() == other
+        else:
+            raise ValueError("Неверный тип данных")
+
+    def __ne__(self, other):
+        if isinstance(other, Role):
+            return self.value() != other.value()
+        elif isinstance(other, int):
+            return self.value() != other
+        else:
+            raise ValueError("Неверный тип данных")
+
     def __repr__(self):
         return f"{self.main_role.name} {self.additional_role.name}"
 
-    def __eq__(self, other):
-        return self.value() == other.value()
+    def __lt__(self, other):
+        return RoleRange(self, RoleOperationType.LT, other)
+
+    def __gt__(self, other):
+        return RoleRange(self, RoleOperationType.GT, other)
+
+    def __le__(self, other):
+        return RoleRange(self, RoleOperationType.LE, other)
+
+    def __ge__(self, other):
+        return RoleRange(self, RoleOperationType.GE, other)
 
     @classmethod
     def from_int(cls, value: int):
