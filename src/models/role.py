@@ -4,22 +4,22 @@ from typing import Tuple
 
 @unique
 class MainRole(Enum):
-    user = 1
-    moderator = 2
-    administrator = 3
+    USER = 1
+    MODER = 2
+    ADMIN = 3
 
 
 @unique
 class AdditionalRole(Enum):
-    one = 1
-    two = 2
-    three = 3
-    four = 4
-    five = 5
-    six = 6
-    seven = 7
-    eight = 8
-    nine = 9
+    ONE = 1
+    TWO = 2
+    THREE = 3
+    FOUR = 4
+    FIVE = 5
+    SIX = 6
+    SEVEN = 7
+    EIGHT = 8
+    NINE = 9
 
 
 class Role:
@@ -41,8 +41,6 @@ class Role:
     :param main_role:
     :param additional_role:
 
-    todo: описать все операции, как если бы они выполнялись от int
-        например: SomeRole >= SomeSomeRole
     """
     def __init__(self, main_role: MainRole, additional_role: AdditionalRole):
         self.main_role = main_role
