@@ -1,120 +1,217 @@
-from starlette.authentication import AuthCredentials, UnauthenticatedUser, BaseUser
+from starlette.authentication import AuthCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from fastapi.responses import Response
+from fastapi.websockets import WebSocket
 from fastapi.requests import Request
+from starlette.middleware.exceptions import ExceptionMiddleware
+from fastapi.responses import Response
 
-from models import schemas, Role
-from models.state import UserStates
-from services.auth import JWTManager
-from services.auth import SessionManager
-from services.user import UserService
+from src.models import schemas
+from src.models.auth import AuthenticatedUser, UnauthenticatedUser
+from src.services.auth import JWTManager
+from src.services.auth import SessionManager
+from src.services.repository import UserRepo
 
 
-class JWTMiddleware(BaseHTTPMiddleware):
+class MutableFlag:
+    def __init__(self, value: bool = False):
+        self._value = value
 
-    def __init__(
-            self,
-            app,
-            jwt: JWTManager = JWTManager(),
-            session: SessionManager = SessionManager(),
-    ):
-        super().__init__(app)
+    def __bool__(self):
+        return self._value
 
-        self.jwt = jwt
-        self.session = session
-        self.user_service = UserService()
+    def set(self, value: bool):
+        self._value = value
 
-    async def dispatch(self, request: Request, call_next):
-        session_id = self.session.get_session_id(request)
-        current_tokens = self.jwt.get_jwt_cookie(request)
-        is_need_update = False
-        is_auth = False
+
+class Container:
+    def __init__(self, value):
+        self._value = value
+
+    def get(self):
+        return self._value
+
+    def set(self, value):
+        self._value = value
+
+
+async def jwt_pre_process(
+        current_tokens: schemas.Tokens,
+        jwt: JWTManager,
+        session: SessionManager,
+        session_id: str | int,
+        db_session,
+        req_obj: Request | WebSocket,
+        is_auth: MutableFlag = MutableFlag(False),
+        is_need_update: MutableFlag = MutableFlag(False),
+        disable_update: bool = False,
+):
+    """
+    Проверка авторизации и обновление токенов
+
+    :param current_tokens: Текущие токены
+    :param jwt: Менеджер JWT
+    :param session: Менеджер сессий
+
+    :param session_id: Идентификатор сессии
+    :param db_session: Активная сессия БД
+    :param req_obj: Объект запроса
+
+    :param is_auth: Признак авторизации
+    :param is_need_update: Признак необходимости обновления токенов
+    :param disable_update: Признак принудительного отключения обновления токенов
+    """
+    # Проверка авторизации
+    if current_tokens:
+        is_valid_access_token = jwt.is_valid_access_token(current_tokens.access_token)
+        is_valid_refresh_token = jwt.is_valid_refresh_token(current_tokens.refresh_token)
+        is_valid_session = False
+
+        if is_valid_refresh_token:
+            # Проверка валидности сессии
+            if await session.is_valid_session(session_id, current_tokens.refresh_token):
+                is_valid_session = True
+
+        is_auth.set(is_valid_access_token and is_valid_refresh_token and is_valid_session)
+        is_need_update.set((not is_valid_access_token) and is_valid_refresh_token and is_valid_session)
+
+    # Обновление токенов
+    if is_need_update and not disable_update:
+        user_id = jwt.decode_refresh_token(current_tokens.refresh_token).id
+        async with db_session() as active_session:
+            user = await UserRepo(active_session).get(id=user_id)
+
+        if user:
+            new_tokens = jwt.generate_tokens(
+                id=user.id,
+                username=user.username,
+                role_value=user.role.value
+            )
+            # Для бесшовного обновления токенов:
+            req_obj.cookies["access_token"] = new_tokens.access_token
+            req_obj.cookies["refresh_token"] = new_tokens.refresh_token
+
+            current_tokens.access_token = new_tokens.access_token
+            current_tokens.refresh_token = new_tokens.refresh_token
+
+            is_auth.set(True)
+
+    # Установка данных авторизации
+    if is_auth:
+        payload: schemas.TokenPayload = jwt.decode_access_token(current_tokens.access_token)
+        req_obj.scope["user"] = AuthenticatedUser(**payload.dict())
+        req_obj.scope["auth"] = AuthCredentials(["authenticated"])
+    else:
+        access_exp = None
+        if current_tokens and current_tokens.access_token:
+            access_exp = jwt.decode_access_token(current_tokens.access_token).exp
+
+        req_obj.scope["user"] = UnauthenticatedUser(exp=access_exp)
+        req_obj.scope["auth"] = AuthCredentials()
+
+
+async def jwt_post_process(
+        is_need_update: MutableFlag,
+        response: Response,
+        current_tokens: schemas.Tokens,
+        jwt: JWTManager,
+        session: SessionManager,
+        session_id: str | int
+):
+    if is_need_update:
+        # Обновляем response
+        jwt.set_jwt_cookie(response, current_tokens)
+        await session.set_session_id(response, current_tokens.refresh_token, session_id)
+
+
+class JWTMiddlewareWS:
+    def __init__(self, app: ExceptionMiddleware):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "websocket":
+            await self.app(scope, receive, send)
+            return
+
+        websocket = WebSocket(scope, receive=receive, send=send)
+        jwt = JWTManager(config=websocket.app.state.config, debug=websocket.app.debug)
+        session = SessionManager(
+            redis_client=websocket.app.state.redis,
+            debug=websocket.app.debug,
+            config=websocket.app.state.config
+        )
+        db_session = websocket.app.state.db_session
+
+        session_id = session.get_session_id(websocket)
+        current_tokens = jwt.get_jwt_cookie(websocket)
+        is_need_update = MutableFlag(False)
+        is_auth = MutableFlag(False)
 
         # ----- pre_process -----
         # Проверка авторизации
-        if current_tokens:
-            is_valid_access_token = self.jwt.is_valid_access_token(current_tokens.access_token)
-            is_valid_refresh_token = self.jwt.is_valid_refresh_token(current_tokens.refresh_token)
-            is_valid_session = False
+        await jwt_pre_process(
+            current_tokens=current_tokens,
+            jwt=jwt,
+            session=session,
+            session_id=session_id,
+            db_session=db_session,
+            req_obj=websocket,
+            is_need_update=is_need_update,
+            is_auth=is_auth,
+            disable_update=True
+        )
 
-            if is_valid_refresh_token:
-                # Проверка валидности сессии
-                if await self.session.is_valid_session(session_id, current_tokens.refresh_token):
-                    is_valid_session = True
+        # ----- process -----
+        await self.app(scope, receive, send)
 
-            is_auth = is_valid_access_token and is_valid_refresh_token and is_valid_session
-            is_need_update = (not is_valid_access_token) and is_valid_refresh_token and is_valid_session
+        # ----- post_process -----
+        pass
 
-        # Обновление токенов
-        if is_need_update:
-            user_id = self.jwt.decode_refresh_token(current_tokens.refresh_token).id
-            user = await self.user_service.get_user(user_id=user_id)
-            if user:
-                new_payload = schemas.TokenPayload(
-                    id=user.id,
-                    username=user.username,
-                    role_id=user.role_id,
-                    state_id=user.state.value,
-                    exp=0
-                )  # exp не используется, но нужно для составления модели
-                new_tokens = schemas.Tokens(
-                    access_token=self.jwt.generate_access_token(**new_payload.dict()),
-                    refresh_token=self.jwt.generate_refresh_token(**new_payload.dict())
-                )
-                # Для бесшовного обновления токенов:
-                request.cookies["access_token"] = new_tokens.access_token
-                request.cookies["refresh_token"] = new_tokens.refresh_token
-                current_tokens = new_tokens
-                is_auth = True
 
-        # Установка данных авторизации
-        if is_auth:
-            payload: schemas.TokenPayload = self.jwt.decode_access_token(current_tokens.access_token)
-            request.scope["user"] = AuthenticatedUser(**payload.dict())
-            request.scope["auth"] = AuthCredentials(["authenticated"])
-        else:
-            request.scope["user"] = UnauthenticatedUser()
-            request.scope["auth"] = AuthCredentials()
+class JWTMiddlewareHTTP(BaseHTTPMiddleware):
+
+    def __init__(self, app: ExceptionMiddleware):
+        super().__init__(app)
+
+        self.debug = app.debug
+
+    async def dispatch(self, request: Request, call_next):
+        jwt = JWTManager(config=request.app.state.config, debug=self.debug)
+        session = SessionManager(
+            redis_client=request.app.state.redis,
+            debug=self.debug,
+            config=request.app.state.config
+        )
+        db_session = request.app.state.db_session
+
+        # States
+        session_id = session.get_session_id(request)
+        current_tokens = jwt.get_jwt_cookie(request)
+        is_need_update = MutableFlag(False)
+        is_auth = MutableFlag(False)
+
+        # ----- pre_process -----
+        await jwt_pre_process(
+            current_tokens=current_tokens,
+            jwt=jwt,
+            session=session,
+            session_id=session_id,
+            db_session=db_session,
+            req_obj=request,
+            is_need_update=is_need_update,
+            is_auth=is_auth
+        )
 
         response = await call_next(request)
 
         # ----- post_process -----
-        if is_need_update:
-            # Обновляем response
-            self.jwt.set_jwt_cookie(response, current_tokens)
-            await self.session.set_session_id(response, current_tokens.refresh_token, session_id)
+        await jwt_post_process(
+            is_need_update=is_need_update,
+            response=response,
+            current_tokens=current_tokens,
+            jwt=jwt,
+            session=session,
+            session_id=session_id
+        )
 
         return response
-
-
-class AuthenticatedUser(BaseUser):
-    def __init__(self, id: int, username: str, role_id: int, state_id: int, **kwargs):
-        self.id = id
-        self.username = username
-        self.role_id = role_id
-        self.state_id = state_id
-
-    def is_authenticated(self) -> bool:
-        return True
-
-    def display_name(self) -> str:
-        return self.username
-
-    def identity(self) -> int:
-        return self.id
-
-    def role(self) -> Role:
-        return Role.from_int(self.role_id)
-
-    def state(self) -> UserStates:
-        return UserStates(self.state_id)
-
-    def __eq__(self, other):
-        return isinstance(other, AuthenticatedUser) and self.id == other.id
-
-    def __hash__(self):
-        return hash(self.id)
-
-    def __repr__(self):
-        return f"<AuthenticatedUser(id={self.id}, username={self.username})>"
