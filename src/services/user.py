@@ -1,52 +1,59 @@
-from typing import Optional, Union
+from src import exceptions
+from src.services.repository import UserRepo
+from src.services.auth.filters import role_filter
+from src.services.auth.password import verify_password
 
-from exceptions import APIError
-from models import schemas
-from models.state import UserStates
-from models.role import Role, MainRole as M, AdditionalRole as A
-
-import utils
-from services.repository import UserRepo
-from services.repository import DeletedUserRepo
+from src.models import schemas
+from src.models.auth import BaseUser
+from src.models.state import UserStates
+from src.models.role import Role, MainRole as M, AdditionalRole as A
 
 
-class UserService:
+class UserApplicationService:
 
-    def __init__(
-            self,
-            user_repo: UserRepo = UserRepo(),
-            du_repo: DeletedUserRepo = DeletedUserRepo(),
-    ):
-        self._user_repo = user_repo
-        self._du_repo = du_repo
+    def __init__(self, current_user: BaseUser, *, user_repo: UserRepo):
+        self._current_user = current_user
+        self._repo = user_repo
 
-    async def create_user(self, user: schemas.UserCreate) -> schemas.User:
-        if await self.get_user(username=user.username):
-            raise APIError(903)
-        if await self.get_user(email=user.email):
-            raise APIError(922)
+    @role_filter(min_role=Role(M.USER, A.ONE))
+    async def get_me(self) -> schemas.User:
+        user = await self._repo.get(id=self._current_user.id)
+        return schemas.User.from_orm(user)
 
-        user = await self._user_repo.insert(
-            role_id=Role(M.user, A.one).value(),
-            state=UserStates.not_confirmed,
-            hashed_password=utils.get_hashed_password(user.password),
-            username=user.username,
-            email=user.email,
+    @role_filter(min_role=Role(M.USER, A.ONE))
+    async def get_user(self, user_id: str) -> schemas.UserSmall:
+        user = await self._repo.get(id=user_id)
+
+        if not user:
+            raise exceptions.NotFound(f"Пользователь с id:{user_id} не найден!")
+
+        return schemas.UserSmall.from_orm(user)
+
+    @role_filter(min_role=Role(M.USER, A.ONE))
+    async def update_me(self, data: schemas.UserUpdate) -> None:
+        await self._repo.update(
+            id=self._current_user.id,
+            **data.model_dump(exclude_unset=True)
         )
-        return user
 
-    async def get_user(self, user_id: int = None, username: str = None, email: str = None) -> Optional[schemas.User]:
-        user = await self._user_repo.get(
-            **{"id": user_id} if user_id else {"username__iexact": username} if username else {"email__iexact": email},
+    @role_filter(min_role=Role(M.ADMIN, A.ONE))
+    async def update_user(self, user_id: str, data: schemas.UserUpdateByAdmin) -> None:
+        user = await self._repo.get(id=user_id)
+        if not user:
+            raise exceptions.NotFound(f"Пользователь с id:{user_id} не найден!")
+
+        await self._repo.update(
+            id=user_id,
+            **data.model_dump(exclude_unset=True)
         )
-        return schemas.User.from_orm(user) if user else None
 
-    async def update_user(self, user_id: int, **kwargs) -> None:
-        article = await self._user_repo.get(id=user_id)
-        if not article:
-            raise APIError(919)
-        await self._user_repo.update(user_id, **kwargs)
+    @role_filter(min_role=Role(M.USER, A.ONE))
+    async def delete_me(self, password: str) -> None:
+        user = await self._repo.get(id=self._current_user.id)
+        if not verify_password(password, user.hashed_password):
+            raise exceptions.BadRequest("Неверный пароль!")
 
-    async def delete_user(self, user_id: int) -> None:
-        await self._du_repo.insert(id=user_id)  # TODO: возможно, стоит сделать транзакцию;
-        await self._user_repo.update(user_id, state=UserStates.deleted)
+        await self._repo.update(
+            id=self._current_user.id,
+            state=UserStates.DELETED
+        )
