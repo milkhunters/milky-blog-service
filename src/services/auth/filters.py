@@ -15,6 +15,12 @@ def role_filter(*roles: Role | RoleRange, exclude: list[Role | RoleRange] = None
     :return: decorator
     """
 
+    if exclude is None:
+        exclude = []
+
+    if min_role is None:
+        min_role = 00
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):

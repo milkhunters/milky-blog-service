@@ -1,5 +1,4 @@
 import time
-import uuid
 from typing import Optional
 
 import jwt
@@ -21,9 +20,8 @@ class JWTManager:
     COOKIE_ACCESS_KEY = "access_token"
     COOKIE_REFRESH_KEY = "refresh_token"
 
-    def __init__(self, config: Config, debug: bool = False):
+    def __init__(self, config: Config):
         self._config = config
-        self._debug = debug
 
         self.JWT_ACCESS_SECRET_KEY = config.BASE.JWT.ACCESS_SECRET_KEY
         self.JWT_REFRESH_SECRET_KEY = config.BASE.JWT.REFRESH_SECRET_KEY

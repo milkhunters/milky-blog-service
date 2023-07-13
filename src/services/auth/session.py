@@ -2,7 +2,7 @@ import uuid
 from typing import Optional
 
 from fastapi import Request, Response
-from starlette.websockets import WebSocket
+from fastapi.websockets import WebSocket
 
 from src.utils import RedisClient
 
