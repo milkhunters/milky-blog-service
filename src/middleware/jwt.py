@@ -1,9 +1,9 @@
 from starlette.authentication import AuthCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.exceptions import ExceptionMiddleware
 
 from fastapi.websockets import WebSocket
 from fastapi.requests import Request
-from starlette.middleware.exceptions import ExceptionMiddleware
 from fastapi.responses import Response
 
 from src.models import schemas
@@ -39,7 +39,7 @@ async def jwt_pre_process(
         current_tokens: schemas.Tokens,
         jwt: JWTManager,
         session: SessionManager,
-        session_id: str | int,
+        session_id: str,
         db_session,
         req_obj: Request | WebSocket,
         is_auth: MutableFlag = MutableFlag(False),
@@ -85,7 +85,8 @@ async def jwt_pre_process(
             new_tokens = jwt.generate_tokens(
                 id=user.id,
                 username=user.username,
-                role_value=user.role.value
+                role_id=user.role_id,
+                state_id=user.state_id.value,
             )
             # Для бесшовного обновления токенов:
             req_obj.cookies["access_token"] = new_tokens.access_token
@@ -98,15 +99,11 @@ async def jwt_pre_process(
 
     # Установка данных авторизации
     if is_auth:
-        payload: schemas.TokenPayload = jwt.decode_access_token(current_tokens.access_token)
-        req_obj.scope["user"] = AuthenticatedUser(**payload.dict())
+        payload = jwt.decode_access_token(current_tokens.access_token)
+        req_obj.scope["user"] = AuthenticatedUser(**payload.model_dump())
         req_obj.scope["auth"] = AuthCredentials(["authenticated"])
     else:
-        access_exp = None
-        if current_tokens and current_tokens.access_token:
-            access_exp = jwt.decode_access_token(current_tokens.access_token).exp
-
-        req_obj.scope["user"] = UnauthenticatedUser(exp=access_exp)
+        req_obj.scope["user"] = UnauthenticatedUser()
         req_obj.scope["auth"] = AuthCredentials()
 
 
@@ -116,7 +113,7 @@ async def jwt_post_process(
         current_tokens: schemas.Tokens,
         jwt: JWTManager,
         session: SessionManager,
-        session_id: str | int
+        session_id: str | int # todo
 ):
     if is_need_update:
         # Обновляем response
@@ -134,7 +131,7 @@ class JWTMiddlewareWS:
             return
 
         websocket = WebSocket(scope, receive=receive, send=send)
-        jwt = JWTManager(config=websocket.app.state.config, debug=websocket.app.debug)
+        jwt = JWTManager(config=websocket.app.state.config)
         session = SessionManager(
             redis_client=websocket.app.state.redis,
             debug=websocket.app.debug,
@@ -173,13 +170,10 @@ class JWTMiddlewareHTTP(BaseHTTPMiddleware):
     def __init__(self, app: ExceptionMiddleware):
         super().__init__(app)
 
-        self.debug = app.debug
-
     async def dispatch(self, request: Request, call_next):
-        jwt = JWTManager(config=request.app.state.config, debug=self.debug)
+        jwt = JWTManager(config=request.app.state.config)
         session = SessionManager(
             redis_client=request.app.state.redis,
-            debug=self.debug,
             config=request.app.state.config
         )
         db_session = request.app.state.db_session
@@ -195,7 +189,7 @@ class JWTMiddlewareHTTP(BaseHTTPMiddleware):
             current_tokens=current_tokens,
             jwt=jwt,
             session=session,
-            session_id=session_id,
+            session_id=str(session_id),
             db_session=db_session,
             req_obj=request,
             is_need_update=is_need_update,

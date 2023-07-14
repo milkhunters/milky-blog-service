@@ -1,15 +1,17 @@
+import uuid
 from abc import ABC, abstractmethod
 
 from starlette import authentication
 
 from src.models.role import Role, MainRole, AdditionalRole
+from src.models.state import UserState
 
 
 class BaseUser(ABC, authentication.BaseUser):
 
     @property
     @abstractmethod
-    def id(self) -> str:
+    def id(self) -> uuid.UUID:
         pass
 
     @property
@@ -20,6 +22,11 @@ class BaseUser(ABC, authentication.BaseUser):
     @property
     @abstractmethod
     def role(self) -> Role:
+        pass
+
+    @property
+    @abstractmethod
+    def state(self) -> UserState | None:
         pass
 
     @property
@@ -36,10 +43,11 @@ class BaseUser(ABC, authentication.BaseUser):
 
 
 class AuthenticatedUser(BaseUser):
-    def __init__(self, id: str, username: str, role_value: int, exp: int, **kwargs):
-        self._id = id
+    def __init__(self, id: str, username: str, role_id: int, state_id: int, exp: int, **kwargs):
+        self._id = uuid.UUID(id)
         self._username = username
-        self._role_value = role_value
+        self._role_id = role_id
+        self._state_id = state_id
         self._exp = exp
 
     @property
@@ -51,11 +59,11 @@ class AuthenticatedUser(BaseUser):
         return self.username
 
     @property
-    def identity(self) -> str:
+    def identity(self) -> uuid.UUID:
         return self._id
 
     @property
-    def id(self) -> str:
+    def id(self) -> uuid.UUID:
         return self._id
 
     @property
@@ -64,7 +72,11 @@ class AuthenticatedUser(BaseUser):
 
     @property
     def role(self) -> Role:
-        return Role.from_int(self._role_value)
+        return Role.from_int(self._role_id)
+
+    @property
+    def state(self) -> UserState:
+        return UserState(self._state_id)
 
     @property
     def access_exp(self) -> int:
@@ -106,7 +118,11 @@ class UnauthenticatedUser(BaseUser):
 
     @property
     def role(self) -> Role:
-        return Role(MainRole.GUEST, AdditionalRole.one)
+        return Role(MainRole.GUEST, AdditionalRole.ONE)
+
+    @property
+    def state(self) -> None:
+        return None
 
     @property
     def access_exp(self) -> int | None:
