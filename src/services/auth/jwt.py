@@ -23,8 +23,8 @@ class JWTManager:
     def __init__(self, config: Config):
         self._config = config
 
-        self.JWT_ACCESS_SECRET_KEY = config.BASE.JWT.ACCESS_SECRET_KEY
-        self.JWT_REFRESH_SECRET_KEY = config.BASE.JWT.REFRESH_SECRET_KEY
+        self.JWT_ACCESS_SECRET_KEY = config.JWT.ACCESS_SECRET_KEY
+        self.JWT_REFRESH_SECRET_KEY = config.JWT.REFRESH_SECRET_KEY
 
     def is_valid_refresh_token(self, token: str) -> bool:
         """
@@ -58,51 +58,32 @@ class JWTManager:
         """
         return self._decode_jwt(token, self.JWT_REFRESH_SECRET_KEY)
 
-    def generate_access_token(self, id: str, username: str, role_value: int) -> str:
-        """
-        Генерирует access-токен
-        на основе payload:
-        :param id: ид пользователя
-        :param username: имя пользователя
-        :param role_value: целочисленное значение роли
-        :return:
-        """
-        return self._generate_token(
-            exp_minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES,
-            secret_key=self.JWT_ACCESS_SECRET_KEY,
-            id=id,
-            username=username,
-            role_value=role_value,
-        )
-
-    def generate_refresh_token(self, id: str, username: str, role_value: int) -> str:
-        """
-        Генерирует refresh-токен
-        на основе payload:
-        :param id: ид пользователя
-        :param username: имя пользователя
-        :param role_value: целочисленное значение роли
-        :return:
-        """
-        return self._generate_token(
-            exp_minutes=self.REFRESH_TOKEN_EXPIRE_MINUTES,
-            secret_key=self.JWT_REFRESH_SECRET_KEY,
-            id=id,
-            username=username,
-            role_value=role_value,
-        )
-
-    def generate_tokens(self, id: str, username: str, role_value: int) -> schemas.Tokens:
+    def generate_tokens(self, id: str, username: str, role_id: int, state_id: int) -> schemas.Tokens:
         """
         Генерирует access- и refresh-токены
         :param id:
         :param username:
-        :param role_value:
+        :param role_id:
+        :param state_id:
         :return:
         """
         return schemas.Tokens(
-            access_token=self.generate_access_token(id, username, role_value),
-            refresh_token=self.generate_refresh_token(id, username, role_value)
+            access_token=self._generate_token(
+                exp_minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES,
+                secret_key=self.JWT_ACCESS_SECRET_KEY,
+                id=id,
+                username=username,
+                role_id=role_id,
+                state_id=state_id,
+            ),
+            refresh_token=self._generate_token(
+                exp_minutes=self.REFRESH_TOKEN_EXPIRE_MINUTES,
+                secret_key=self.JWT_REFRESH_SECRET_KEY,
+                id=id,
+                username=username,
+                role_id=role_id,
+                state_id=state_id,
+            )
         )
 
     def set_jwt_cookie(self, response: Response, tokens: schemas.Tokens) -> None:
@@ -169,7 +150,7 @@ class JWTManager:
         :return: токен
         """
         payload = schemas.TokenPayload(**kwargs, exp=int(time.time() + exp_minutes * 60))
-        return jwt.encode(payload.dict(), secret_key, algorithm=self.ALGORITHM)
+        return jwt.encode(payload.model_dump(), secret_key, algorithm=self.ALGORITHM)
 
     def _decode_jwt(self, token: str, secret_key: str) -> schemas.TokenPayload:
         """
