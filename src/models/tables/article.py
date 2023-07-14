@@ -1,28 +1,47 @@
-import textwrap
+import uuid
 
-from tortoise import fields, models
+from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey
+from sqlalchemy.orm import relationship
 
-from models.state import ArticleState
+from src.db import Base
 
 
-class Article(models.Model):
+from src.models.state import ArticleState
+
+
+class Article(Base):
     """
     The Article model
     """
+    __tablename__ = "articles"
 
-    id = fields.IntField(pk=True)
-    title = fields.CharField(max_length=255)
-    poster_url = fields.CharField(max_length=255, null=True)
-    content = fields.TextField()
-    tags = fields.ManyToManyField('models.Tag', related_name="articles")
-    owner = fields.ForeignKeyField('models.User', related_name="articles")
-    state = fields.IntEnumField(ArticleState)
-    create_time = fields.DatetimeField(auto_now_add=True)
-    update_time = fields.DatetimeField(auto_now=True, null=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(VARCHAR(255), nullable=False)
+    poster_url = Column(VARCHAR(255), nullable=True)
+    content = Column(VARCHAR(10000), nullable=False)
+    state = Column(Enum(ArticleState), default=ArticleState.DRAFT)
 
-    @property
-    def description(self):
-        return textwrap.shorten(self.content, 100, placeholder="...")
+    tags = relationship('models.tables.tag.Tag', secondary='article_tags', back_populates='articles')
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    owner = relationship("models.tables.user.User", back_populates="articles")
+    comments_tree = relationship("models.tables.comment.CommentTree", back_populates="article")
 
-    class PydanticMeta:
-        computed = ["description"]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'
+
+
+class ArticleTag(Base):
+    """
+    Many-to-many table for Article and Tag
+    """
+    __tablename__ = "article_tags"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
+    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'

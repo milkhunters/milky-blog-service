@@ -1,40 +1,36 @@
-from tortoise import fields, models
-from models.role import Role, MainRole as M, AdditionalRole as A
-from models.state import UserStates
+import uuid
+
+from sqlalchemy import Column, UUID, VARCHAR, INTEGER, Enum, DateTime, func
+from sqlalchemy.orm import relationship
+
+from src.models.role import Role, MainRole as M, AdditionalRole as A
+from src.models.state import UserState
+
+from src.db import Base
 
 
-class User(models.Model):
+class User(Base):
     """
     The User model
     """
+    __tablename__ = "users"
 
-    id = fields.IntField(pk=True)
-    username = fields.CharField(max_length=30, unique=True)
-    email = fields.CharField(max_length=100, unique=True)
-    articles: fields.ReverseRelation["Article"]
-    first_name = fields.CharField(max_length=50, null=True)
-    last_name = fields.CharField(max_length=50, null=True)
-    comments: fields.ReverseRelation["Comment"]
-    notifications: fields.ReverseRelation["Notification"]
-    role_id = fields.IntField(default=Role(M.user, A.one))
-    state = fields.IntEnumField(UserStates)
-    hashed_password = fields.CharField(max_length=255)
-    create_time = fields.DatetimeField(auto_now_add=True)
-    update_time = fields.DatetimeField(auto_now=True, null=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(VARCHAR(32), unique=True, nullable=False)
+    email = Column(VARCHAR(255), unique=True, nullable=False)
+    first_name = Column(VARCHAR(100), nullable=True)
+    last_name = Column(VARCHAR(100), nullable=True)
+    role_id = Column(INTEGER(), default=Role(M.USER, A.ONE).value())
+    state = Column(Enum(UserState), default=UserState.NOT_CONFIRMED)
+    hashed_password = Column(VARCHAR(255))
 
-    def full_name(self) -> str:
-        if self.first_name or self.last_name:
-            return f"{self.first_name or ''} {self.last_name or ''}".strip()
-        return self.username
+    articles = relationship("models.tables.article.Article", back_populates="owner")
+    comments = relationship("models.tables.comment.Comment", back_populates="owner")
+    notifications = relationship("models.tables.notification.Notification", back_populates="owner")
+    files = relationship("models.tables.file.File", back_populates="owner")
 
-    class PydanticMeta:
-        computed = ["full_name"]
-        # exclude = ["hashed_password"]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-
-class DeletedUser(models.Model):
-    id = fields.IntField(pk=True)
-    delete_time = fields.DatetimeField(auto_now_add=True)
-
-    class Meta:
-        table = "deleted_user"
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'

@@ -1,17 +1,28 @@
-from tortoise import fields, models
+import uuid
 
-from models.state import NotificationTypes
+from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey
+from sqlalchemy.orm import relationship
+
+from src.db import Base
+from src.models.state import NotificationType
 
 
-class Notification(models.Model):
+class Notification(Base):
     """
     The Notification model
 
     """
+    __tablename__ = "notifications"
 
-    id = fields.IntField(pk=True, index=True)
-    type = fields.IntEnumField(NotificationTypes)
-    data = fields.IntField()
-    owner = fields.ForeignKeyField('models.User', related_name="notifications")
-    is_read = fields.BooleanField(default=False)
-    create_time = fields.DatetimeField(auto_now_add=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    type = Column(Enum(NotificationType), default=NotificationType.COMMENT_ANSWER)
+    content_id = Column(UUID(as_uuid=True), nullable=False)
+    content = Column(VARCHAR(64), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    owner = relationship("models.tables.user.User", back_populates="notifications")
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'

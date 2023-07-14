@@ -1,22 +1,34 @@
-from tortoise import fields, models
+import uuid
 
-from models.state import CommentState
+from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey, Integer
+from sqlalchemy.orm import relationship
+
+from src.db import Base
+from src.models.state import CommentState
 
 
-class Comment(models.Model):
+class Comment(Base):
     """
     The Comment model
 
     """
-    id = fields.IntField(pk=True)
-    content = fields.TextField(max_length=1000, min_length=1)
-    owner = fields.ForeignKeyField('models.User', related_name="comments")
-    state = fields.IntEnumField(CommentState)
-    create_time = fields.DatetimeField(auto_now_add=True)
-    update_time = fields.DatetimeField(auto_now=True, null=True)
+    __tablename__ = "comments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    content = Column(VARCHAR(1000), nullable=False)
+    state_id = Column(Enum(CommentState), default=CommentState.PUBLISHED)
+
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    owner = relationship("models.tables.user.User", back_populates="comments")
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'
 
 
-class CommentTree(models.Model):
+class CommentTree(Base):
     """
     The CommentSubset model
     («Closure Table» и «Adjacency List»)
@@ -29,12 +41,19 @@ class CommentTree(models.Model):
     level: уровень вложенности
 
     """
-    ancestor_id = fields.IntField()
-    descendant_id = fields.IntField()
-    nearest_ancestor_id = fields.IntField()
-    article = fields.ForeignKeyField('models.Article', related_name="comments_tree")
-    level = fields.IntField()
-    create_time = fields.DatetimeField(auto_now_add=True)
 
-    class Meta:
-        table = "comment_tree"
+    __tablename__ = "comment_tree"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    ancestor_id = Column(UUID(as_uuid=True))
+    descendant_id = Column(UUID(as_uuid=True))
+    nearest_ancestor_id = Column(UUID(as_uuid=True))
+    article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
+    article = relationship("models.tables.article.Article", back_populates="comments_tree")
+    level = Column(Integer())
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'

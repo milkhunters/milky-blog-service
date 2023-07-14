@@ -1,7 +1,10 @@
+from src.db import Base
+
 from .user import User
-from .user import DeletedUser
+from .article import ArticleTag
 from .article import Article
+from .tag import Tag
 from .comment import Comment
 from .comment import CommentTree
 from .notification import Notification
-from .tags import Tag
+from .file import File
