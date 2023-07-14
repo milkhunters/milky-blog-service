@@ -1,73 +1,42 @@
-import logging
-
 from fastapi import APIRouter, Depends
 from fastapi.requests import Request
 from fastapi.responses import Response
-
-from services import UserService
-from config import load_docs
-from dependencies import JWTCookie
-from exceptions.api import APIError
-
-from services.auth import authenticate, logout, refresh_tokens
-from views import UserResponse
-from exceptions.models import ErrorAPIResponse
-from models import schemas
+from fastapi import status as http_status
 
 
-router = APIRouter(responses={"400": {"model": ErrorAPIResponse}})
-docs = load_docs("auth.ini")
+from src.views import UserResponse
+from src.dependencies.services import get_services
+from src.models import schemas
+from src.services import ServiceFactory
+
+router = APIRouter()
 
 
-@router.post(
-    "/signUp",
-    response_model=UserResponse,
-    summary=docs["signUp"]["summary"],
-    description=docs["signUp"]["description"]
-)
-async def sign_up(
-        data: schemas.UserCreate,
-        is_auth=Depends(JWTCookie(auto_error=False)),
-):
-    user_service = UserService()
-
-    if is_auth:
-        raise APIError(920)
-    return await user_service.create_user(data)
+@router.post("/signUp", response_model=None, status_code=http_status.HTTP_201_CREATED)
+async def sign_up(data: schemas.UserCreate, services: ServiceFactory = Depends(get_services)):
+    await services.auth.create_user(data)
 
 
-@router.post(
-    "/signIn",
-    response_model=UserResponse,
-    summary=docs["signIn"]["summary"],
-    description=docs["signIn"]["description"]
-)
-async def sign_in(
-        user: schemas.UserAuth,
-        response: Response,
-        is_auth=Depends(JWTCookie(auto_error=False))
-):
-    if is_auth:
-        raise APIError(920)
-    print(is_auth, "Не авторизован")
-    return await authenticate(user.username, user.password, response)
+@router.post("/signIn", response_model=UserResponse, status_code=http_status.HTTP_200_OK)
+async def sign_in(user: schemas.UserAuth, response: Response, services: ServiceFactory = Depends(get_services)):
+    return UserResponse(content=await services.auth.authenticate(user, response))
 
 
-@router.post(
-    '/logout',
-    dependencies=[Depends(JWTCookie())],
-    summary=docs["logout"]["summary"],
-    description=docs["logout"]["description"]
-)
-async def logout_controller(request: Request, response: Response):
-    await logout(request, response)
+@router.post('/logout', response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def logout(request: Request, response: Response, services: ServiceFactory = Depends(get_services)):
+    await services.auth.logout(request, response)
 
 
-@router.post(
-    '/refresh_tokens',
-    dependencies=[Depends(JWTCookie())],
-    summary=docs["refresh_tokens"]["summary"],
-    description=docs["refresh_tokens"]["description"]
-)
-async def refresh(request: Request, response: Response):
-    await refresh_tokens(request, response)
+@router.post('/refresh_tokens', response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def refresh(request: Request, response: Response, services: ServiceFactory = Depends(get_services)):
+    await services.auth.refresh_tokens(request, response)
+
+
+@router.post("/send/{email}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def send_email(email: str, services: ServiceFactory = Depends(get_services)):
+    await services.auth.send_verify_code(email)
+
+
+@router.post("/confirm/{email}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def confirm_email(code: int, services: ServiceFactory = Depends(get_services)):
+    await services.auth.verify_email(code)
