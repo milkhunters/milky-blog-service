@@ -1,16 +1,10 @@
-from typing import Optional
-
-from models.schemas import BasePaginationModel
-from models.schemas import Notification
+from .base import BaseView
+from src.models import schemas
 
 
-class NotificationResponse(Notification):
-    pass
+class NotificationResponse(BaseView):
+    content: schemas.Notification
 
 
-class NotificationsResponse(BasePaginationModel):
-    """
-    Список уведомлений
-
-    """
-    items: Optional[list[NotificationResponse]]
+class NotificationsResponse(BaseView):
+    content: list[schemas.Notification]
