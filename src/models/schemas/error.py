@@ -1,10 +1,16 @@
+from typing import Any
+
+from src.models.error import ErrorType
 from pydantic import BaseModel
 
 
 class Error(BaseModel):
-    code: int
-    message: str = None
+    type: ErrorType
+    content: Any
 
 
-class ExceptionsAPIModel(BaseModel):
-    error: Error
+class FieldErrorItem(BaseModel):
+    field: str
+    location: list[str]
+    message: str
+    type: str
