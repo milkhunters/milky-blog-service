@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class UserStates(int, Enum):
+class UserState(int, Enum):
     NOT_CONFIRMED = 0
     ACTIVE = 1
     BLOCKED = 2
@@ -20,5 +20,5 @@ class CommentState(int, Enum):
     PUBLISHED = 1
 
 
-class NotificationTypes(int, Enum):
+class NotificationType(int, Enum):
     COMMENT_ANSWER = 1
