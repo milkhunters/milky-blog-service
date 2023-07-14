@@ -1,3 +1,5 @@
+import uuid
+
 from src.models import schemas
 from src.models.auth import BaseUser
 from src import exceptions
@@ -6,7 +8,7 @@ from src.services.auth import role_filter
 from src.services.repository import NotificationRepo
 
 
-class NotificationService:
+class NotificationApplicationService:
 
     def __init__(
             self,
@@ -31,7 +33,7 @@ class NotificationService:
         per_page_limit = 40
 
         # Подготовка входных данных
-        per_page = max(min(per_page, per_page_limit, 2147483646), 1)
+        per_page = min(per_page, per_page_limit, 2147483646)
         offset = min((page - 1) * per_page, 2147483646)
 
         # Подготовка выходных данных
@@ -53,7 +55,7 @@ class NotificationService:
         return await self._repo.count(owner_id=self._current_user.id)
 
     @role_filter(min_role=Role(M.USER, A.ONE))
-    async def delete_notification(self, notification_id: int) -> None:
+    async def delete_notification(self, notification_id: uuid.UUID) -> None:
         """
         Удалить уведомление
 
