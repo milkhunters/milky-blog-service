@@ -26,9 +26,9 @@ class PostgresConfig:
 class S3Config:
     BUCKET: str
     ENDPOINT_URL: str
-    REGION_NAME: str
-    AWS_ACCESS_KEY_ID: str
-    AWS_SECRET_ACCESS_KEY: str
+    REGION: str
+    ACCESS_KEY_ID: str
+    ACCESS_KEY: str
     SERVICE_NAME: str = "s3"
 
 
@@ -57,7 +57,6 @@ class Base:
     TITLE: str
     DESCRIPTION: str
     VERSION: str
-    JWT: JWT
     CONTACT: Contact
 
 
@@ -65,12 +64,13 @@ class Base:
 class Config:
     DEBUG: bool
     IS_SECURE_COOKIE: bool
+    JWT: JWT
     BASE: Base
     DB: DbConfig
 
 
-def str_to_bool(value: str) -> bool:
-    return value.strip().lower() in ("yes", "true", "t", "1")
+def to_bool(value) -> bool:
+    return str(value).strip().lower() in ("yes", "true", "t", "1")
 
 
 class KVManager:
@@ -84,7 +84,7 @@ class KVManager:
         """
         path = "/".join([self.root_name, *args])
         encode_value = self.config.get(path)[1]
-        if encode_value:
+        if encode_value and encode_value["Value"]:
             value: str = encode_value['Value'].decode("utf-8")
             if value.isdigit():
                 return int(value)
@@ -117,8 +117,8 @@ def load_consul_config(
         root_name=root_name
     )
     return Config(
-        DEBUG=str_to_bool(os.getenv('DEBUG', 1)),
-        IS_SECURE_COOKIE=str_to_bool(config("IS_SECURE_COOKIE")),
+        DEBUG=to_bool(os.getenv('DEBUG', 1)),
+        IS_SECURE_COOKIE=to_bool(config("IS_SECURE_COOKIE")),
         BASE=Base(
             TITLE=config("BASE", "TITLE"),
             DESCRIPTION=config("BASE", "DESCRIPTION"),
@@ -128,10 +128,10 @@ def load_consul_config(
                 URL=config("BASE", "CONTACT", "URL"),
                 EMAIL=config("BASE", "CONTACT", "EMAIL")
             ),
-            JWT=JWT(
-                ACCESS_SECRET_KEY=config("JWT", "ACCESS_SECRET_KEY"),
-                REFRESH_SECRET_KEY=config("JWT", "REFRESH_SECRET_KEY")
-            )
+        ),
+        JWT=JWT(
+            ACCESS_SECRET_KEY=config("JWT", "ACCESS_SECRET_KEY"),
+            REFRESH_SECRET_KEY=config("JWT", "REFRESH_SECRET_KEY")
         ),
         DB=DbConfig(
             POSTGRESQL=PostgresConfig(
@@ -140,19 +140,19 @@ def load_consul_config(
                 USERNAME=config("DATABASE", "POSTGRESQL", "USERNAME"),
                 PASSWORD=config("DATABASE", "POSTGRESQL", "PASSWORD"),
                 DATABASE=config("DATABASE", "POSTGRESQL", "DATABASE")
-            ) if str_to_bool(config("DATABASE", "POSTGRESQL", "is_used")) else None,
+            ) if to_bool(config("DATABASE", "POSTGRESQL", "is_used")) else None,
             REDIS=RedisConfig(
                 HOST=config("DATABASE", "REDIS", "HOST"),
                 USERNAME=config("DATABASE", "REDIS", "USERNAME"),
                 PASSWORD=config("DATABASE", "REDIS", "PASSWORD"),
                 PORT=config("DATABASE", "REDIS", "PORT")
-            ) if str_to_bool(config("DATABASE", "REDIS", "is_used")) else None,
+            ) if to_bool(config("DATABASE", "REDIS", "is_used")) else None,
             S3=S3Config(
                 ENDPOINT_URL=config("DATABASE", "S3", "ENDPOINT_URL"),
-                REGION_NAME=config("DATABASE", "S3", "REGION_NAME"),
-                AWS_ACCESS_KEY_ID=config("DATABASE", "S3", "AWS_ACCESS_KEY_ID"),
-                AWS_SECRET_ACCESS_KEY=config("DATABASE", "S3", "AWS_SECRET_ACCESS_KEY"),
+                REGION=config("DATABASE", "S3", "REGION"),
+                ACCESS_KEY_ID=config("DATABASE", "S3", "ACCESS_KEY_ID"),
+                ACCESS_KEY=config("DATABASE", "S3", "ACCESS_KEY"),
                 BUCKET=config("DATABASE", "S3", "BUCKET")
-            ) if str_to_bool(config("DATABASE", "S3", "is_used")) else None
+            ) if to_bool(config("DATABASE", "S3", "is_used")) else None
         ),
     )
