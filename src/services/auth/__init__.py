@@ -5,12 +5,12 @@ from src import exceptions
 from src.models import tables
 from src.models import schemas
 from src.models.auth import BaseUser
-from src.models.state import UserStates
+from src.models.state import UserState
 from src.models.role import Role, MainRole as M, AdditionalRole as A, RoleRange
 from src.services.repository import UserRepo
 
 from .jwt import JWTManager
-from .password import verify_password
+from .password import verify_password, get_hashed_password
 from .session import SessionManager
 from .filters import role_filter
 
@@ -30,7 +30,7 @@ class AuthApplicationService:
         self._user_repo = user_repo
 
     @role_filter(Role(M.GUEST, A.ONE))
-    async def create_user(self, user: schemas.UserCreate) -> schemas.User:
+    async def create_user(self, user: schemas.UserCreate) -> None:
         """
         Создание нового пользователя
 
@@ -45,17 +45,19 @@ class AuthApplicationService:
         if await self._user_repo.get_by_username_insensitive(user.username):
             raise exceptions.AlreadyExists(f"Пользователь {user.username!r} уже существует")
 
-        user = await self._user_repo.create(**user.model_dump())
-        return schemas.User.from_orm(user)
+        if await self._user_repo.get_by_email_insensitive(user.email):
+            raise exceptions.AlreadyExists(f"Пользователь с email {user.email!r} уже существует")
+
+        hashed_password = get_hashed_password(user.password)
+        await self._user_repo.create(**user.model_dump(exclude={"password"}), hashed_password=hashed_password)
 
     @role_filter(Role(M.GUEST, A.ONE))
-    async def authenticate(self, username: str, password: str, response: Response) -> schemas.User:
+    async def authenticate(self, data: schemas.UserAuth, response: Response) -> schemas.User:
         """
         Аутентификация пользователя
 
-        :param username:
-        :param password:
-        :param response:
+        :param data: UserAuth
+        :param response: Response
 
         :return: User
 
@@ -64,19 +66,58 @@ class AuthApplicationService:
         :raise AccessDenied: if user is banned
         """
 
-        user: tables.User = await self._user_repo.get_by_username_insensitive(username=username)
+        user: tables.User = await self._user_repo.get_by_username_insensitive(username=data.username)
         if not user:
             raise exceptions.NotFound("Пользователь не найден")
-        if not verify_password(password, user.hashed_password):
+        if not verify_password(data.password, user.hashed_password):
             raise exceptions.NotFound("Неверная пара логин/пароль")
-        if user.state == UserStates.BLOCKED:
+        if user.state == UserState.BLOCKED:
             raise exceptions.AccessDenied("Пользователь заблокирован")
 
         # Генерация и установка токенов
-        tokens = self._jwt_manager.generate_tokens(user.id, user.username, user.role.value)
+        tokens = self._jwt_manager.generate_tokens(str(user.id), user.username, user.role_id, user.state.value)
         self._jwt_manager.set_jwt_cookie(response, tokens)
         await self._session_manager.set_session_id(response, tokens.refresh_token)
-        return schemas.User.from_orm(user)
+        return schemas.User.model_validate(user)
+
+    @role_filter(Role(M.GUEST, A.ONE))
+    async def send_verify_code(self, email: str) -> None:
+        """
+        Отправка кода подтверждения на почту
+
+        :param email:
+
+        :raise NotFound: if user not found
+        :raise AccessDenied: if user is banned
+        """
+
+        user: tables.User = await self._user_repo.get(email=email)
+        if not user:
+            raise exceptions.NotFound("Пользователь не найден")
+        if user.state == UserState.BLOCKED:
+            raise exceptions.AccessDenied("Пользователь заблокирован")
+
+        # todo: rabbitmq
+
+    @role_filter(Role(M.GUEST, A.ONE))
+    async def verify_email(self, email: str, code: str) -> None:
+        """
+        Подтверждение почты
+
+        :param email:
+        :param code:
+
+        :raise NotFound: if user not found
+        :raise AccessDenied: if user is banned
+        """
+
+        user: tables.User = await self._user_repo.get(email=email)
+        if not user:
+            raise exceptions.NotFound("Пользователь не найден")
+        if user.state == UserState.BLOCKED:
+            raise exceptions.AccessDenied("Пользователь заблокирован")
+
+        # todo redis
 
     @role_filter(RoleRange("*"), exclude=[Role(M.GUEST, A.ONE)])
     async def logout(self, request: Request, response: Response) -> None:
@@ -108,10 +149,10 @@ class AuthApplicationService:
         if not user:
             raise exceptions.NotFound("Пользователь не найден")
 
-        if user.state == UserStates.BLOCKED:
+        if user.state == UserState.BLOCKED:
             raise exceptions.AccessDenied("Пользователь заблокирован")
 
-        new_tokens = self._jwt_manager.generate_tokens(user.id, user.username, user.role.value)
+        new_tokens = self._jwt_manager.generate_tokens(str(user.id), user.username, user.role_id, user.state.value)
         self._jwt_manager.set_jwt_cookie(response, new_tokens)
         # Для бесшовного обновления токенов:
         request.cookies["access_token"] = new_tokens.access_token
