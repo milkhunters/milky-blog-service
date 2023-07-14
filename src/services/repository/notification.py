@@ -1,6 +1,6 @@
-from models import tables
-from services.repository.base import BaseRepo
+from src.models import tables
+from src.services.repository.base import BaseRepository
 
 
-class NotificationRepo(BaseRepo[tables.Notification]):
+class NotificationRepo(BaseRepository[tables.Notification]):
     table = tables.Notification
