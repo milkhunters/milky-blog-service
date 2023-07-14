@@ -83,10 +83,10 @@ async def jwt_pre_process(
 
         if user:
             new_tokens = jwt.generate_tokens(
-                id=user.id,
+                id=str(user.id),
                 username=user.username,
                 role_id=user.role_id,
-                state_id=user.state_id.value,
+                state_id=user.state.value,
             )
             # Для бесшовного обновления токенов:
             req_obj.cookies["access_token"] = new_tokens.access_token

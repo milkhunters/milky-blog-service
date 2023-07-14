@@ -10,36 +10,39 @@ class ArticleTagItem(BaseModel):
     id: uuid.UUID
     title: str
 
+    class Config:
+        from_attributes = True
+
 
 class Article(BaseModel):
     id: uuid.UUID
     title: str
     content: str
-    poster_url: str = None
+    poster_url: str | None
     tags: list[ArticleTagItem]
     state: ArticleState
     owner: UserSmall
 
     created_at: datetime
-    updated_at: datetime = None
+    updated_at: datetime | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ArticleSmall(BaseModel):
     id: uuid.UUID
     title: str
-    poster_url: str = None
+    poster_url: str | None
     tags: list[ArticleTagItem]
     state: ArticleState
     owner: UserSmall
 
     created_at: datetime
-    updated_at: datetime = None
+    updated_at: datetime | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ArticleCreate(BaseModel):

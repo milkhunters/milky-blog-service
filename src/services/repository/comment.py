@@ -8,8 +8,6 @@ class CommentRepo(BaseRepository[tables.Comment]):
     table = tables.Comment
 
     async def delete_comments(self, comment_ids: list[int]) -> None:
-        if not comment_ids:
-            return
         await self.session.execute(
             self.table.delete().where(self.table.id.in_(comment_ids))
         )

@@ -37,7 +37,7 @@ class ServiceFactory:
 
     @property
     def article(self) -> ArticleApplicationService:
-        return ArticleApplicationService(self._current_user, article_repo=self._repo.article)
+        return ArticleApplicationService(self._current_user, article_repo=self._repo.article, tag_repo=self._repo.tag)
 
     @property
     def comment(self) -> CommentApplicationService:

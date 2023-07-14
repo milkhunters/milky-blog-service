@@ -7,5 +7,5 @@ class ArticleResponse(BaseView):
 
 
 class ArticlesResponse(BaseView):
-    content: list[schemas.Article]
+    content: list[schemas.ArticleSmall]
 

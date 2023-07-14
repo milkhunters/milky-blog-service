@@ -10,7 +10,7 @@ class Error(BaseModel):
 
 
 class FieldErrorItem(BaseModel):
-    field: str
-    location: list[str]
+    field: Any
+    location: list[Any]
     message: str
     type: str
