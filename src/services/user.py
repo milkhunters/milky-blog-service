@@ -1,3 +1,5 @@
+import uuid
+
 from src import exceptions
 from src.services.repository import UserRepo
 from src.services.auth.filters import role_filter
@@ -5,7 +7,7 @@ from src.services.auth.password import verify_password
 
 from src.models import schemas
 from src.models.auth import BaseUser
-from src.models.state import UserStates
+from src.models.state import UserState
 from src.models.role import Role, MainRole as M, AdditionalRole as A
 
 
@@ -21,7 +23,7 @@ class UserApplicationService:
         return schemas.User.from_orm(user)
 
     @role_filter(min_role=Role(M.USER, A.ONE))
-    async def get_user(self, user_id: str) -> schemas.UserSmall:
+    async def get_user(self, user_id: uuid.UUID) -> schemas.UserSmall:
         user = await self._repo.get(id=user_id)
 
         if not user:
@@ -37,7 +39,7 @@ class UserApplicationService:
         )
 
     @role_filter(min_role=Role(M.ADMIN, A.ONE))
-    async def update_user(self, user_id: str, data: schemas.UserUpdateByAdmin) -> None:
+    async def update_user(self, user_id: uuid.UUID, data: schemas.UserUpdateByAdmin) -> None:
         user = await self._repo.get(id=user_id)
         if not user:
             raise exceptions.NotFound(f"Пользователь с id:{user_id} не найден!")
@@ -55,5 +57,5 @@ class UserApplicationService:
 
         await self._repo.update(
             id=self._current_user.id,
-            state=UserStates.DELETED
+            state=UserState.DELETED
         )
