@@ -7,7 +7,7 @@ class Tokens(BaseModel):
 
 
 class TokenPayload(BaseModel):
-    id: int
+    id: str
     username: str
     role_id: int
     state_id: int
