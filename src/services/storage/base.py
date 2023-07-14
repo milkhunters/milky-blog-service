@@ -1,33 +1,17 @@
 import dataclasses
-from enum import Enum, unique
+import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, Union, IO
-
-
-@unique
-class ContentType(Enum):
-    """
-    Типы контента
-    """
-    IMAGE_JPEG = "image/jpeg"
-    IMAGE_PNG = "image/png"
-    IMAGE_GIF = "image/gif"
-    IMAGE_BMP = "image/bmp"
-    # TODO: добавить остальные типы/доработать
-
-    @classmethod
-    def has_value(cls, value):
-        return value in cls._value2member_map_
+from typing import IO
 
 
 @dataclasses.dataclass
 class File:
-    id: str
-    name: str
-    content_type: ContentType
-    size: Optional[int]
-    bytes: Optional[bytes]
-    owner_id: int
+    id: uuid.UUID
+    title: str
+    content_type: any
+    bytes: any
+    owner_id: any
+    size: int = None
 
 
 class AbstractStorage(ABC):
@@ -42,28 +26,29 @@ class AbstractStorage(ABC):
         pass
 
     @abstractmethod
-    async def get(self, file_id: str) -> Optional[File]:
+    async def get(self, file_id: uuid.UUID, load_bytes: bool = False) -> File | None:
         """
         Получить файл из хранилища
         :param file_id:
+        :param load_bytes:
         :return:
         """
         pass
 
     @abstractmethod
-    async def save(self, name: str, content_type: ContentType, file: Union[bytes, IO], owner_id: int) -> str:
+    async def save(self, file_id: uuid.UUID, title: str, content_type: any, file: bytes | IO, owner_id: any):
         """
         Сохранить файл в хранилище
         :param owner_id:
         :param file:
         :param content_type: тип файла
-        :param name: имя файла
-        :return: file_id сохраненного файла
+        :param title: имя файла
+        :param file_id
         """
         pass
 
     @abstractmethod
-    async def delete(self, file_id: int) -> None:
+    async def delete(self, file_id: uuid.UUID) -> None:
         """
         Удалить файл из хранилища
         :param file_id:
