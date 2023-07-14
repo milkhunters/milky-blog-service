@@ -15,11 +15,14 @@ def role_filter(*roles: Role | RoleRange, exclude: list[Role | RoleRange] = None
     :return: decorator
     """
 
+    if not roles:
+        roles = [RoleRange("*")]
+
     if exclude is None:
         exclude = []
 
     if min_role is None:
-        min_role = 00
+        min_role = 0
 
     def decorator(func):
         @wraps(func)
@@ -30,10 +33,14 @@ def role_filter(*roles: Role | RoleRange, exclude: list[Role | RoleRange] = None
             if not current_user:
                 raise ValueError('AuthMiddleware not found')
 
+            cur_in_roles = current_user.role in roles
+            cur_not_in_exclude = current_user.role not in exclude
+            cur_ge_min_role = current_user.role >= min_role
+
             if current_user.role in roles and current_user.role not in exclude and current_user.role >= min_role:
                 return await func(*args, **kwargs)
             else:
-                raise AccessDenied('У вас нет прав для выполнения этого действия')
+                raise AccessDenied('У Вас нет прав для выполнения этого действия')
 
         return wrapper
 
