@@ -27,15 +27,15 @@ class AdditionalRole(Enum):
 class RoleRange:
     def __init__(
             self,
-            *,
             super_symbol: typing.Literal['*'] = None,
+            *,
             left: 'Role' = None,
             operator: 'RoleOperationType' = None,
             right: 'Role' = None
     ):
         if super_symbol == "*":
             self.left = Role(MainRole.GUEST, AdditionalRole.ONE)
-            self.operator = RoleOperationType.GE
+            self.operator = RoleOperationType.LE
             self.right = Role(MainRole.ADMIN, AdditionalRole.NINE)
         else:
             self.left = left
@@ -128,16 +128,28 @@ class Role:
         return f"{self.main_role.name} {self.additional_role.name}"
 
     def __lt__(self, other):
-        return RoleRange(self, RoleOperationType.LT, other)
+        if isinstance(other, Role):
+            return self.value() < other.value()
+        elif isinstance(other, int):
+            return self.value() < other
 
     def __gt__(self, other):
-        return RoleRange(self, RoleOperationType.GT, other)
+        if isinstance(other, Role):
+            return self.value() > other.value()
+        elif isinstance(other, int):
+            return self.value() > other
 
     def __le__(self, other):
-        return RoleRange(self, RoleOperationType.LE, other)
+        if isinstance(other, Role):
+            return self.value() <= other.value()
+        elif isinstance(other, int):
+            return self.value() <= other
 
     def __ge__(self, other):
-        return RoleRange(self, RoleOperationType.GE, other)
+        if isinstance(other, Role):
+            return self.value() >= other.value()
+        elif isinstance(other, int):
+            return self.value() >= other
 
     @classmethod
     def from_int(cls, value: int):
