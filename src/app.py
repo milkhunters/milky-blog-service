@@ -1,108 +1,96 @@
-"""Application implementation - ASGI."""
 import logging
-import urllib.parse
+import os
 
+import redis.asyncio as redis
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
-from fastapi.openapi.utils import get_openapi
-from fastapi.requests import Request
-from tortoise.contrib.fastapi import register_tortoise
 
-from middleware import JWTMiddleware
-from config import load_config
-from exceptions.api import APIError
-from exceptions.api import not_found_exception_handler
-from exceptions.api import validation_exception_handler
-from exceptions.api import api_exception_handler
+from src.models import tables
+from src.db import create_sqlite_async_session, create_psql_async_session
+from src.middleware.jwt import JWTMiddlewareHTTP
+from src.config import load_consul_config
+from src.exceptions import APIError, handle_api_error, handle_404_error, handle_pydantic_error
 
-from router import root_api_router
-from utils import RedisClient, AiohttpClient
-from utils.rabbitmq import RabbitMQ
+from src.router import register_api_router
+from src.utils import RedisClient
+from src.utils.fakeredis import FakeRedisPool
+from src.utils.openapi import custom_openapi
 
-config = load_config()
+config = load_consul_config(os.getenv('CONSUL_ROOT', "milk-back-dev"), host="192.168.3.41")
 log = logging.getLogger(__name__)
 
 log.debug("Инициализация приложения FastAPI.")
 app = FastAPI(
-    title=config.base.name,
-    debug=config.debug,
-    version=config.base.vers,
-    description=config.base.description,
-    root_path="/api/v1" if not config.debug else "",
-    docs_url="/api/docs" if config.debug else "/docs",
-    redoc_url="/api/redoc" if config.debug else "/redoc",
+    title=config.BASE.TITLE,
+    debug=config.DEBUG,
+    version=config.BASE.VERSION,
+    description=config.BASE.DESCRIPTION,
+    root_path="/api/v1" if not config.DEBUG else "",
+    docs_url="/api/docs" if config.DEBUG else "/docs",
+    redoc_url="/api/redoc" if config.DEBUG else "/redoc",
     contact={
-        "name": config.base.contact.name,
-        "url": config.base.contact.url,
-        "email": config.base.contact.email,
+        "name": config.BASE.CONTACT.NAME,
+        "url": config.BASE.CONTACT.URL,
+        "email": config.BASE.CONTACT.EMAIL,
     }
 )
 
-register_tortoise(
-    app,
-    db_url="postgres://{user}:{password}@{host}:{port}/{database}".format(
-        user=config.db.postgresql.username,
-        password=urllib.parse.quote_plus(config.db.postgresql.password),
-        host=config.db.postgresql.host,
-        port=config.db.postgresql.port,
-        database=config.db.postgresql.database
-    ),
-    modules={"models": ["src.models.tables"]},
-    generate_schemas=True,
-    add_exception_handlers=True,
-)
+
+async def init_db(app: FastAPI):
+    if config.DB.POSTGRESQL:
+        engine, session = create_psql_async_session(
+            host=config.DB.POSTGRESQL.HOST,
+            port=config.DB.POSTGRESQL.PORT,
+            username=config.DB.POSTGRESQL.USERNAME,
+            password=config.DB.POSTGRESQL.PASSWORD,
+            database=config.DB.POSTGRESQL.DATABASE,
+            echo=config.DEBUG,
+        )
+    else:
+        engine, session = create_sqlite_async_session(
+            database='database.db',
+            echo=config.DEBUG,
+        )
+    app.state.db_session = session
+
+    async with engine.begin() as conn:
+        # await conn.run_sync(tables.Base.metadata.drop_all)
+        await conn.run_sync(tables.Base.metadata.create_all)
+
+
+async def init_redis_pool(app: FastAPI, db: int = 0):
+    if config.DB.REDIS:
+        pool = await redis.from_url(
+            f"redis://:{config.DB.REDIS.PASSWORD}@{config.DB.REDIS.HOST}:{config.DB.REDIS.PORT}/{db}",
+            encoding="utf-8",
+            decode_responses=True,
+        )
+    else:
+        pool = FakeRedisPool()
+    app.state.redis = RedisClient(pool)
 
 
 @app.on_event("startup")
 async def on_startup():
-    log.debug("Выполнение обработчика события старта FastAPI.")
-    if config.db.redis:
-        await RedisClient.open_redis_client()  # TODO: в скоуп
-    app.state.rabbitmq = await RabbitMQ.open_connection()
-    AiohttpClient.get_aiohttp_client()
+    log.debug("Выполнение FastAPI startup event handler.")
+    await init_db(app)
+    await init_redis_pool(app)
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
-    log.debug("Выполнение обработчика события закрытия FastAPI.")
-    # Gracefully close utilities.
-    if config.db.redis:
-        await RedisClient.close_redis_client()
-    await app.state.rabbitmq.close_connection()
-    await AiohttpClient.close_aiohttp_client()
+    log.debug("Выполнение FastAPI shutdown event handler.")
+    await app.state.redis.close()
 
 
-# custom OpenApi
-def custom_openapi():
-    if not app.openapi_schema:
-        app.openapi_schema = get_openapi(
-            title=app.title,
-            version=app.version,
-            openapi_version=app.openapi_version,
-            description=app.description,
-            terms_of_service=app.terms_of_service,
-            contact=app.contact,
-            license_info=app.license_info,
-            routes=app.routes,
-            tags=app.openapi_tags,
-            servers=app.servers,
-        )
-        for _, method_item in app.openapi_schema.get('paths').items():
-            for _, param in method_item.items():
-                responses = param.get('responses')
-                # remove 422 response, also can remove other status code
-                if '422' in responses:
-                    del responses['422']
-    return app.openapi_schema
+app.openapi = lambda: custom_openapi(app)
+app.state.config = config
 
-
-app.openapi = custom_openapi
-
-log.debug("Добавление маршрутов приложения.")
-app.include_router(root_api_router)
+log.debug("Добавление маршрутов")
+app.include_router(register_api_router(config.DEBUG))
 log.debug("Регистрация обработчиков исключений.")
-app.add_exception_handler(APIError, api_exception_handler)
-app.add_exception_handler(404, not_found_exception_handler)
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-log.debug("Регистрация промежуточного ПО.")
-app.add_middleware(JWTMiddleware)
+app.add_exception_handler(APIError, handle_api_error)
+app.add_exception_handler(404, handle_404_error)
+app.add_exception_handler(RequestValidationError, handle_pydantic_error)
+log.debug("Регистрация middleware.")
+app.add_middleware(JWTMiddlewareHTTP)
