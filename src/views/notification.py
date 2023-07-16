@@ -8,3 +8,7 @@ class NotificationResponse(BaseView):
 
 class NotificationsResponse(BaseView):
     content: list[schemas.Notification]
+
+
+class NotificationCountResponse(BaseView):
+    content: int
