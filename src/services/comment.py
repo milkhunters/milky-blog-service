@@ -10,7 +10,7 @@ import uuid
 from src.models import schemas
 from src.models.auth import BaseUser
 from src.models.role import Role, MainRole as M, AdditionalRole as A
-from src.models.state import CommentState
+from src.models.state import CommentState, ArticleState
 from src.models.state import NotificationType
 
 from src import exceptions
@@ -56,6 +56,9 @@ class CommentApplicationService:
         if article is None:
             raise exceptions.NotFound("Публикация не найдена")
 
+        if article.state != ArticleState.PUBLISHED:
+            raise exceptions.BadRequest("Нельзя добавить комментарий к неопубликованной публикации")
+
         parent = None
         parent_level = -1
         if parent_id is not None:
@@ -72,6 +75,9 @@ class CommentApplicationService:
 
             parent_level = parent_as_node.level
 
+        if parent and parent.state == CommentState.DELETED:
+            raise exceptions.BadRequest("Родительский комментарий удален")
+
         new_comment = await self._repo.create(
             content=data.content,
             owner_id=self._current_user.id,
@@ -82,7 +88,7 @@ class CommentApplicationService:
                 owner_id=parent.owner_id,
                 type_id=NotificationType.COMMENT_ANSWER,
                 content_id=new_comment.id,
-                content=f"{new_comment.owner.username} ответил на ваш комментарий"
+                content=f"{new_comment.owner.username} ответил на Ваш комментарий"
             )
 
         await self._tree_repo.create_branch(
@@ -95,10 +101,6 @@ class CommentApplicationService:
 
     @role_filter(min_role=Role(M.GUEST, A.ONE))
     async def get_comment(self, comment_id: uuid.UUID) -> schemas.Comment:
-        """
-        Получить комментарий
-        """
-        # check if exists
         comment = await self._repo.get(id=comment_id)
         if comment is None:
             raise exceptions.NotFound(f"Комментарий c id:{comment_id} не найден")
@@ -108,34 +110,57 @@ class CommentApplicationService:
 
         return schemas.Comment.model_validate(comment)
 
-    async def get_comments(self, article_id: uuid.UUID) -> list[dict]:
+    @role_filter(min_role=Role(M.GUEST, A.ONE))
+    async def get_comments(self, article_id: uuid.UUID) -> list[schemas.CommentNode]:
         """
         Получить все комментарии публикации
 
-        :param article_id:
-        :return:
         """
-        raw_data = await self._db.get_raw_comments(article_id)
-        self._normalize(raw_data)
-        return raw_data
+        raw = await self._tree_repo.get_comments(article_id)
 
-    async def delete(self, comment_id: uuid.UUID) -> None:
+        # Подготовка
+        comment_list = []
+        for obj, nearest_ancestor_id, level in raw:
+            comment = schemas.Comment.model_validate(obj)
+            if comment.state == CommentState.DELETED:
+                if self._current_user.role < Role(M.ADMIN, A.ONE):
+                    comment.content = "Комментарий удален"
+                else:
+                    comment.content = f"(Комментарий удален): {comment.content}"
+
+            comment_list.append(schemas.CommentNode(
+                **comment.model_dump(),
+                answers=[],
+                parent_id=nearest_ancestor_id,
+                level=level
+            ))
+
+        # Сортировка
+        comment_tree = []
+        for comment in comment_list:
+            if comment.level == 0:
+                comment_tree.append(comment)
+            for descendant in comment_list:
+                if descendant.parent_id == comment.id:
+                    comment.answers.append(descendant)
+        return comment_tree
+
+    @role_filter(min_role=Role(M.USER, A.ONE))
+    async def delete_comment(self, comment_id: uuid.UUID) -> None:
         """
         Удалить комментарий
-        (Изменить состояние - deleted)
-
-        :param comment_id:
-        :return:
         """
-        # comment = await cs.get_comment(id)
-        # if not comment:
-        #     raise APIError(919)
-        # if comment["state"] == CommentState.deleted:
-        #     raise APIError(919)
-        # if comment["owner_id"] != request.user.id:
-        #     if request.user.role_id < 21:
-        #         raise APIError(909)
-        await self._repo.update(id=comment_id, state=CommentState.deleted)
+        comment = await self._repo.get(id=comment_id)
+        if comment is None:
+            raise exceptions.NotFound(f"Комментарий c id:{comment_id} не найден")
+
+        if comment.state == CommentState.DELETED:
+            raise exceptions.BadRequest(f"Комментарий c id:{comment_id} уже удален")
+
+        if comment.owner_id != self._current_user.id and self._current_user.role < Role(M.ADMIN, A.ONE):
+            raise exceptions.AccessDenied("Нельзя удалить чужой комментарий")
+
+        await self._repo.update(id=comment_id, state=CommentState.DELETED)
 
     async def delete_all_comments(self, article_id: int) -> None:
         """

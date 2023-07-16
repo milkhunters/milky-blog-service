@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import insert, select, bindparam, text, literal, union_all, UUID, Integer
+from sqlalchemy.orm import joinedload
 
 from src.models import tables
 from src.services.repository.base import BaseRepository
@@ -13,6 +14,11 @@ class CommentRepo(BaseRepository[tables.Comment]):
         await self.session.execute(
             self.table.delete().where(self.table.id.in_(comment_ids))
         )
+
+    async def get(self, **kwargs) -> tables.Comment:
+        return (await self._session.execute(select(self.table).filter_by(**kwargs).options(
+            joinedload(self.table.owner)
+        ))).scalars().first()
 
 
 class CommentTreeRepo(BaseRepository[tables.CommentTree]):
@@ -47,3 +53,47 @@ class CommentTreeRepo(BaseRepository[tables.CommentTree]):
         result = await self.session.execute(sql_raw, params)
         await self.session.commit()
         return result
+
+    async def get_comments(self, article_id: uuid.UUID):
+        # sql_raw = """
+        #             SELECT
+        #                 tableData.id,
+        #                 tableData.content,
+        #                 tableData.owner_id,
+        #                 tableUser.first_name,
+        #                 tableUser.last_name,
+        #                 tableUser.username,
+        #                 tableTree.nearest_ancestor_id,
+        #                 tableTree.article_id,
+        #                 tableData.state,
+        #                 tableData.create_time,
+        #                 tableData.update_time
+        #             FROM comment AS tableData
+        #             JOIN "user" AS tableUser
+        #                 ON tableUser.id = tableData.owner_id
+        #             JOIN comment_tree AS tableTree
+        #                 ON tableData.id = tableTree.descendant_id
+        #             WHERE tableTree.article_id = $1
+        #                 AND tableTree.ancestor_id = tableData.id
+        #             ORDER BY tableData.id ASC
+        #         """
+        # smt = select(tables.Comment, tables.CommentTree).select_from(
+        #     tables.Comment.join(tables.CommentTree)
+        # ).where(tables.CommentTree.article_id == article_id)
+
+        query = (
+            select(
+                tables.Comment,
+                self.table.nearest_ancestor_id,
+                self.table.level,
+            ).options(
+                joinedload(tables.Comment.owner)
+            )
+            .join(tables.User, tables.User.id == tables.Comment.owner_id)
+            .join(self.table, tables.Comment.id == self.table.descendant_id)
+            .where(self.table.article_id == article_id)
+            .where(self.table.ancestor_id == tables.Comment.id)
+            .order_by(tables.Comment.id.asc())
+        )
+        result = await self.session.execute(query)
+        return result.fetchall()
