@@ -38,5 +38,5 @@ async def send_email(email: str, services: ServiceFactory = Depends(get_services
 
 
 @router.post("/confirm/{email}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
-async def confirm_email(code: int, services: ServiceFactory = Depends(get_services)):
-    await services.auth.verify_email(code)
+async def confirm_email(email: str, code: int, services: ServiceFactory = Depends(get_services)):
+    await services.auth.verify_email(email, code)
