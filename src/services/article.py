@@ -149,7 +149,6 @@ class ArticleApplicationService:
 
     @role_filter(min_role=Role(M.MODER, A.ONE))
     async def delete_article(self, article_id: uuid.UUID) -> None:
-        # todo
         article = await self._repo.get(id=article_id)
         if not article:
             raise exceptions.NotFound("Статья не найдена")
@@ -158,9 +157,4 @@ class ArticleApplicationService:
             raise exceptions.AccessDenied("Вы не являетесь владельцем статьи")
 
         await self._repo.delete(id=article_id)
-
-        comment_ids = await self._comment_repo.get_id_comments_in_article(article_id)
-        if comment_ids:
-            await self._comment_repo.delete_comments(comment_ids)
-
-        await self._tree_repo.delete_all_branches(article_id)
+        await self._comment_repo.delete_comments_by_article(article_id)

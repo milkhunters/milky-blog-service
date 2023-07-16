@@ -46,6 +46,7 @@ async def update_article(
 ):
     await services.article.update_article(article_id, data)
 
-# @router.delete("/delete", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
-# async def delete_article(aid: int):
-#     await BlogService().delete_article(id)
+
+@router.delete("/delete/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def delete_article(article_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
+    await services.article.delete_article(article_id)

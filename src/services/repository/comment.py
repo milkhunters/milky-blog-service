@@ -10,11 +10,6 @@ from src.services.repository.base import BaseRepository
 class CommentRepo(BaseRepository[tables.Comment]):
     table = tables.Comment
 
-    async def delete_comments(self, comment_ids: list[int]) -> None:
-        await self.session.execute(
-            self.table.delete().where(self.table.id.in_(comment_ids))
-        )
-
     async def get(self, **kwargs) -> tables.Comment:
         return (await self._session.execute(select(self.table).filter_by(**kwargs).options(
             joinedload(self.table.owner)
