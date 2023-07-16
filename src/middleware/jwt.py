@@ -113,7 +113,7 @@ async def jwt_post_process(
         current_tokens: schemas.Tokens,
         jwt: JWTManager,
         session: SessionManager,
-        session_id: str | int # todo
+        session_id: str
 ):
     if is_need_update:
         # Обновляем response
@@ -205,7 +205,7 @@ class JWTMiddlewareHTTP(BaseHTTPMiddleware):
             current_tokens=current_tokens,
             jwt=jwt,
             session=session,
-            session_id=session_id
+            session_id=str(session_id)
         )
 
         return response
