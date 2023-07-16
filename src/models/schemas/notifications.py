@@ -1,5 +1,9 @@
+import uuid
+
 from pydantic import BaseModel
 from datetime import datetime
+
+from src.models.state import NotificationType
 
 
 class Notification(BaseModel):
@@ -7,12 +11,12 @@ class Notification(BaseModel):
     Базовая модель уведомления
 
     """
-    id: int
-    type: int
-    data: int
-    owner_id: int
-    is_read: bool
-    create_time: datetime
+    id: uuid.UUID
+    type: NotificationType
+    content_id: uuid.UUID
+    content: str
+
+    created_at: datetime
 
     class Config:
         orm_mode = True
