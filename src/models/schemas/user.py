@@ -1,11 +1,9 @@
-from typing import Optional
+import uuid
+
 from pydantic import BaseModel, validator
-from tortoise import fields
 from datetime import datetime
 
-from exceptions import APIError
-from models.state import UserStates
-from utils import validators
+from src.models.state import UserState
 
 
 class User(BaseModel):
@@ -13,30 +11,33 @@ class User(BaseModel):
     Модель пользователя
 
     """
-    id: int
+    id: uuid.UUID
     username: str
     email: str
-    full_name: str
-    first_name: Optional[str]
-    last_name: Optional[str]
+    first_name: str = None
+    last_name: str = None
     role_id: int
-    state: UserStates
-    hashed_password: str
-    create_time: datetime
-    update_time: datetime
+    state: UserState
 
-    @validator("*", pre=True, each_item=False)
-    def _tortoise_convert(cls, value):
-        # Computed fields
-        if callable(value):
-            return value()
-        # Convert ManyToManyRelation to list
-        if isinstance(value, (fields.ManyToManyRelation, fields.ReverseRelation)):
-            return list(value)
-        return value
+    created_at: datetime
+    updated_at: datetime = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class UserSmall(BaseModel):
+    id: uuid.UUID
+    username: str
+    first_name: str | None
+    last_name: str | None
+    role_id: int
+    state: UserState
+
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class UserCreate(BaseModel):
@@ -44,54 +45,67 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
-    @validator('username')
-    def username_must_be_valid(cls, value):
-        if not validators.is_valid_username(value):
-            raise APIError(api_code=901)
-        return value
-
-    @validator('email')
-    def email_must_be_valid(cls, value):
-        if not validators.is_valid_email(value):
-            raise APIError(api_code=902)
-        return value
-
-    @validator('password')
-    def password_must_be_valid(cls, value):
-        if not validators.is_valid_password(value):
-            raise APIError(api_code=921)
-        return value
+    # @validator('username')
+    # def username_must_be_valid(cls, value):
+    #     if not validators.is_valid_username(value):
+    #         raise APIError(api_code=901)
+    #     return value
+    #
+    # @validator('email')
+    # def email_must_be_valid(cls, value):
+    #     if not validators.is_valid_email(value):
+    #         raise APIError(api_code=902)
+    #     return value
+    #
+    # @validator('password')
+    # def password_must_be_valid(cls, value):
+    #     if not validators.is_valid_password(value):
+    #         raise APIError(api_code=921)
+    #     return value
 
 
 class UserAuth(BaseModel):
     username: str
     password: str
 
-    @validator('username')
-    def username_must_be_valid(cls, value):
-        if not validators.is_valid_username(value):
-            raise APIError(api_code=901)
-        return value
-
-    @validator('password')
-    def password_must_be_valid(cls, value):
-        if not validators.is_valid_password(value):
-            raise APIError(api_code=921)
-        return value
+    # @validator('username')
+    # def username_must_be_valid(cls, value):
+    #     if not validators.is_valid_username(value):
+    #         raise APIError(api_code=901)
+    #     return value
+    #
+    # @validator('password')
+    # def password_must_be_valid(cls, value):
+    #     if not validators.is_valid_password(value):
+    #         raise APIError(api_code=921)
+    #     return value
 
 
 class UserUpdate(BaseModel):
-    username: Optional[str]
-    first_name: Optional[str]
-    last_name: Optional[str]
+    username: str = None
+    first_name: str = None
+    last_name: str = None
 
-    @validator('username')
-    def username_must_be_valid(cls, value):
-        if not validators.is_valid_username(value):
-            raise APIError(api_code=901)
-        return value
+    # @validator('username')
+    # def username_must_be_valid(cls, value):
+    #     if not validators.is_valid_username(value):
+    #         raise APIError(api_code=901)
+    #     return value
 
 
-class DeletedUser(BaseModel):
-    id: int
-    delete_time: datetime
+class UserUpdateByAdmin(UserUpdate):
+    email: str = None
+    role_id: int = None
+    state: UserState = None
+
+    # @validator('email')
+    # def email_must_be_valid(cls, value):
+    #     if not validators.is_valid_email(value):
+    #         raise APIError(api_code=902)
+    #     return value
+
+    # @validator('role_id')
+    # def role_id_must_be_valid(cls, value):
+    #     if not validators.is_valid_role_id(value):
+    #         raise APIError(api_code=911)
+    #     return value
