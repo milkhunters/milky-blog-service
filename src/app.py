@@ -2,6 +2,8 @@ import logging
 import os
 
 import redis.asyncio as redis
+import aio_pika
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 
@@ -70,17 +72,29 @@ async def init_redis_pool(app: FastAPI, db: int = 0):
     app.state.redis = RedisClient(pool)
 
 
+async def init_rabbitmq(app: FastAPI):
+    app.state.rmq = await aio_pika.connect_robust(
+        host=config.EMAIL.RabbitMQ.HOST,
+        port=config.EMAIL.RabbitMQ.PORT,
+        login=config.EMAIL.RabbitMQ.USERNAME,
+        password=config.EMAIL.RabbitMQ.PASSWORD,
+        virtualhost=config.EMAIL.RabbitMQ.VIRTUALHOST,
+    )
+
+
 @app.on_event("startup")
 async def on_startup():
     log.debug("Выполнение FastAPI startup event handler.")
     await init_db(app)
     await init_redis_pool(app)
+    await init_rabbitmq(app)
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
     log.debug("Выполнение FastAPI shutdown event handler.")
     await app.state.redis.close()
+    await app.state.rmq.close()
 
 
 app.openapi = lambda: custom_openapi(app)
