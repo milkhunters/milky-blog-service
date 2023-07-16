@@ -53,6 +53,22 @@ class JWT:
 
 
 @dataclass
+class RabbitMQ:
+    HOST: str
+    PORT: int
+    USERNAME: str
+    PASSWORD: str
+    VIRTUALHOST: str
+    QUEUE: str
+
+
+@dataclass
+class Email:
+    RabbitMQ: RabbitMQ
+    FROM_NAME: str
+
+
+@dataclass
 class Base:
     TITLE: str
     DESCRIPTION: str
@@ -67,6 +83,7 @@ class Config:
     JWT: JWT
     BASE: Base
     DB: DbConfig
+    EMAIL: Email
 
 
 def to_bool(value) -> bool:
@@ -155,4 +172,15 @@ def load_consul_config(
                 BUCKET=config("DATABASE", "S3", "BUCKET")
             ) if to_bool(config("DATABASE", "S3", "is_used")) else None
         ),
+        EMAIL=Email(
+            RabbitMQ=RabbitMQ(
+                HOST=config("EMAIL", "RabbitMQ", "HOST"),
+                PORT=config("EMAIL", "RabbitMQ", "PORT"),
+                USERNAME=config("EMAIL", "RabbitMQ", "USERNAME"),
+                PASSWORD=config("EMAIL", "RabbitMQ", "PASSWORD"),
+                VIRTUALHOST=config("EMAIL", "RabbitMQ", "VIRTUALHOST"),
+                QUEUE=config("EMAIL", "RabbitMQ", "QUEUE")
+            ),
+            FROM_NAME=config("EMAIL", "FROM_NAME")
+        )
     )
