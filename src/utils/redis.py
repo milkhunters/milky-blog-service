@@ -1,5 +1,6 @@
 """Redis client class utility."""
 import logging
+from typing import Any
 
 import redis.asyncio as redis
 from redis.exceptions import RedisError
@@ -45,13 +46,13 @@ class RedisClient:
             )
             return False
 
-    async def set(self, key: str, value: str, expire: int = 2592000):
+    async def set(self, key: Any, value: Any, expire: int = 2592000):
         """Выполнить команду Redis SET.
          Установите ключ для хранения строкового значения. Если ключ уже содержит значение, оно
          перезаписывается независимо от его типа.
         Args:
-            key (str): Ключ.
-            value (str): Значение, которое необходимо установить.
+            key (any): Ключ.
+            value (any): Значение, которое необходимо установить.
             expire (int): Время в секундах, по истечении которого ключ будет удален.
             (по умолчанию 30 дней)
         Returns:
@@ -177,6 +178,18 @@ class RedisClient:
         except RedisError as ex:
             self.log.exception(
                 "Команда Redis DELETE завершена с исключением",
+                exc_info=(type(ex), ex, ex.__traceback__),
+            )
+            raise ex
+
+    async def keys(self, pattern: str, **kwargs):
+
+        self.log.debug(f"Сформирована Redis KEYS команда, key: {pattern}")
+        try:
+            return await self.redis_client.keys(pattern, **kwargs)
+        except RedisError as ex:
+            self.log.exception(
+                "Команда Redis KEYS завершена с исключением",
                 exc_info=(type(ex), ex, ex.__traceback__),
             )
             raise ex
