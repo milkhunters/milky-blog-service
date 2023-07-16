@@ -1,11 +1,5 @@
-"""
-    Сервис для работы с комментариями
-
-    Используется подход ...
-
-
-"""
 import uuid
+from datetime import timedelta, datetime
 
 from src.models import schemas
 from src.models.auth import BaseUser
@@ -176,65 +170,23 @@ class CommentApplicationService:
 
         await self._repo.delete_comments_by_article(article_id)
 
+    @role_filter(min_role=Role(M.USER, A.ONE))
     async def update_comment(self, comment_id: uuid.UUID, data: schemas.CommentUpdate) -> None:
         """
         Изменить комментарий
 
-        :param comment_id:
-        :param data:
-        :return:
         """
-        # comment = await cs.get_comment(id)
-        # if not comment or (comment["state"] == CommentState.deleted):
-        #     raise APIError(919)
-        # if comment["owner_id"] != request.user.id:
-        #     raise APIError(909)
-        await self._repo.update(id=comment_id, content=data.content)
+        comment = await self._repo.get(id=comment_id)
+        if comment is None:
+            raise exceptions.NotFound(f"Комментарий c id:{comment_id} не найден")
 
-    @staticmethod
-    def _normalize(raw_data: list[dict]) -> None:
-        """
-        Сортировка комментариев
+        if comment.state == CommentState.DELETED:
+            raise exceptions.BadRequest(f"Комментарий c id:{comment_id} уже удален")
 
-        При этом:
-            - добавляется поле <<answers>>
-            - не включаются удаленные комментарии
-            - удаляется поле <<state>>
+        if comment.owner_id != self._current_user.id and self._current_user.role < Role(M.ADMIN, A.ONE):
+            raise exceptions.AccessDenied("Нельзя изменить чужой комментарий")
 
-        :param raw_data: список <<голых>> комментариев из бд
-        :return:
-        """
-        assert type(raw_data) is list, TypeError("raw_data должно быть list, а не " + str(type(raw_data)))
-        for i in reversed(range(len(raw_data))):
-            # Берем последний эл-т
-            row = raw_data[i]
-            # Если комментарий удален
-            if row["state"] == CommentState.DELETED:
-                row["content"] = "Комментарий удален"
-                row["owner_id"] = 0
-                row["first_name"] = ""
-                row["last_name"] = ""
-                row["username"] = ""
+        if (comment.created_at + timedelta(days=1) < datetime.now()) and self._current_user.role < Role(M.ADMIN, A.ONE):
+            raise exceptions.BadRequest("Нельзя изменить комментарий старше 24 часов")
 
-            # Есть ли поле "answers" в словаре raw
-            if not ("answers" in row.keys()):
-                # Добавляем недостающие поля
-                row["answers"] = []
-
-            # Есть ли у комментария родитель (ответ на коммент)
-            if row["nearest_ancestor_id"] != 0:
-                # Поиск индекса родителя
-                parent_index = next((i for i, x in enumerate(raw_data) if x["id"] == row["nearest_ancestor_id"]), None)
-                if parent_index is None:
-                    # Ситуация, когда нет доступа к родителю:
-                    # достается инфо только об одном комментарии
-                    continue
-
-                parent = raw_data[parent_index]
-                # Есть ли поле "answers" в словаре родителя
-                if not ("answers" in parent.keys()):
-                    parent["answers"] = []
-
-                # Перемещение коммента в первую ячейку списка ответивших
-                parent["answers"].insert(0, row)
-                raw_data.pop(i)
+        await self._repo.update(id=comment_id, **data.model_dump(exclude_unset=True))
