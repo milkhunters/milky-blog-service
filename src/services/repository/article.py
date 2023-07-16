@@ -32,18 +32,6 @@ class ArticleRepo(BaseRepository[tables.Article]):
         )
         return result.scalars().all()
 
-    # async def get_full_article(self, id: uuid.UUID):
-    #     result = await self.session.execute(
-    #         select(self.table).where(
-    #             self.table.id == id
-    #         ).join(
-    #             tables.Article.tags
-    #         ).join(
-    #             tables.Article.owner
-    #         )
-    #     )
-    #     return result.scalars().first()
-
     async def get(self, **kwargs) -> tables.Article:
         return (await self._session.execute(select(self.table).filter_by(**kwargs).options(
             subqueryload(self.table.tags),
