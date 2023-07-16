@@ -1,35 +1,22 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi import status as http_status
 
-from config import load_config
+from src.dependencies.services import get_services
+from src.services import ServiceFactory
 
-import utils
-from exceptions.models import ErrorAPIResponse
-
-router = APIRouter(responses={"400": {"model": ErrorAPIResponse}})
-config = load_config()
+router = APIRouter()
 
 
-@router.get("/version")
-async def version(details: bool = False):
-    info = {
-        "version": config.base.vers,
-    }
-    if details:
-        info.update(
-            {
-                "name": config.base.name,
-                "mode": config.mode,
-                "build": config.build,
-                "build_date": config.build_date,
-                "branch": config.branch,
-                "commit_hash": config.commit_hash,
-            }
-        )
-    return info
+@router.get("/version", response_model=dict, status_code=http_status.HTTP_200_OK)
+async def version(details: bool = False, services: ServiceFactory = Depends(get_services)):
+    return await services.stats.get_stats(details)
 
 
-@router.get("/test")
-async def test():
-    return {
-        "Redis": await utils.RedisClient.ping(),
-    }
+@router.get("/ping_redis", response_model=bool, status_code=http_status.HTTP_200_OK)
+async def ping_redis(services: ServiceFactory = Depends(get_services)):
+    return await services.stats.redis_ping()
+
+
+@router.get("/ping", response_model=str, status_code=http_status.HTTP_200_OK)
+def ping():
+    return "pong"

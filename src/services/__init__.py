@@ -8,6 +8,7 @@ from .auth import AuthApplicationService
 from .comment import CommentApplicationService
 from .email import EmailService
 from .notification import NotificationApplicationService
+from .stats import StatsApplicationService
 from .user import UserApplicationService
 
 
@@ -69,3 +70,7 @@ class ServiceFactory:
     @property
     def email(self) -> EmailService:
         return EmailService(config=self._config.EMAIL, rmq=self._rmq)
+
+    @property
+    def stats(self) -> StatsApplicationService:
+        return StatsApplicationService(redis_client=self._redis_client, config=self._config)
