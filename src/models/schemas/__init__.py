@@ -22,4 +22,7 @@ from .article import ArticleTagItem
 from .tag import Tag
 
 from .comment import Comment
+from .comment import CommentNode
 from .comment import CommentBranch
+from .comment import CommentCreate
+from .comment import CommentUpdate
