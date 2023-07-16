@@ -24,4 +24,5 @@ async def get_services(
         current_user=scope.get("user"),
         config=request.app.state.config,
         redis_client=app.state.redis,
+        rmq=app.state.rmq,
     )
