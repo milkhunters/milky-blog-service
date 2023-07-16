@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey, Integer
+from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey, Integer, BigInteger
 from sqlalchemy.orm import relationship
 
 from src.db import Base
@@ -16,7 +16,7 @@ class Comment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     content = Column(VARCHAR(1000), nullable=False)
-    state_id = Column(Enum(CommentState), default=CommentState.PUBLISHED)
+    state = Column(Enum(CommentState), default=CommentState.PUBLISHED)
 
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     owner = relationship("models.tables.user.User", back_populates="comments")
@@ -44,10 +44,10 @@ class CommentTree(Base):
 
     __tablename__ = "comment_tree"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    ancestor_id = Column(UUID(as_uuid=True))
-    descendant_id = Column(UUID(as_uuid=True))
-    nearest_ancestor_id = Column(UUID(as_uuid=True))
+    id = Column(BigInteger(), primary_key=True, autoincrement=True)
+    ancestor_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
+    descendant_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
+    nearest_ancestor_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=True)
     article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
     article = relationship("models.tables.article.Article", back_populates="comments_tree")
     level = Column(Integer())
