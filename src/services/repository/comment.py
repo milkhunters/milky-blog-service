@@ -1,5 +1,7 @@
 import uuid
 
+from sqlalchemy import insert, select, bindparam, text, literal, union_all, UUID, Integer
+
 from src.models import tables
 from src.services.repository.base import BaseRepository
 
@@ -23,13 +25,25 @@ class CommentTreeRepo(BaseRepository[tables.CommentTree]):
             article_id: uuid.UUID,
             parent_level: int
     ):
-        sql_raw = """
+        sql_raw = text("""
             INSERT INTO comment_tree (ancestor_id, descendant_id, nearest_ancestor_id, article_id, level)
-             SELECT ancestor_id, $1::int, $2::int, $3::int, $4::int
-                FROM comment_tree
-              WHERE descendant_id = $2::int
-            UNION ALL SELECT $1::int, $1::int, $2::int, $3::int, $4::int
-            """
-        return await self.session.execute(
-            sql_raw, (new_comment_id, parent_id, article_id, parent_level + 1)
-        )  # TODO: параметры: словарь аля ':var' => var=some
+            SELECT ancestor_id, :new_comment_id, :parent_id, :article_id, :parent_level
+            FROM comment_tree
+            WHERE descendant_id = :parent_id
+            UNION ALL SELECT :new_comment_id, :new_comment_id, :parent_id, :article_id, :parent_level
+        """)
+        params = {
+            'new_comment_id': new_comment_id,
+            'parent_id': parent_id,
+            'article_id': article_id,
+            'parent_level': parent_level + 1,
+        }
+        sql_raw = sql_raw.bindparams(
+            bindparam('new_comment_id', type_=UUID),
+            bindparam('parent_id', type_=UUID),
+            bindparam('article_id', type_=UUID),
+            bindparam('parent_level', type_=Integer),
+        ).columns()
+        result = await self.session.execute(sql_raw, params)
+        await self.session.commit()
+        return result
