@@ -11,17 +11,27 @@ class Comment(BaseModel):
     id: uuid.UUID
     content: str
     owner: UserSmall
-    nearest_ancestor_id: uuid.UUID
-    article_id: uuid.UUID
     state: CommentState
-    answers: list[dict] # todo: типы
 
     created_at: datetime
-    updated_at: datetime = None
+    updated_at: datetime | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = 'ignore'
+
+
+class CommentNode(Comment):
+    """
+    Модель комментария с деревом ответов
+
+    """
+    answers: list['CommentNode']
+    parent_id: uuid.UUID | None
+    level: int
+
+    class Config:
+        from_attributes = True
 
 
 class CommentBranch(BaseModel):
@@ -38,4 +48,12 @@ class CommentBranch(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class CommentCreate(BaseModel):
+    content: str
+
+
+class CommentUpdate(BaseModel):
+    content: str
