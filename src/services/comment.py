@@ -162,17 +162,19 @@ class CommentApplicationService:
 
         await self._repo.update(id=comment_id, state=CommentState.DELETED)
 
-    async def delete_all_comments(self, article_id: int) -> None:
+    @role_filter(min_role=Role(M.USER, A.ONE))
+    async def delete_all_comments(self, article_id: uuid) -> None:
         """
         Удалить все комментарии публикации
-        (из бд)
-
-        :param article_id:
-        :return:
         """
-        comment_ids = await self._repo.get_id_comments_in_article(article_id)
-        await self._tree_repo.delete_all_branches(article_id)
-        await self._repo.delete_comments(comment_ids)
+        article = await self._article_repo.get(id=article_id)
+        if article is None:
+            raise exceptions.NotFound("Публикация не найдена")
+
+        if article.owner_id != self._current_user.id and self._current_user.role < Role(M.ADMIN, A.ONE):
+            raise exceptions.AccessDenied("Нельзя удалить чужие комментарии")
+
+        await self._repo.delete_comments_by_article(article_id)
 
     async def update_comment(self, comment_id: uuid.UUID, data: schemas.CommentUpdate) -> None:
         """

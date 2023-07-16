@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import insert, select, bindparam, text, literal, union_all, UUID, Integer
+from sqlalchemy import insert, select, bindparam, text, literal, union_all, UUID, Integer, delete
 from sqlalchemy.orm import joinedload
 
 from src.models import tables
@@ -19,6 +19,27 @@ class CommentRepo(BaseRepository[tables.Comment]):
         return (await self._session.execute(select(self.table).filter_by(**kwargs).options(
             joinedload(self.table.owner)
         ))).scalars().first()
+
+    async def delete_comments_by_article(self, article_id: uuid.UUID) -> None:
+        select_query = (
+            select(tables.CommentTree.descendant_id)
+            .where(tables.CommentTree.ancestor_id == tables.CommentTree.descendant_id)
+            .where(tables.CommentTree.article_id == article_id)
+        )
+
+        delete_query = (
+            delete(self.table)
+            .where(self.table.id.in_(select_query))
+        )
+
+        delete_branch_query = (
+            delete(tables.CommentTree)
+            .where(tables.CommentTree.article_id == article_id)
+        )
+
+        await self.session.execute(delete_query)
+        await self.session.execute(delete_branch_query)
+        await self.session.commit()
 
 
 class CommentTreeRepo(BaseRepository[tables.CommentTree]):

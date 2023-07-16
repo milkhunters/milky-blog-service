@@ -45,9 +45,9 @@ class CommentTree(Base):
     __tablename__ = "comment_tree"
 
     id = Column(BigInteger(), primary_key=True, autoincrement=True)
-    ancestor_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
-    descendant_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
-    nearest_ancestor_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=True)
+    ancestor_id = Column(UUID(as_uuid=True), nullable=False)
+    descendant_id = Column(UUID(as_uuid=True), nullable=False)
+    nearest_ancestor_id = Column(UUID(as_uuid=True), nullable=True)
     article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
     article = relationship("models.tables.article.Article", back_populates="comments_tree")
     level = Column(Integer())
