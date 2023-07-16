@@ -15,7 +15,7 @@ from src.services.repository import UserRepo
 from .jwt import JWTManager
 from .password import verify_password, get_hashed_password
 from .session import SessionManager
-from .filters import role_filter
+from .filters import role_filter, state_filter
 
 from src.services.email import EmailService
 from src.utils import RedisClient
@@ -84,6 +84,10 @@ class AuthApplicationService:
             raise exceptions.NotFound("Неверная пара логин/пароль")
         if user.state == UserState.BLOCKED:
             raise exceptions.AccessDenied("Пользователь заблокирован")
+        if user.state == UserState.NOT_CONFIRMED:
+            raise exceptions.AccessDenied("Пользователь не подтвержден")
+        if user.state == UserState.DELETED:
+            raise exceptions.AccessDenied("Пользователь удален")
 
         # Генерация и установка токенов
         tokens = self._jwt_manager.generate_tokens(str(user.id), user.username, user.role_id, user.state.value)
@@ -176,6 +180,7 @@ class AuthApplicationService:
             await self._session_manager.delete_session_id(session_id, response)
 
     @role_filter(RoleRange("*"), exclude=[Role(M.GUEST, A.ONE)])
+    @state_filter(UserState.ACTIVE)
     async def refresh_tokens(self, request: Request, response: Response) -> None:
         """
         Обновление токенов

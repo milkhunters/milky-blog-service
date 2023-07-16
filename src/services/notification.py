@@ -4,7 +4,9 @@ from src.models import schemas
 from src.models.auth import BaseUser
 from src import exceptions
 from src.models.role import Role, MainRole as M, AdditionalRole as A
+from src.models.state import UserState
 from src.services.auth import role_filter
+from src.services.auth.filters import state_filter
 from src.services.repository import NotificationRepo
 
 
@@ -19,6 +21,7 @@ class NotificationApplicationService:
         self._repo = notify_repo
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def get_notifications(self, page: int, per_page: int = 10) -> list[schemas.Notification]:
         """
         Список уведомлений
@@ -46,6 +49,7 @@ class NotificationApplicationService:
         return [schemas.Notification.from_orm(notification) for notification in notifications]
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def get_total(self) -> int:
         """
         Количество уведомлений пользователя
@@ -55,6 +59,7 @@ class NotificationApplicationService:
         return await self._repo.count(owner_id=self._current_user.id)
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def delete_notification(self, notification_id: uuid.UUID) -> None:
         """
         Удалить уведомление

@@ -5,8 +5,9 @@ from src import exceptions
 from src.models import schemas
 from src.models.auth import BaseUser
 from src.models.role import Role, MainRole as M, AdditionalRole as A
-from src.models.state import ArticleState
+from src.models.state import ArticleState, UserState
 from src.services.auth import role_filter
+from src.services.auth.filters import state_filter
 from src.services.repository import CommentTreeRepo, CommentRepo
 from src.services.repository.article import ArticleRepo
 from src.services.repository.tag import TagRepo
@@ -112,6 +113,7 @@ class ArticleApplicationService:
         return schemas.Article.model_validate(article)
 
     @role_filter(min_role=Role(M.MODER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def create_article(self, data: schemas.ArticleCreate) -> schemas.Article:
         _ = await self._repo.create(
             **data.model_dump(exclude_unset=True, exclude={"tags"}),
@@ -128,6 +130,7 @@ class ArticleApplicationService:
         return schemas.Article.model_validate(article)
 
     @role_filter(min_role=Role(M.MODER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def update_article(self, article_id: uuid.UUID, data: schemas.ArticleUpdate) -> None:
         article = await self._repo.get(id=article_id)
         if not article:
@@ -148,6 +151,7 @@ class ArticleApplicationService:
         await self._repo.update(article_id, **data.model_dump(exclude_unset=True, exclude={"tags"}))
 
     @role_filter(min_role=Role(M.MODER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def delete_article(self, article_id: uuid.UUID) -> None:
         article = await self._repo.get(id=article_id)
         if not article:

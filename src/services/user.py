@@ -2,7 +2,7 @@ import uuid
 
 from src import exceptions
 from src.services.repository import UserRepo
-from src.services.auth.filters import role_filter
+from src.services.auth.filters import role_filter, state_filter
 from src.services.auth.password import verify_password
 
 from src.models import schemas
@@ -18,11 +18,12 @@ class UserApplicationService:
         self._repo = user_repo
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def get_me(self) -> schemas.User:
         user = await self._repo.get(id=self._current_user.id)
         return schemas.User.from_orm(user)
 
-    @role_filter(min_role=Role(M.USER, A.ONE))
+    @role_filter(min_role=Role(M.GUEST, A.ONE))
     async def get_user(self, user_id: uuid.UUID) -> schemas.UserSmall:
         user = await self._repo.get(id=user_id)
 
@@ -32,6 +33,7 @@ class UserApplicationService:
         return schemas.UserSmall.from_orm(user)
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def update_me(self, data: schemas.UserUpdate) -> None:
         await self._repo.update(
             id=self._current_user.id,
@@ -39,6 +41,7 @@ class UserApplicationService:
         )
 
     @role_filter(min_role=Role(M.ADMIN, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def update_user(self, user_id: uuid.UUID, data: schemas.UserUpdateByAdmin) -> None:
         user = await self._repo.get(id=user_id)
         if not user:
@@ -50,6 +53,7 @@ class UserApplicationService:
         )
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def delete_me(self, password: str) -> None:
         user = await self._repo.get(id=self._current_user.id)
         if not verify_password(password, user.hashed_password):

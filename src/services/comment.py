@@ -4,11 +4,12 @@ from datetime import timedelta, datetime
 from src.models import schemas
 from src.models.auth import BaseUser
 from src.models.role import Role, MainRole as M, AdditionalRole as A
-from src.models.state import CommentState, ArticleState
+from src.models.state import CommentState, ArticleState, UserState
 from src.models.state import NotificationType
 
 from src import exceptions
 from src.services.auth import role_filter
+from src.services.auth.filters import state_filter
 from src.services.repository import CommentRepo, ArticleRepo
 from src.services.repository import CommentTreeRepo
 from src.services.repository import NotificationRepo
@@ -30,6 +31,7 @@ class CommentApplicationService:
         self._article_repo = article_repo
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def add_comment(
             self,
             article_id: uuid.UUID,
@@ -140,6 +142,7 @@ class CommentApplicationService:
         return comment_tree
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def delete_comment(self, comment_id: uuid.UUID) -> None:
         """
         Удалить комментарий
@@ -157,6 +160,7 @@ class CommentApplicationService:
         await self._repo.update(id=comment_id, state=CommentState.DELETED)
 
     @role_filter(min_role=Role(M.ADMIN, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def delete_all_comments(self, article_id: uuid) -> None:
         """
         Удалить все комментарии публикации
@@ -168,6 +172,7 @@ class CommentApplicationService:
         await self._repo.delete_comments_by_article(article_id)
 
     @role_filter(min_role=Role(M.USER, A.ONE))
+    @state_filter(UserState.ACTIVE)
     async def update_comment(self, comment_id: uuid.UUID, data: schemas.CommentUpdate) -> None:
         """
         Изменить комментарий
