@@ -136,7 +136,16 @@ class ArticleApplicationService:
         if article.owner_id != self._current_user.id and self._current_user.role < Role(M.ADMIN, A.ONE):
             raise exceptions.AccessDenied("Вы не являетесь владельцем статьи")
 
-        await self._repo.update(article_id, **data.model_dump(exclude_unset=True))
+        if data.tags:
+            article.tags = []
+            for tag_title in data.tags:
+                tag = await self._tag_repo.get(title=tag_title)
+                if not tag:
+                    tag = await self._tag_repo.create(title=tag_title)
+                article.tags.append(tag)
+            await self._repo.session.commit()
+
+        await self._repo.update(article_id, **data.model_dump(exclude_unset=True, exclude={"tags"}))
 
     @role_filter(min_role=Role(M.MODER, A.ONE))
     async def delete_article(self, article_id: uuid.UUID) -> None:
