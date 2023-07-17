@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from src.models.schemas import UserSmall, Article
 from src.models.state import CommentState
@@ -54,6 +54,24 @@ class CommentBranch(BaseModel):
 class CommentCreate(BaseModel):
     content: str
 
+    @field_validator('content')
+    def content_must_be_valid(cls, value):
+        if not value:
+            raise ValueError("Комментарий не может быть пустым")
+
+        if len(value) > 1000:
+            raise ValueError("Комментарий не может быть длиннее 1000 символов")
+        return value
+
 
 class CommentUpdate(BaseModel):
     content: str
+
+    @field_validator('content')
+    def content_must_be_valid(cls, value):
+        if not value:
+            raise ValueError("Комментарий не может быть пустым")
+
+        if len(value) > 1000:
+            raise ValueError("Комментарий не может быть длиннее 1000 символов")
+        return value

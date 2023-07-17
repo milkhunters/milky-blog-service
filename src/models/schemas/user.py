@@ -1,9 +1,11 @@
 import uuid
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 
+from src.models.role import Role
 from src.models.state import UserState
+from src.utils import validators
 
 
 class User(BaseModel):
@@ -45,40 +47,40 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
-    # @validator('username')
-    # def username_must_be_valid(cls, value):
-    #     if not validators.is_valid_username(value):
-    #         raise APIError(api_code=901)
-    #     return value
-    #
-    # @validator('email')
-    # def email_must_be_valid(cls, value):
-    #     if not validators.is_valid_email(value):
-    #         raise APIError(api_code=902)
-    #     return value
-    #
-    # @validator('password')
-    # def password_must_be_valid(cls, value):
-    #     if not validators.is_valid_password(value):
-    #         raise APIError(api_code=921)
-    #     return value
+    @field_validator('username')
+    def username_must_be_valid(cls, value):
+        if not validators.is_valid_username(value):
+            raise ValueError("Имя пользователя должно быть валидным")
+        return value
+
+    @field_validator('email')
+    def email_must_be_valid(cls, value):
+        if not validators.is_valid_email(value):
+            raise ValueError("Email должен быть валидным")
+        return value
+
+    @field_validator('password')
+    def password_must_be_valid(cls, value):
+        if not validators.is_valid_password(value):
+            raise ValueError("Пароль должен быть валидным")
+        return value
 
 
 class UserAuth(BaseModel):
     username: str
     password: str
 
-    # @validator('username')
-    # def username_must_be_valid(cls, value):
-    #     if not validators.is_valid_username(value):
-    #         raise APIError(api_code=901)
-    #     return value
-    #
-    # @validator('password')
-    # def password_must_be_valid(cls, value):
-    #     if not validators.is_valid_password(value):
-    #         raise APIError(api_code=921)
-    #     return value
+    @field_validator('username')
+    def username_must_be_valid(cls, value):
+        if not validators.is_valid_username(value):
+            raise ValueError("Имя пользователя должно быть валидным")
+        return value
+
+    @field_validator('password')
+    def password_must_be_valid(cls, value):
+        if not validators.is_valid_password(value):
+            raise ValueError("Пароль должен быть валидным")
+        return value
 
 
 class UserUpdate(BaseModel):
@@ -86,11 +88,23 @@ class UserUpdate(BaseModel):
     first_name: str = None
     last_name: str = None
 
-    # @validator('username')
-    # def username_must_be_valid(cls, value):
-    #     if not validators.is_valid_username(value):
-    #         raise APIError(api_code=901)
-    #     return value
+    @field_validator('username')
+    def username_must_be_valid(cls, value):
+        if value and not validators.is_valid_username(value):
+            raise ValueError("Имя пользователя должно быть валидным")
+        return value
+
+    @field_validator('first_name')
+    def first_name_must_be_valid(cls, value):
+        if value and len(value.strip()) > 100:
+            raise ValueError("Имя должно быть валидным")
+        return value.strip()
+
+    @field_validator('last_name')
+    def last_name_must_be_valid(cls, value):
+        if value and len(value.strip()) > 100:
+            raise ValueError("Фамилия должна быть валидной")
+        return value.strip()
 
 
 class UserUpdateByAdmin(UserUpdate):
@@ -98,14 +112,14 @@ class UserUpdateByAdmin(UserUpdate):
     role_id: int = None
     state: UserState = None
 
-    # @validator('email')
-    # def email_must_be_valid(cls, value):
-    #     if not validators.is_valid_email(value):
-    #         raise APIError(api_code=902)
-    #     return value
+    @field_validator('email')
+    def email_must_be_valid(cls, value):
+        if value and not validators.is_valid_email(value):
+            raise ValueError("Email должен быть валидным")
+        return value
 
-    # @validator('role_id')
-    # def role_id_must_be_valid(cls, value):
-    #     if not validators.is_valid_role_id(value):
-    #         raise APIError(api_code=911)
-    #     return value
+    @field_validator('role_id')
+    def role_id_must_be_valid(cls, value):
+        if value:
+            Role.from_int(value)
+        return value
