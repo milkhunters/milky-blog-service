@@ -18,7 +18,7 @@ class Article(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(VARCHAR(255), nullable=False)
     poster_url = Column(VARCHAR(255), nullable=True)
-    content = Column(VARCHAR(10000), nullable=False)
+    content = Column(VARCHAR(32000), nullable=False)
     state = Column(Enum(ArticleState), default=ArticleState.DRAFT)
 
     tags = relationship('models.tables.tag.Tag', secondary='article_tags', back_populates='articles')
