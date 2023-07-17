@@ -3,7 +3,6 @@ import os
 
 import redis.asyncio as redis
 import aio_pika
-from aiobotocore.session import AioSession
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
