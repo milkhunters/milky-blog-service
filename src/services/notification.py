@@ -46,7 +46,7 @@ class NotificationApplicationService:
             order_by="created_at",
             owner_id=self._current_user.id
         )
-        return [schemas.Notification.from_orm(notification) for notification in notifications]
+        return [schemas.Notification.model_validate(notification) for notification in notifications]
 
     @role_filter(min_role=Role(M.USER, A.ONE))
     @state_filter(UserState.ACTIVE)
