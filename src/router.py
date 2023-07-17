@@ -6,6 +6,7 @@ from src.controllers import user
 from src.controllers import stats
 from src.controllers import blog
 from src.controllers import notify
+from src.controllers import files
 
 
 def register_api_router(is_debug: bool) -> APIRouter:
@@ -17,5 +18,6 @@ def register_api_router(is_debug: bool) -> APIRouter:
     root_api_router.include_router(notify.router, prefix="/notification", tags=["Notification"])
     root_api_router.include_router(blog.router, prefix="/blog", tags=["Blog"])
     root_api_router.include_router(stats.router, prefix="", tags=["Stats"])
+    root_api_router.include_router(files.router, prefix="/file", tags=["File"])
 
     return root_api_router

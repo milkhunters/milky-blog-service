@@ -3,6 +3,7 @@ import os
 
 import redis.asyncio as redis
 import aio_pika
+from aiobotocore.session import AioSession
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -14,6 +15,7 @@ from src.config import load_consul_config
 from src.exceptions import APIError, handle_api_error, handle_404_error, handle_pydantic_error
 
 from src.router import register_api_router
+from src.services.storage.s3 import S3Storage
 from src.utils import RedisClient
 from src.utils.fakeredis import FakeRedisPool
 from src.utils.openapi import custom_openapi
@@ -82,12 +84,25 @@ async def init_rabbitmq(app: FastAPI):
     )
 
 
+async def init_s3_storage():
+    app.state.file_storage = await S3Storage(
+        bucket=config.DB.S3.BUCKET,
+    ).create_session(
+        service_name=config.DB.S3.SERVICE_NAME,
+        endpoint_url=config.DB.S3.ENDPOINT_URL,
+        region_name=config.DB.S3.REGION,
+        access_key_id=config.DB.S3.ACCESS_KEY_ID,
+        secret_access_key=config.DB.S3.ACCESS_KEY,
+    )
+
+
 @app.on_event("startup")
 async def on_startup():
     log.debug("Выполнение FastAPI startup event handler.")
     await init_db(app)
     await init_redis_pool(app)
     await init_rabbitmq(app)
+    await init_s3_storage()
 
 
 @app.on_event("shutdown")

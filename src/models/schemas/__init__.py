@@ -26,3 +26,5 @@ from .comment import CommentNode
 from .comment import CommentBranch
 from .comment import CommentCreate
 from .comment import CommentUpdate
+
+from .files import FileItem

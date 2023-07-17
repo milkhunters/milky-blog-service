@@ -7,8 +7,10 @@ from .article import ArticleApplicationService
 from .auth import AuthApplicationService
 from .comment import CommentApplicationService
 from .email import EmailService
+from .filestorage import FileStorageApplicationService
 from .notification import NotificationApplicationService
 from .stats import StatsApplicationService
+from .storage.base import AbstractStorage
 from .user import UserApplicationService
 
 
@@ -21,12 +23,14 @@ class ServiceFactory:
             config,
             redis_client,
             rmq: aio_pika.RobustConnection,
+            file_storage: AbstractStorage,
     ):
         self._repo = repo_factory
         self._current_user = current_user
         self._config = config
         self._redis_client = redis_client
         self._rmq = rmq
+        self._file_storage = file_storage
 
     @property
     def user(self) -> UserApplicationService:
@@ -74,3 +78,11 @@ class ServiceFactory:
     @property
     def stats(self) -> StatsApplicationService:
         return StatsApplicationService(redis_client=self._redis_client, config=self._config)
+
+    @property
+    def file(self) -> FileStorageApplicationService:
+        return FileStorageApplicationService(
+            self._current_user,
+            file_repo=self._repo.file,
+            file_storage=self._file_storage
+        )

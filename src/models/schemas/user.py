@@ -16,13 +16,13 @@ class User(BaseModel):
     id: uuid.UUID
     username: str
     email: str
-    first_name: str = None
-    last_name: str = None
+    first_name: str | None
+    last_name: str | None
     role_id: int
     state: UserState
 
     created_at: datetime
-    updated_at: datetime = None
+    updated_at: datetime | None
 
     class Config:
         from_attributes = True

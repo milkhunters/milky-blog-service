@@ -25,4 +25,5 @@ async def get_services(
         config=request.app.state.config,
         redis_client=app.state.redis,
         rmq=app.state.rmq,
+        file_storage=app.state.file_storage,
     )
