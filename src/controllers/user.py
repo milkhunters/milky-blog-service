@@ -51,6 +51,22 @@ async def update_password(old_password: str, new_password: str, services: Servic
     await services.user.update_password(old_password, new_password)
 
 
+@router.put("/update/{user_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def update_user(
+        user_id: uuid.UUID,
+        data: schemas.UserUpdateByAdmin,
+        services: ServiceFactory = Depends(get_services)
+):
+    """
+    Обновить данные пользователя по id
+
+    Минимальная роль: ADMIN.ONE
+
+    Состояние: ACTIVE
+    """
+    await services.user.update_user(user_id, data)
+
+
 @router.get("/{user_id}", response_model=UserSmallResponse, status_code=http_status.HTTP_200_OK)
 async def get_user(user_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
     """
