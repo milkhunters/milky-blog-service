@@ -88,7 +88,7 @@ class UserApplicationService:
                     "Также рекомендуем изменить пароль от этой эл. почты, "
                     "чтобы обеспечить максимальную защиту аккаунта. <br>"
                     "Если вы не можете получить доступ к своему аккаунту, пройдите по этой "
-                    f"<a href='https://milkhunters.ru/password_reset?email={user.email}.'>ссылке</a>,"
+                    f"<a href='https://milkhunters.ru/password_reset?email={user.email}.'>ссылке</a>, "
                     "чтобы восстановить доступ к аккаунту.<br><br>"
                     "С любовью, команда MilkHunters."
         )
