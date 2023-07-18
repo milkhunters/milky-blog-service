@@ -116,16 +116,16 @@ class AuthApplicationService:
         if user.state != UserState.NOT_CONFIRMED:
             raise exceptions.AccessDenied("Пользователь уже подтвержден")
 
-        keys = await self._redis_client.keys(pattern=f'{email}*')
+        keys = await self._redis_client.keys(pattern=f'verify:{email}*')
         if keys:
             data_key = keys[0].split(':')
-            if int(data_key[1]) > int(time.time()) - 120:
+            if int(data_key[2]) > int(time.time()) - 120:
                 raise exceptions.BadRequest("Код уже отправлен")
             await self._redis_client.delete(keys[0])
 
         code = randint(100000, 999999)
-        await self._redis_client.set(f"""{email}:{int(time.time())}:0""", code, expire=60 * 60)
-        await self._email_service.send_mail(email, "Подтверждение почты", f"Код подтверждения: {code}")
+        await self._redis_client.set(f"verify:{email}:{int(time.time())}:0", code, expire=60 * 60)
+        await self._email_service.send_mail(email, "Подтверждение почты", f"Код подтверждения: <b>{code}</b>")
 
     @role_filter(Role(M.GUEST, A.ONE))
     async def verify_email(self, email: str, code: int) -> None:
@@ -148,14 +148,14 @@ class AuthApplicationService:
         if user.state != UserState.NOT_CONFIRMED:
             raise exceptions.AccessDenied("Пользователь уже подтвержден")
 
-        keys = await self._redis_client.keys(pattern=f'{email}*')
+        keys = await self._redis_client.keys(pattern=f'verify:{email}*')
         if not keys:
             raise exceptions.BadRequest("Код не отправлен")
 
         data = keys[0].split(':')
-        email = data[0]
-        timestamp = int(data[1])
-        attempts = int(data[2])
+        email = data[1]
+        timestamp = int(data[2])
+        attempts = int(data[3])
 
         if timestamp < int(time.time()) - 86400:
             raise exceptions.BadRequest("Код устарел, отправьте новый")
@@ -166,10 +166,77 @@ class AuthApplicationService:
         code_in_db = await self._redis_client.get(keys[0])
         if int(code_in_db) != code:
             await self._redis_client.delete(keys[0])
-            await self._redis_client.set(f"{email}:{timestamp}:{attempts + 1}", code, expire=60 * 60)
+            await self._redis_client.set(f"verify:{email}:{timestamp}:{attempts + 1}", code, expire=60 * 60)
             raise exceptions.BadRequest("Неверный код")
 
         await self._user_repo.update(user.id, state=UserState.ACTIVE)
+        await self._redis_client.delete(keys[0])
+
+    @role_filter(Role(M.GUEST, A.ONE))
+    async def reset_password(self, email: str) -> None:
+        """
+        Отправка кода восстановления пароля на почту
+
+        :param email:
+
+        :raise NotFound: if user not found
+        :raise AccessDenied: if user is banned
+        """
+
+        user: tables.User = await self._user_repo.get(email=email)
+        if not user:
+            raise exceptions.NotFound("Пользователь не найден")
+
+        keys = await self._redis_client.keys(pattern=f'reset:{email}*')
+        if keys:
+            data_key = keys[0].split(':')
+            if int(data_key[2]) > int(time.time()) - 120:
+                raise exceptions.BadRequest("Код уже отправлен")
+            await self._redis_client.delete(keys[0])
+
+        code = randint(100000, 999999)
+        await self._redis_client.set(f"reset:{email}:{int(time.time())}:0", code, expire=60 * 60)
+        await self._email_service.send_mail(email, "Восстановление пароля", f"Код восстановления: <b>{code}</b>")
+
+    @role_filter(Role(M.GUEST, A.ONE))
+    async def confirm_reset_password(self, email: str, code: int, new_password: str) -> None:
+        """
+        Восстановление пароля
+
+        :param email:
+        :param code:
+        :param new_password:
+
+        :raise NotFound: if user not found
+        :raise AccessDenied: if user is banned
+        """
+
+        user = await self._user_repo.get(email=email)
+        if not user:
+            raise exceptions.NotFound("Пользователь не найден")
+
+        keys = await self._redis_client.keys(pattern=f'reset:{email}*')
+        if not keys:
+            raise exceptions.BadRequest("Код не отправлен")
+
+        data = keys[0].split(':')
+        email = data[1]
+        timestamp = int(data[2])
+        attempts = int(data[3])
+
+        if timestamp < int(time.time()) - 86400:
+            raise exceptions.BadRequest("Код устарел, отправьте новый")
+
+        if attempts > 3:
+            raise exceptions.BadRequest("Превышено количество попыток")
+
+        code_in_db = await self._redis_client.get(keys[0])
+        if int(code_in_db) != code:
+            await self._redis_client.delete(keys[0])
+            await self._redis_client.set(f"reset:{email}:{timestamp}:{attempts + 1}", code, expire=60 * 60)
+            raise exceptions.BadRequest("Неверный код")
+
+        await self._user_repo.update(user.id, hashed_password=get_hashed_password(new_password))
         await self._redis_client.delete(keys[0])
 
     @role_filter(RoleRange("*"), exclude=[Role(M.GUEST, A.ONE)])

@@ -14,6 +14,13 @@ router = APIRouter()
 
 @router.get("/download/{file_id}", status_code=http_status.HTTP_200_OK)
 async def get_file(file_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
+    """
+    Скачать файл по id
+
+    Ограничений по роли нет
+
+    Заголовок: Content-Disposition: attachment; filename={file_name}
+    """
     stream, info = await services.file.get_file(file_id)
     return StreamingResponse(
         stream,
@@ -24,9 +31,20 @@ async def get_file(file_id: uuid.UUID, services: ServiceFactory = Depends(get_se
 
 @router.post("/upload", response_model=FileResponse, status_code=http_status.HTTP_200_OK)
 async def save_file(file: UploadFile, services: ServiceFactory = Depends(get_services)):
+    """
+    Загрузить файл
+
+    Минимальная роль: USER.ONE
+    Состояние: ACTIVE
+    """
     return FileResponse(content=await services.file.upload_file(file))
 
 
 @router.get("/info/{file_id}", response_model=FileResponse, status_code=http_status.HTTP_200_OK)
 async def get_file_info(file_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
+    """
+    Получить информацию о файле по id
+
+    Ограничений по роли нет
+    """
     return FileResponse(content=await services.file.get_file_info(file_id))

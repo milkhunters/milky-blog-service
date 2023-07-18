@@ -26,8 +26,8 @@ pip install -r requirements.txt
 
 Следует определить переменные окружения:
 ```bash
-export MODE=dev
 export DEBUG=1
+export CONSUL_ROOT=milk-back-dev
 ```
 
 Запустите приложение:
@@ -44,5 +44,5 @@ docker build -t milky-backend .
 
 Запустите контейнер на основе образа:
 ```bash
-docker run -d --restart=always -u 0 --name milky-backend -e MODE=dev -e DEBUG=1 -p 8000:8000 -m 1024m --cpus=2 milky-backend
+docker run -d --restart=always -u 0 --name milky-backend -e DEBUG=1 -e CONSUL_ROOT=milk-back-dev -p 8000:8000 -m 1024m --cpus=2 milky-backend
 ```

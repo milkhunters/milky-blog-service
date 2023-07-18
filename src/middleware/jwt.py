@@ -100,10 +100,10 @@ async def jwt_pre_process(
     # Установка данных авторизации
     if is_auth:
         payload = jwt.decode_access_token(current_tokens.access_token)
-        req_obj.scope["user"] = AuthenticatedUser(**payload.model_dump())
+        req_obj.scope["user"] = AuthenticatedUser(**payload.model_dump(), ip=req_obj.client.host)
         req_obj.scope["auth"] = AuthCredentials(["authenticated"])
     else:
-        req_obj.scope["user"] = UnauthenticatedUser()
+        req_obj.scope["user"] = UnauthenticatedUser(ip=req_obj.client.host)
         req_obj.scope["auth"] = AuthCredentials()
 
 

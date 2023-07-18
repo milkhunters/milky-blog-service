@@ -31,6 +31,7 @@ app = FastAPI(
     root_path="/api/v1" if not config.DEBUG else "",
     docs_url="/api/docs" if config.DEBUG else "/docs",
     redoc_url="/api/redoc" if config.DEBUG else "/redoc",
+    swagger_ui_parameters={"syntaxHighlight.theme": "obsidian"},
     contact={
         "name": config.BASE.CONTACT.NAME,
         "url": config.BASE.CONTACT.URL,
@@ -111,7 +112,7 @@ async def on_shutdown():
     await app.state.rmq.close()
 
 
-app.openapi = lambda: custom_openapi(app)
+app.openapi = lambda: custom_openapi(app, logo_url="https://avatars.githubusercontent.com/u/107867909?s=200&v=4")
 app.state.config = config
 
 log.debug("Добавление маршрутов")

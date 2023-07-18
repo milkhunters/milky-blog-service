@@ -8,13 +8,13 @@ class EmailService:
         self._rmq = rmq
         self._config = config
 
-    async def send_mail(self, email: str, subject: str, message: str, content_type: str = "text/html"):
+    async def send_mail(self, to: str, subject: str, content: str, content_type: str = "text/html"):
         """
         Отправляет сообщение на почту
 
-        :param email: почта получателя.
+        :param to: почта получателя.
         :param subject: тема сообщения
-        :param message: текст сообщения
+        :param content: текст сообщения
         :param content_type: тип контента
         """
 
@@ -24,11 +24,11 @@ class EmailService:
         await channel.default_exchange.publish(
             aio_pika.Message(
                 headers={
-                    "To": email,
+                    "To": to,
                     "Subject": subject,
                     "FromName": self._config.FROM_NAME
                 },
-                body=message.encode(),
+                body=content.encode(),
                 content_type=content_type
             ),
             routing_key=queue.name,

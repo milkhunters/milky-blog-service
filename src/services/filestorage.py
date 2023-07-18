@@ -20,7 +20,6 @@ class FileStorageApplicationService:
         self._repo = file_repo
         self._file_storage = file_storage
 
-    @role_filter(min_role=Role(M.GUEST, A.ONE))
     async def get_file_info(self, file_id: uuid.UUID) -> schemas.FileItem:
         file = await self._repo.get(id=file_id)
         if not file:

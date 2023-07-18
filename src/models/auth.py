@@ -34,6 +34,11 @@ class BaseUser(ABC, authentication.BaseUser):
     def access_exp(self) -> int:
         pass
 
+    @property
+    @abstractmethod
+    def ip(self) -> str:
+        pass
+
     @abstractmethod
     def __eq__(self, other):
         pass
@@ -49,6 +54,7 @@ class AuthenticatedUser(BaseUser):
         self._role_id = role_id
         self._state_id = state_id
         self._exp = exp
+        self._ip = kwargs.get('ip')
 
     @property
     def is_authenticated(self) -> bool:
@@ -82,6 +88,10 @@ class AuthenticatedUser(BaseUser):
     def access_exp(self) -> int:
         return self._exp
 
+    @property
+    def ip(self) -> str:
+        return self._ip
+
     def __eq__(self, other):
         return isinstance(other, AuthenticatedUser) and self._id == other.id
 
@@ -93,8 +103,9 @@ class AuthenticatedUser(BaseUser):
 
 
 class UnauthenticatedUser(BaseUser):
-    def __init__(self, exp: int = None):
+    def __init__(self, exp: int = None, **kwargs):
         self._exp = exp
+        self._ip = kwargs.get('ip')
 
     @property
     def is_authenticated(self) -> bool:
@@ -127,6 +138,10 @@ class UnauthenticatedUser(BaseUser):
     @property
     def access_exp(self) -> int | None:
         return self._exp
+
+    @property
+    def ip(self) -> str:
+        return self._ip
 
     def __eq__(self, other):
         return isinstance(other, UnauthenticatedUser)
