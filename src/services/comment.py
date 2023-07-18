@@ -112,6 +112,10 @@ class CommentApplicationService:
         Получить все комментарии публикации
 
         """
+        article = await self._article_repo.get(id=article_id)
+        if article is None:
+            raise exceptions.NotFound("Публикация не найдена")
+
         raw = await self._tree_repo.get_comments(article_id)
 
         # Подготовка
