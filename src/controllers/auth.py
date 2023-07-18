@@ -3,7 +3,6 @@ from fastapi.requests import Request
 from fastapi.responses import Response
 from fastapi import status as http_status
 
-
 from src.views import UserResponse
 from src.dependencies.services import get_services
 from src.models import schemas
@@ -40,3 +39,23 @@ async def send_email(email: str, services: ServiceFactory = Depends(get_services
 @router.post("/confirm/{email}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def confirm_email(email: str, code: int, services: ServiceFactory = Depends(get_services)):
     await services.auth.verify_email(email, code)
+
+
+@router.post("/reset/{email}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def reset_password(email: str, services: ServiceFactory = Depends(get_services)):
+    """
+    Отправить письмо с кодом для сброса пароля
+
+    Роль: GUEST.ONE
+    """
+    await services.auth.reset_password(email)
+
+
+@router.post("/reset/{email}/{code}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def confirm_reset_password(email: str, code: int, password: str, services: ServiceFactory = Depends(get_services)):
+    """
+    Сбросить пароль
+
+    Роль: GUEST.ONE
+    """
+    await services.auth.confirm_reset_password(email, code, password)
