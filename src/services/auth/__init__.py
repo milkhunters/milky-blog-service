@@ -125,7 +125,7 @@ class AuthApplicationService:
 
         code = randint(100000, 999999)
         await self._redis_client.set(f"""{email}:{int(time.time())}:0""", code, expire=60 * 60)
-        await self._email_service.send_mail(email, "Подтверждение почты", f"Код подтверждения: {code}")
+        await self._email_service.send_mail(email, "Подтверждение почты", f"Код подтверждения: <b>{code}</b>")
 
     @role_filter(Role(M.GUEST, A.ONE))
     async def verify_email(self, email: str, code: int) -> None:
