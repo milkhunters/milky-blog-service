@@ -37,10 +37,18 @@ async def update_current_user(data: schemas.UserUpdate, services: ServiceFactory
     """
     await services.user.update_me(data)
 
-#
-# @router.put("/update/password", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
-# async def update_password():
-#     await services.user.update_password(new_hashed_password, old_hashed_password, new_enc_private_key)
+
+@router.put("/update/password", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def update_password(old_password: str, new_password: str, services: ServiceFactory = Depends(get_services)):
+    """
+    Обновить пароль текущего пользователя
+
+    Минимальная роль: USER.ONE
+
+    Состояние: ACTIVE
+
+    """
+    await services.user.update_password(old_password, new_password)
 
 
 @router.get("/{user_id}", response_model=UserSmallResponse, status_code=http_status.HTTP_200_OK)

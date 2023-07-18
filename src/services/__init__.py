@@ -34,7 +34,7 @@ class ServiceFactory:
 
     @property
     def user(self) -> UserApplicationService:
-        return UserApplicationService(self._current_user, user_repo=self._repo.user)
+        return UserApplicationService(self._current_user, user_repo=self._repo.user, email_service=self.email)
 
     @property
     def auth(self) -> AuthApplicationService:
