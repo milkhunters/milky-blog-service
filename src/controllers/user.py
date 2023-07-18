@@ -16,11 +16,25 @@ router = APIRouter()
 
 @router.get("/current", response_model=UserResponse, status_code=http_status.HTTP_200_OK)
 async def get_current_user(services: ServiceFactory = Depends(get_services)):
+    """
+    Получить модель текущего пользователя
+
+    Минимальная роль: USER.ONE
+
+    Состояние: ACTIVE
+    """
     return UserResponse(content=await services.user.get_me())
 
 
 @router.put("/update", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def update_current_user(data: schemas.UserUpdate, services: ServiceFactory = Depends(get_services)):
+    """
+    Обновить данные текущего пользователя
+
+    Минимальная роль: USER.ONE
+
+    Состояние: ACTIVE
+    """
     await services.user.update_me(data)
 
 #
@@ -31,6 +45,11 @@ async def update_current_user(data: schemas.UserUpdate, services: ServiceFactory
 
 @router.get("/{user_id}", response_model=UserSmallResponse, status_code=http_status.HTTP_200_OK)
 async def get_user(user_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
+    """
+    Получить модель пользователя по id
+
+    Минимальная роль: GUEST.ONE
+    """
     return UserSmallResponse(content=await services.user.get_user(user_id))
 
 
@@ -41,5 +60,12 @@ async def delete_current_user(
         response: Response,
         services: ServiceFactory = Depends(get_services)
 ):
+    """
+    Удалить текущего пользователя
+
+    Минимальная роль: USER.ONE
+
+    Состояние: ACTIVE
+    """
     await services.user.delete_me(password)
     await services.auth.logout(request, response)
