@@ -9,11 +9,21 @@ router = APIRouter()
 
 @router.get("/version", response_model=dict, status_code=http_status.HTTP_200_OK)
 async def version(details: bool = False, services: ServiceFactory = Depends(get_services)):
+    """
+    Получить информацию о приложении
+
+    Ограничений по роли нет
+    """
     return await services.stats.get_stats(details)
 
 
 @router.get("/ping_redis", response_model=bool, status_code=http_status.HTTP_200_OK)
 async def ping_redis(services: ServiceFactory = Depends(get_services)):
+    """
+    Получить состояние redis
+
+    Ограничений по роли нет
+    """
     return await services.stats.redis_ping()
 
 
