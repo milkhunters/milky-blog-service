@@ -1,14 +1,15 @@
-import dataclasses
 import uuid
 from abc import ABC, abstractmethod
 from typing import IO
+
+import typing
 
 
 class AbstractStorage(ABC):
     """Abstract storage class"""
 
     @abstractmethod
-    async def get(self, file_id: uuid.UUID):
+    async def get(self, file_id: uuid.UUID) -> typing.AsyncIterable[str | bytes]:
         """
         Получить файл из хранилища
         :param file_id:

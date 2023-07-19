@@ -1,5 +1,6 @@
 import uuid
 
+import typing
 from fastapi import UploadFile
 from starlette.responses import AsyncContentStream
 
@@ -27,7 +28,7 @@ class FileStorageApplicationService:
 
         return schemas.FileItem.model_validate(file)
 
-    async def get_file(self, file_id: uuid.UUID) -> tuple[AsyncContentStream, schemas.FileItem]:
+    async def get_file(self, file_id: uuid.UUID) -> tuple[typing.AsyncIterable[str | bytes], schemas.FileItem]:
         file = await self._repo.get(id=file_id)
         if not file:
             raise exceptions.NotFound(f"Файл с id:{file_id} не найден")

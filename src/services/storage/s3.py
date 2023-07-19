@@ -1,5 +1,5 @@
 import uuid
-from typing import IO, Any
+from typing import IO
 from aiobotocore.response import StreamingBody
 
 from .base import AbstractStorage
