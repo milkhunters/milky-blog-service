@@ -4,15 +4,6 @@ from src.version import __version__
 
 import consul
 
-
-@dataclass
-class RedisConfig:
-    HOST: str
-    PASSWORD: str
-    USERNAME: str
-    PORT: int = 6379
-
-
 @dataclass
 class PostgresConfig:
     DATABASE: str
@@ -23,20 +14,8 @@ class PostgresConfig:
 
 
 @dataclass
-class S3Config:
-    BUCKET: str
-    ENDPOINT_URL: str
-    REGION: str
-    ACCESS_KEY_ID: str
-    ACCESS_KEY: str
-    SERVICE_NAME: str = "s3"
-
-
-@dataclass
 class DbConfig:
-    POSTGRESQL: PostgresConfig = None
-    REDIS: RedisConfig = None
-    S3: S3Config = None
+    POSTGRESQL: PostgresConfig
 
 
 @dataclass
@@ -53,22 +32,6 @@ class JWT:
 
 
 @dataclass
-class RabbitMQ:
-    HOST: str
-    PORT: int
-    USERNAME: str
-    PASSWORD: str
-    VIRTUALHOST: str
-    QUEUE: str
-
-
-@dataclass
-class Email:
-    RabbitMQ: RabbitMQ
-    FROM_NAME: str
-
-
-@dataclass
 class Base:
     TITLE: str
     DESCRIPTION: str
@@ -79,11 +42,9 @@ class Base:
 @dataclass
 class Config:
     DEBUG: bool
-    IS_SECURE_COOKIE: bool
     JWT: JWT
     BASE: Base
     DB: DbConfig
-    EMAIL: Email
 
 
 def to_bool(value) -> bool:
@@ -135,7 +96,6 @@ def load_consul_config(
     )
     return Config(
         DEBUG=to_bool(os.getenv('DEBUG', 1)),
-        IS_SECURE_COOKIE=to_bool(config("IS_SECURE_COOKIE")),
         BASE=Base(
             TITLE=config("BASE", "TITLE"),
             DESCRIPTION=config("BASE", "DESCRIPTION"),
@@ -158,29 +118,5 @@ def load_consul_config(
                 PASSWORD=config("DATABASE", "POSTGRESQL", "PASSWORD"),
                 DATABASE=config("DATABASE", "POSTGRESQL", "DATABASE")
             ) if to_bool(config("DATABASE", "POSTGRESQL", "is_used")) else None,
-            REDIS=RedisConfig(
-                HOST=config("DATABASE", "REDIS", "HOST"),
-                USERNAME=config("DATABASE", "REDIS", "USERNAME"),
-                PASSWORD=config("DATABASE", "REDIS", "PASSWORD"),
-                PORT=config("DATABASE", "REDIS", "PORT")
-            ) if to_bool(config("DATABASE", "REDIS", "is_used")) else None,
-            S3=S3Config(
-                ENDPOINT_URL=config("DATABASE", "S3", "ENDPOINT_URL"),
-                REGION=config("DATABASE", "S3", "REGION"),
-                ACCESS_KEY_ID=config("DATABASE", "S3", "ACCESS_KEY_ID"),
-                ACCESS_KEY=config("DATABASE", "S3", "ACCESS_KEY"),
-                BUCKET=config("DATABASE", "S3", "BUCKET")
-            ) if to_bool(config("DATABASE", "S3", "is_used")) else None
         ),
-        EMAIL=Email(
-            RabbitMQ=RabbitMQ(
-                HOST=config("EMAIL", "RabbitMQ", "HOST"),
-                PORT=config("EMAIL", "RabbitMQ", "PORT"),
-                USERNAME=config("EMAIL", "RabbitMQ", "USERNAME"),
-                PASSWORD=config("EMAIL", "RabbitMQ", "PASSWORD"),
-                VIRTUALHOST=config("EMAIL", "RabbitMQ", "VIRTUALHOST"),
-                QUEUE=config("EMAIL", "RabbitMQ", "QUEUE")
-            ),
-            FROM_NAME=config("EMAIL", "FROM_NAME")
-        )
     )
