@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends
 from fastapi import status as http_status
 

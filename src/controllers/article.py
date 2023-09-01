@@ -26,10 +26,12 @@ async def get_articles(
     """
     Получить список статей
 
-    Минимальная роль: GUEST.ONE
+    Требуемое состояние: -
 
-    Если указан owner_id, то возвращаются только статьи этого пользователя, причем пользователь с ролью ADMIN.ONE может
-    просматривать чужие публикации.
+    Требуемые права доступа: CAN_GET_PUBLIC_ARTICLES / CAN_GET_PRIVATE_ARTICLES / CAN_GET_SELF_ARTICLES
+
+    Если указан owner_id, то возвращаются только статьи этого пользователя,
+    причем пользователь с доступом CAN_GET_PRIVATE_ARTICLES может просматривать чужие публикации.
     """
     return ArticlesResponse(
         content=await services.article.get_articles(page, per_page, order_by, query, state, owner_id)
@@ -41,9 +43,9 @@ async def create_article(article: schemas.ArticleCreate, services: ServiceFactor
     """
     Создать статью
 
-    Минимальная роль: MODER.ONE
+    Требуемое состояние: ACTIVE
 
-    Состояние: ACTIVE
+    Требуемые права доступа: CAN_CREATE_SELF_ARTICLES
 
     Максимальный размер статьи - 32000 символов
     """
@@ -55,7 +57,9 @@ async def get_article(article_id: uuid.UUID, services: ServiceFactory = Depends(
     """
     Получить статью по id
 
-    Минимальная роль: GUEST.ONE
+    Требуемое состояние: -
+
+    Требуемые права доступа: CAN_GET_PUBLIC_ARTICLES / CAN_GET_PRIVATE_ARTICLES / CAN_GET_SELF_ARTICLES
     """
     return ArticleResponse(content=await services.article.get_article(article_id))
 
@@ -69,11 +73,11 @@ async def update_article(
     """
     Обновить статью по id
 
-    Минимальная роль: MODER.ONE
+    Требуемое состояние: ACTIVE
 
-    Состояние: ACTIVE
+    Требуемые права доступа: CAN_UPDATE_SELF_ARTICLES / CAN_UPDATE_USER_ARTICLES
 
-    Причем пользователь с ролью ADMIN.ONE может редактировать чужие публикации.
+    Причем пользователь с доступом CAN_UPDATE_USER_ARTICLES может редактировать чужие публикации.
     """
     await services.article.update_article(article_id, data)
 
@@ -83,10 +87,10 @@ async def delete_article(article_id: uuid.UUID, services: ServiceFactory = Depen
     """
     Удалить статью по id
 
-    Минимальная роль: MODER.ONE
+    Требуемое состояние: ACTIVE
 
-    Состояние: ACTIVE
+    Требуемые права доступа: CAN_DELETE_SELF_ARTICLES / CAN_DELETE_USER_ARTICLES
 
-    Причем пользователь с ролью ADMIN.ONE может удалять чужие публикации.
+    Причем пользователь с доступом CAN_DELETE_USER_ARTICLES может удалять чужие публикации.
     """
     await services.article.delete_article(article_id)
