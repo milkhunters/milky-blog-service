@@ -11,9 +11,7 @@ class CommentRepo(BaseRepository[tables.Comment]):
     table = tables.Comment
 
     async def get(self, **kwargs) -> tables.Comment:
-        return (await self._session.execute(select(self.table).filter_by(**kwargs).options(
-            joinedload(self.table.owner)
-        ))).scalars().first()
+        return (await self._session.execute(select(self.table).filter_by(**kwargs))).scalars().first()
 
     async def delete_comments_by_article(self, article_id: uuid.UUID) -> None:
         select_query = (
@@ -102,10 +100,7 @@ class CommentTreeRepo(BaseRepository[tables.CommentTree]):
                 tables.Comment,
                 self.table.nearest_ancestor_id,
                 self.table.level,
-            ).options(
-                joinedload(tables.Comment.owner)
             )
-            .join(tables.User, tables.User.id == tables.Comment.owner_id)
             .join(self.table, tables.Comment.id == self.table.descendant_id)
             .where(self.table.article_id == article_id)
             .where(self.table.ancestor_id == tables.Comment.id)

@@ -35,7 +35,6 @@ class ArticleRepo(BaseRepository[tables.Article]):
     async def get(self, **kwargs) -> tables.Article:
         return (await self._session.execute(select(self.table).filter_by(**kwargs).options(
             subqueryload(self.table.tags),
-            joinedload(self.table.owner)
         ))).scalars().first()
 
     async def get_all(
@@ -48,6 +47,5 @@ class ArticleRepo(BaseRepository[tables.Article]):
         result = await self._session.execute(
             select(self.table).filter_by(**kwargs).order_by(text(order_by)).options(
                 subqueryload(self.table.tags),
-                joinedload(self.table.owner)
             ).limit(limit).offset(offset))
         return result.scalars().all()
