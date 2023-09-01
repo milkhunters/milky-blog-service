@@ -1,19 +1,19 @@
 ![TeamCity build status](https://teamcity.milkhunters.ru/app/rest/builds/buildType:id:MilkhuntersBackend_Build_Prod/statusIcon.svg)
 
-# Milky-backend
-Основной backend сайта команды MilkHunters
+# Milky-Blog-Service
+Один из основных backend сервисов сайта команды MilkHunters
  
 
 ## Установка
 
 Клонируйте проект:
 ```bash
-git clone https://github.com/milkhunters/milky-backend.git
+git clone https://github.com/milkhunters/milky-blog-service.git
 ```
 
 Перейдите в директорию проекта, создайте виртуальное окружение и активируйте его:
 ```bash
-cd milky-backend
+cd milky-blog-service
 python3 -m venv venv
 source venv/bin/activate
 ```
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 Следует определить переменные окружения:
 ```bash
 export DEBUG=1
-export CONSUL_ROOT=milk-back-dev
+export CONSUL_ROOT=milk-blog-dev
 ```
 
 Запустите приложение:
