@@ -3,14 +3,14 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_validator
 
-from src.models.schemas import UserSmall, Article
+from src.models.schemas import Article
 from src.models.state import CommentState
 
 
 class Comment(BaseModel):
     id: uuid.UUID
     content: str
-    owner: UserSmall
+    owner_id: uuid.UUID
     state: CommentState
 
     created_at: datetime

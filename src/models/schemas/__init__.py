@@ -1,13 +1,6 @@
 from .jwt import Tokens
 from .jwt import TokenPayload
 
-from .user import User
-from .user import UserSmall
-from .user import UserUpdate
-from .user import UserUpdateByAdmin
-from .user import UserCreate
-from .user import UserAuth
-
 from .notifications import Notification
 
 from .error import Error
@@ -26,5 +19,3 @@ from .comment import CommentNode
 from .comment import CommentBranch
 from .comment import CommentCreate
 from .comment import CommentUpdate
-
-from .files import FileItem

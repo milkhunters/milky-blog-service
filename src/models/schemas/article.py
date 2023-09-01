@@ -3,7 +3,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, field_validator
 from src.models.state import ArticleState
-from .user import UserSmall
 
 
 class ArticleTagItem(BaseModel):
@@ -21,7 +20,7 @@ class Article(BaseModel):
     poster_url: str | None
     tags: list[ArticleTagItem]
     state: ArticleState
-    owner: UserSmall
+    owner_id: uuid.UUID
 
     created_at: datetime
     updated_at: datetime | None
@@ -36,7 +35,7 @@ class ArticleSmall(BaseModel):
     poster_url: str | None
     tags: list[ArticleTagItem]
     state: ArticleState
-    owner: UserSmall
+    owner_id: uuid.UUID
 
     created_at: datetime
     updated_at: datetime | None
