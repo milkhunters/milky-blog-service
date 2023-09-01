@@ -199,13 +199,13 @@ class ArticleApplicationService:
 
         if (
                 article.owner_id != self._current_user.id and
-                AccessTags.CAN_UPDATE_USER_ARTICLES.value not in self._current_user.access
+                AccessTags.CAN_DELETE_USER_ARTICLES.value not in self._current_user.access
         ):
             raise exceptions.AccessDenied("Вы не являетесь владельцем статьи")
 
         if (
                 article.owner_id == self._current_user.id and
-                AccessTags.CAN_UPDATE_SELF_ARTICLES.value not in self._current_user.access
+                AccessTags.CAN_DELETE_SELF_ARTICLES.value not in self._current_user.access
         ):
             raise exceptions.AccessDenied("Вы не можете удалять свои статьи")
 
