@@ -1,7 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func
 
 from src.db import Base
 from src.models.state import NotificationType
@@ -18,8 +17,7 @@ class Notification(Base):
     type = Column(Enum(NotificationType), default=NotificationType.COMMENT_ANSWER)
     content_id = Column(UUID(as_uuid=True), nullable=False)
     content = Column(VARCHAR(64), nullable=False)
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    owner = relationship("models.tables.user.User", back_populates="notifications")
+    owner_id = Column(UUID(as_uuid=True), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -18,8 +18,7 @@ class Comment(Base):
     content = Column(VARCHAR(1000), nullable=False)
     state = Column(Enum(CommentState), default=CommentState.PUBLISHED)
 
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    owner = relationship("models.tables.user.User", back_populates="comments")
+    owner_id = Column(UUID(as_uuid=True), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
