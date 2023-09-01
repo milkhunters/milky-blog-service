@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from starlette import authentication
 
-from src.models.role import Role, MainRole, AdditionalRole
+from src.models.access import AccessTags
 from src.models.state import UserState
 
 
@@ -21,7 +21,7 @@ class BaseUser(ABC, authentication.BaseUser):
 
     @property
     @abstractmethod
-    def role(self) -> Role:
+    def access(self) -> set[str]:
         pass
 
     @property
@@ -34,11 +34,6 @@ class BaseUser(ABC, authentication.BaseUser):
     def access_exp(self) -> int:
         pass
 
-    @property
-    @abstractmethod
-    def ip(self) -> str:
-        pass
-
     @abstractmethod
     def __eq__(self, other):
         pass
@@ -48,13 +43,12 @@ class BaseUser(ABC, authentication.BaseUser):
 
 
 class AuthenticatedUser(BaseUser):
-    def __init__(self, id: str, username: str, role_id: int, state_id: int, exp: int, **kwargs):
+    def __init__(self, id: str, username: str, access: list[AccessTags], state_id: int, exp: int, **kwargs):
         self._id = uuid.UUID(id)
         self._username = username
-        self._role_id = role_id
+        self._access = access
         self._state_id = state_id
         self._exp = exp
-        self._ip = kwargs.get('ip')
 
     @property
     def is_authenticated(self) -> bool:
@@ -77,8 +71,8 @@ class AuthenticatedUser(BaseUser):
         return self.username
 
     @property
-    def role(self) -> Role:
-        return Role.from_int(self._role_id)
+    def access(self) -> set[AccessTags]:
+        return set(self._access)
 
     @property
     def state(self) -> UserState:
@@ -87,10 +81,6 @@ class AuthenticatedUser(BaseUser):
     @property
     def access_exp(self) -> int:
         return self._exp
-
-    @property
-    def ip(self) -> str:
-        return self._ip
 
     def __eq__(self, other):
         return isinstance(other, AuthenticatedUser) and self._id == other.id
@@ -105,7 +95,6 @@ class AuthenticatedUser(BaseUser):
 class UnauthenticatedUser(BaseUser):
     def __init__(self, exp: int = None, **kwargs):
         self._exp = exp
-        self._ip = kwargs.get('ip')
 
     @property
     def is_authenticated(self) -> bool:
@@ -128,8 +117,11 @@ class UnauthenticatedUser(BaseUser):
         return None
 
     @property
-    def role(self) -> Role:
-        return Role(MainRole.GUEST, AdditionalRole.ONE)
+    def access(self) -> set[str]:
+        return {
+            AccessTags.CAN_GET_PUBLIC_ARTICLES.value,
+            AccessTags.CAN_GET_PUBLIC_COMMENTS.value,
+        }
 
     @property
     def state(self) -> None:
@@ -138,10 +130,6 @@ class UnauthenticatedUser(BaseUser):
     @property
     def access_exp(self) -> int | None:
         return self._exp
-
-    @property
-    def ip(self) -> str:
-        return self._ip
 
     def __eq__(self, other):
         return isinstance(other, UnauthenticatedUser)
