@@ -1,12 +1,12 @@
 import uuid
 
 from src.models import schemas
+from src.models.access import AccessTags
 from src.models.auth import BaseUser
 from src import exceptions
-from src.models.role import Role, MainRole as M, AdditionalRole as A
 from src.models.state import UserState
-from src.services.auth import role_filter
 from src.services.auth.filters import state_filter
+from src.services.auth.filters import access_filter
 from src.services.repository import NotificationRepo
 
 
@@ -20,14 +20,13 @@ class NotificationApplicationService:
         self._current_user = current_user
         self._repo = notify_repo
 
-    @role_filter(min_role=Role(M.USER, A.ONE))
+    @access_filter(AccessTags.CAN_GET_SELF_NOTIFICATIONS)
     @state_filter(UserState.ACTIVE)
     async def get_notifications(self, page: int, per_page: int = 10) -> list[schemas.Notification]:
         """
         Список уведомлений
 
         :return:
-
         """
         if page < 1:
             raise exceptions.NotFound("Страница не найдена")
@@ -48,7 +47,7 @@ class NotificationApplicationService:
         )
         return [schemas.Notification.model_validate(notification) for notification in notifications]
 
-    @role_filter(min_role=Role(M.USER, A.ONE))
+    @access_filter(AccessTags.CAN_GET_SELF_NOTIFICATIONS)
     @state_filter(UserState.ACTIVE)
     async def get_total(self) -> int:
         """
@@ -58,7 +57,7 @@ class NotificationApplicationService:
         """
         return await self._repo.count(owner_id=self._current_user.id)
 
-    @role_filter(min_role=Role(M.USER, A.ONE))
+    @access_filter(AccessTags.CAN_DELETE_SELF_NOTIFICATION)
     @state_filter(UserState.ACTIVE)
     async def delete_notification(self, notification_id: uuid.UUID) -> None:
         """

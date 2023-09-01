@@ -1,15 +1,17 @@
 import uuid
 from datetime import timedelta, datetime
 
+import pytz
+
 from src.models import schemas
+from src.models.access import AccessTags
 from src.models.auth import BaseUser
-from src.models.role import Role, MainRole as M, AdditionalRole as A
 from src.models.state import CommentState, ArticleState, UserState
 from src.models.state import NotificationType
 
 from src import exceptions
-from src.services.auth import role_filter
 from src.services.auth.filters import state_filter
+from src.services.auth.filters import access_filter
 from src.services.repository import CommentRepo, ArticleRepo
 from src.services.repository import CommentTreeRepo
 from src.services.repository import NotificationRepo
@@ -30,7 +32,7 @@ class CommentApplicationService:
         self._notification_repo = notify_repo
         self._article_repo = article_repo
 
-    @role_filter(min_role=Role(M.USER, A.ONE))
+    @access_filter(AccessTags.CAN_CREATE_COMMENT)
     @state_filter(UserState.ACTIVE)
     async def add_comment(
             self,
@@ -95,18 +97,27 @@ class CommentApplicationService:
         )
         return schemas.Comment.model_validate(new_comment)
 
-    @role_filter(min_role=Role(M.GUEST, A.ONE))
     async def get_comment(self, comment_id: uuid.UUID) -> schemas.Comment:
         comment = await self._repo.get(id=comment_id)
         if comment is None:
             raise exceptions.NotFound(f"Комментарий c id:{comment_id} не найден")
 
-        if comment.state == CommentState.DELETED and self._current_user.role < Role(M.ADMIN, A.ONE):
-            raise exceptions.NotFound(f"Комментарий c id:{comment_id} не найден")
+        if comment.state == CommentState.DELETED:
+
+            if AccessTags.CAN_GET_DELETED_COMMENTS.value not in self._current_user.access:
+                raise exceptions.AccessDenied("Комментарий удален")
+            else:
+                comment.content = f"(Комментарий удален): {comment.content}"
+
+        elif (
+                comment.state == CommentState.PUBLISHED and
+                AccessTags.CAN_GET_PUBLIC_COMMENTS.value not in self._current_user.access
+        ):
+            raise exceptions.AccessDenied("Вы не можете просматривать публичные комментарии")
 
         return schemas.Comment.model_validate(comment)
 
-    @role_filter(min_role=Role(M.GUEST, A.ONE))
+    @access_filter(AccessTags.CAN_GET_PUBLIC_COMMENTS)
     async def get_comments(self, article_id: uuid.UUID) -> list[schemas.CommentNode]:
         """
         Получить все комментарии публикации
@@ -123,7 +134,7 @@ class CommentApplicationService:
         for obj, nearest_ancestor_id, level in raw:
             comment = schemas.Comment.model_validate(obj)
             if comment.state == CommentState.DELETED:
-                if self._current_user.role < Role(M.ADMIN, A.ONE):
+                if AccessTags.CAN_GET_DELETED_COMMENTS.value not in self._current_user.access:
                     comment.content = "Комментарий удален"
                 else:
                     comment.content = f"(Комментарий удален): {comment.content}"
@@ -145,7 +156,6 @@ class CommentApplicationService:
                     comment.answers.append(descendant)
         return comment_tree
 
-    @role_filter(min_role=Role(M.USER, A.ONE))
     @state_filter(UserState.ACTIVE)
     async def delete_comment(self, comment_id: uuid.UUID) -> None:
         """
@@ -158,12 +168,21 @@ class CommentApplicationService:
         if comment.state == CommentState.DELETED:
             raise exceptions.BadRequest(f"Комментарий c id:{comment_id} уже удален")
 
-        if comment.owner_id != self._current_user.id and self._current_user.role < Role(M.ADMIN, A.ONE):
+        if (
+                comment.owner_id != self._current_user.id and
+                AccessTags.CAN_DELETE_USER_COMMENT.value not in self._current_user.access
+        ):
             raise exceptions.AccessDenied("Нельзя удалить чужой комментарий")
+
+        if (
+                comment.owner_id == self._current_user.id and
+                AccessTags.CAN_DELETE_SELF_COMMENT.value not in self._current_user.access
+        ):
+            raise exceptions.AccessDenied("Нельзя удалить свой комментарий")
 
         await self._repo.update(id=comment_id, state=CommentState.DELETED)
 
-    @role_filter(min_role=Role(M.ADMIN, A.ONE))
+    @access_filter(AccessTags.CAN_DELETE_USER_COMMENT)
     @state_filter(UserState.ACTIVE)
     async def delete_all_comments(self, article_id: uuid) -> None:
         """
@@ -175,7 +194,6 @@ class CommentApplicationService:
 
         await self._repo.delete_comments_by_article(article_id)
 
-    @role_filter(min_role=Role(M.USER, A.ONE))
     @state_filter(UserState.ACTIVE)
     async def update_comment(self, comment_id: uuid.UUID, data: schemas.CommentUpdate) -> None:
         """
@@ -189,10 +207,22 @@ class CommentApplicationService:
         if comment.state == CommentState.DELETED:
             raise exceptions.BadRequest(f"Комментарий c id:{comment_id} уже удален")
 
-        if comment.owner_id != self._current_user.id and self._current_user.role < Role(M.ADMIN, A.ONE):
+        if (
+                comment.owner_id != self._current_user.id and
+                AccessTags.CAN_UPDATE_USER_COMMENT.value not in self._current_user.access
+        ):
             raise exceptions.AccessDenied("Нельзя изменить чужой комментарий")
 
-        if (comment.created_at + timedelta(days=1) < datetime.now()) and self._current_user.role < Role(M.ADMIN, A.ONE):
+        if (
+                comment.owner_id == self._current_user.id and
+                AccessTags.CAN_UPDATE_SELF_COMMENT.value not in self._current_user.access
+        ):
+            raise exceptions.AccessDenied("Нельзя изменить свой комментарий")
+
+        if (
+                (comment.created_at + timedelta(days=1) < datetime.now(pytz.utc)) and
+                AccessTags.CAN_UPDATE_USER_COMMENT.value not in self._current_user.access
+        ):
             raise exceptions.BadRequest("Нельзя изменить комментарий старше 24 часов")
 
         await self._repo.update(id=comment_id, **data.model_dump(exclude_unset=True))
