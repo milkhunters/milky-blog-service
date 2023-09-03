@@ -7,8 +7,8 @@ from src.services import ServiceFactory
 router = APIRouter()
 
 
-@router.get("/guest_access", response_model=list[str], status_code=http_status.HTTP_200_OK)
-async def role_guest_access(services: ServiceFactory = Depends(get_services)):
+@router.get("/guest", response_model=list[str], status_code=http_status.HTTP_200_OK)
+async def guest_access(services: ServiceFactory = Depends(get_services)):
     """
     Список доступов для локального гостя
 
@@ -17,8 +17,8 @@ async def role_guest_access(services: ServiceFactory = Depends(get_services)):
     return await services.role.guest_access()
 
 
-@router.get("/app_access", response_model=list[str], status_code=http_status.HTTP_200_OK)
-async def role_app_access(services: ServiceFactory = Depends(get_services)):
+@router.get("/app", response_model=list[str], status_code=http_status.HTTP_200_OK)
+async def app_access(services: ServiceFactory = Depends(get_services)):
     """
     Список доступов приложения
 
