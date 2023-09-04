@@ -14,7 +14,7 @@ async def guest_access(services: ServiceFactory = Depends(get_services)):
 
     Требуемые права доступа: None
     """
-    return await services.role.guest_access()
+    return await services.access.guest_access()
 
 
 @router.get("/app", response_model=list[str], status_code=http_status.HTTP_200_OK)
@@ -24,4 +24,4 @@ async def app_access(services: ServiceFactory = Depends(get_services)):
 
     Требуемые права доступа: None
     """
-    return await services.role.app_access()
+    return await services.access.app_access()
