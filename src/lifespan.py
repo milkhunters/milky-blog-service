@@ -64,7 +64,5 @@ def create_start_app_handler(app: FastAPI, config: Config) -> Callable:
 def create_stop_app_handler(app: FastAPI) -> Callable:
     async def stop_app() -> None:
         logging.debug("Выполнение FastAPI shutdown event handler.")
-        await app.state.redis.close()
-        await app.state.rmq.close()
 
     return stop_app
