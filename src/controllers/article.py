@@ -6,7 +6,7 @@ from fastapi import status as http_status
 
 from src.dependencies.services import get_services
 from src.models import schemas
-from src.models.state import ArticleState
+from src.models.state import ArticleState, RateState
 from src.services import ServiceFactory
 from src.views import ArticleResponse, ArticlesResponse
 
@@ -38,8 +38,8 @@ async def get_articles(
     )
 
 
-@router.post("/create", response_model=ArticleResponse, status_code=http_status.HTTP_201_CREATED)
-async def create_article(article: schemas.ArticleCreate, services: ServiceFactory = Depends(get_services)):
+@router.post("/new", response_model=ArticleResponse, status_code=http_status.HTTP_201_CREATED)
+async def new_article(article: schemas.ArticleCreate, services: ServiceFactory = Depends(get_services)):
     """
     Создать статью
 
@@ -94,3 +94,15 @@ async def delete_article(article_id: uuid.UUID, services: ServiceFactory = Depen
     Причем пользователь с доступом CAN_DELETE_USER_ARTICLES может удалять чужие публикации.
     """
     await services.article.delete_article(article_id)
+
+
+@router.post("/rate/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def rate_article(article_id: uuid.UUID, state: RateState, services: ServiceFactory = Depends(get_services)):
+    """
+    Оценить статью по id
+
+    Требуемое состояние: ACTIVE
+
+    Требуемые права доступа: CAN_RATE_ARTICLES
+    """
+    await services.article.rate_article(article_id, state)
