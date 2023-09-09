@@ -5,10 +5,10 @@ from src import exceptions
 from src.models import schemas
 from src.models.access import AccessTags
 from src.models.auth import BaseUser
-from src.models.state import ArticleState, UserState
+from src.models.state import ArticleState, UserState, RateState
 from src.services.auth.filters import state_filter
 from src.services.auth.filters import access_filter
-from src.services.repository import CommentTreeRepo
+from src.services.repository import CommentTreeRepo, LikeRepo
 from src.services.repository import CommentRepo
 from src.services.repository import ArticleRepo
 from src.services.repository import TagRepo
@@ -22,7 +22,8 @@ class ArticleApplicationService:
             article_repo: ArticleRepo,
             tag_repo: TagRepo,
             comment_tree_repo: CommentTreeRepo,
-            comment_repo: CommentRepo
+            comment_repo: CommentRepo,
+            like_repo: LikeRepo,
 
     ):
         self._current_user = current_user
@@ -30,6 +31,7 @@ class ArticleApplicationService:
         self._tag_repo = tag_repo
         self._tree_repo = comment_tree_repo
         self._comment_repo = comment_repo
+        self._like_repo = like_repo
 
     async def get_articles(
             self,
@@ -44,7 +46,7 @@ class ArticleApplicationService:
         Получить список статей
 
         :param page: номер страницы (всегда >= 1)
-        :param per_page: количество статей на странице (всегда >= 1 но <= per_page_limit)
+        :param per_page: количество статей на странице (всегда >= 1, но <= per_page_limit)
         :param order_by: поле сортировки
         :param query: поисковый запрос (если необходим)
         :param state: статус статьи (по умолчанию только опубликованные)
@@ -109,7 +111,6 @@ class ArticleApplicationService:
                 **{"state": state} if state else {},
                 **{"owner_id": owner_id} if owner_id else {}
             )
-
         return [schemas.ArticleSmall.model_validate(article) for article in articles]
 
     async def get_article(self, article_id: uuid.UUID) -> schemas.Article:
@@ -143,6 +144,15 @@ class ArticleApplicationService:
         ):
             raise exceptions.AccessDenied("Вы не можете просматривать публичные публикации")
 
+        # Views
+        if article.state == ArticleState.PUBLISHED and article.owner_id != self._current_user.id:
+            article.views += 1
+            await self._repo.session.commit()
+            await self._repo.session.refresh(article)
+
+        # Likes
+        article.likes_count = await self._like_repo.count(article_id=article_id)
+
         return schemas.Article.model_validate(article)
 
     @access_filter(AccessTags.CAN_CREATE_SELF_ARTICLES)
@@ -153,6 +163,7 @@ class ArticleApplicationService:
             owner_id=self._current_user.id
         )
         article = await self._repo.get(id=_.id)
+        article.likes_count = 0
         # Добавление тегов
         for tag_title in data.tags:
             tag = await self._tag_repo.get(title=tag_title)
@@ -190,6 +201,26 @@ class ArticleApplicationService:
             await self._repo.session.commit()
 
         await self._repo.update(article_id, **data.model_dump(exclude_unset=True, exclude={"tags"}))
+
+    @access_filter(AccessTags.CAN_RATE_ARTICLES)
+    @state_filter(UserState.ACTIVE)
+    async def rate_article(self, article_id: uuid.UUID, state: RateState) -> None:
+        article = await self._repo.get(id=article_id)
+        if not article:
+            raise exceptions.NotFound("Статья не найдена")
+
+        if article.owner_id == self._current_user.id:
+            raise exceptions.BadRequest("Вы не можете оценивать свои статьи")
+
+        like = await self._like_repo.get(article_id=article_id, owner_id=self._current_user.id)
+        if state == RateState.LIKE:
+            if like:
+                raise exceptions.BadRequest("Вы уже поставили лайк")
+            await self._like_repo.create(article_id=article_id, owner_id=self._current_user.id)
+        elif state == RateState.NEUTRAL:
+            if not like:
+                raise exceptions.BadRequest("Вы еще не оценили статью")
+            await self._like_repo.delete(like.id)
 
     @state_filter(UserState.ACTIVE)
     async def delete_article(self, article_id: uuid.UUID) -> None:

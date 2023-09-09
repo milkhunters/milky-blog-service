@@ -28,6 +28,7 @@ class ServiceFactory:
             tag_repo=self._repo.tag,
             comment_repo=self._repo.comment,
             comment_tree_repo=self._repo.comment_tree,
+            like_repo=self._repo.like,
         )
 
     @property
