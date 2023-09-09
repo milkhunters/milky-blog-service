@@ -1,5 +1,6 @@
 from .article import ArticleRepo
 from .comment import CommentRepo, CommentTreeRepo
+from .like import LikeRepo
 from .notification import NotificationRepo
 from .tag import TagRepo
 
@@ -27,3 +28,7 @@ class RepoFactory:
     @property
     def tag(self) -> TagRepo:
         return TagRepo(self._session)
+
+    @property
+    def like(self) -> LikeRepo:
+        return LikeRepo(self._session)

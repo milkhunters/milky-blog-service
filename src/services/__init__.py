@@ -4,7 +4,7 @@ from . import repository
 from .article import ArticleApplicationService
 from .comment import CommentApplicationService
 from .notification import NotificationApplicationService
-from .role import RoleApplicationService
+from .access import AccessApplicationService
 from .stats import StatsApplicationService
 
 
@@ -28,6 +28,7 @@ class ServiceFactory:
             tag_repo=self._repo.tag,
             comment_repo=self._repo.comment,
             comment_tree_repo=self._repo.comment_tree,
+            like_repo=self._repo.like,
         )
 
     @property
@@ -49,5 +50,5 @@ class ServiceFactory:
         return StatsApplicationService(config=self._config)
 
     @property
-    def role(self) -> RoleApplicationService:
-        return RoleApplicationService()
+    def access(self) -> AccessApplicationService:
+        return AccessApplicationService()

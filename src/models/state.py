@@ -22,3 +22,8 @@ class CommentState(int, Enum):
 
 class NotificationType(int, Enum):
     COMMENT_ANSWER = 1
+
+
+class RateState(int, Enum):
+    NEUTRAL = 0
+    LIKE = 1

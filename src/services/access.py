@@ -2,7 +2,7 @@ from src.models.auth import UnauthenticatedUser
 from src.models.access import AccessTags
 
 
-class RoleApplicationService:
+class AccessApplicationService:
 
     async def guest_access(self) -> list[str]:
         return list(UnauthenticatedUser().access)

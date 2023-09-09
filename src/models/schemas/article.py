@@ -18,6 +18,8 @@ class Article(BaseModel):
     title: str
     content: str
     poster_url: str | None
+    views: int
+    likes_count: int
     tags: list[ArticleTagItem]
     state: ArticleState
     owner_id: uuid.UUID
@@ -33,6 +35,8 @@ class ArticleSmall(BaseModel):
     id: uuid.UUID
     title: str
     poster_url: str | None
+    views: int
+    likes_count: int
     tags: list[ArticleTagItem]
     state: ArticleState
     owner_id: uuid.UUID
