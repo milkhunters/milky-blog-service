@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from typing import Callable
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -31,18 +32,20 @@ async def grpc_server(app_state):
     blog_service_control_pb2_grpc.add_BlogServicer_to_server(BlogService(app_state), server)
     listen_addr = '[::]:50052'
     server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
+    logging.info(f"Starting gRPC server on {listen_addr}")
     await server.start()
     await server.wait_for_termination()
 
 
-async def init_scheduler(app: FastAPI, config: Config):
+async def init_reauth_checker(app: FastAPI, config: Config):
     scheduler = AsyncIOScheduler()
+    ums_grps_host = os.getenv("UMS_GRPC_HOST")
+    ums_grps_port = int(os.getenv("UMS_GRPC_PORT"))
     scheduler.add_job(
         update_reauth_list,
         'interval',
         seconds=5,
-        args=[app, config],
+        args=[app, config, (ums_grps_host, ums_grps_port)]
     )
     scheduler.start()
 
@@ -53,7 +56,7 @@ def create_start_app_handler(app: FastAPI, config: Config) -> Callable:
         await init_db(app, config)
 
         app.state.reauth_session_dict = dict()
-        await init_scheduler(app, config)
+        await init_reauth_checker(app, config)
 
         asyncio.get_running_loop().create_task(grpc_server(app.state))
         logging.info("FastAPI Успешно запущен.")
