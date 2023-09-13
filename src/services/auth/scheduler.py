@@ -5,12 +5,12 @@ from src.protos.ums_control import ums_control_pb2
 from src.protos.ums_control import ums_control_pb2_grpc
 
 
-async def update_reauth_list(app, config):
+async def update_reauth_list(app, config, ums_grps_addr: tuple[str, int]):
     app.state.reauth_session_dict = dict()
 
     try:
 
-        async with grpc.aio.insecure_channel("localhost:50051") as channel:
+        async with grpc.aio.insecure_channel(f"{ums_grps_addr[0]}:{ums_grps_addr[1]}") as channel:
             stub = ums_control_pb2_grpc.UserManagementStub(channel)
             response = await stub.GetListOfReauth(ums_control_pb2.GetListRequest())
 
