@@ -47,6 +47,7 @@ async def init_reauth_checker(app: FastAPI, config: Config):
         seconds=5,
         args=[app, config, (ums_grps_host, ums_grps_port)]
     )
+    logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
     scheduler.start()
 
 
