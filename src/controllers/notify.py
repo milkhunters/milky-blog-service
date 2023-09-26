@@ -17,7 +17,7 @@ async def get_notifications(page: int, per_page: int, services: ServiceFactory =
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_GET_SELF_NOTIFICATIONS
+    Требуемые права доступа: GET_SELF_NOTIFICATIONS
 
     """
     return NotificationsResponse(content=await services.notification.get_notifications(page, per_page))
@@ -30,7 +30,7 @@ async def get_total(services: ServiceFactory = Depends(get_services)):
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_GET_SELF_NOTIFICATIONS
+    Требуемые права доступа: GET_SELF_NOTIFICATIONS
 
     """
     return NotificationCountResponse(content=await services.notification.get_total())
@@ -43,7 +43,7 @@ async def read_notification(notification_id: uuid.UUID, services: ServiceFactory
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_DELETE_SELF_NOTIFICATION
+    Требуемые права доступа: DELETE_SELF_NOTIFICATION
 
     Рекомендуется удалять уведомления, которые пользователь прочитал
     """

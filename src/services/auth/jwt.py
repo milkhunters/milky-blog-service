@@ -1,12 +1,11 @@
 import time
-import uuid
 
 import jwt
-from fastapi import Response, Request
+from fastapi import Request
+from pydantic import ValidationError
 
 from src.config import Config
 from src.models import schemas
-from src.models.state import UserState
 
 
 class JWTManager:
@@ -73,8 +72,14 @@ class JWTManager:
 
     def _is_valid_jwt(self, token: str, secret_key: str) -> bool:
         try:
-            jwt.decode(token, secret_key, algorithms=self.ALGORITHM)
-        except (jwt.exceptions.InvalidTokenError, jwt.exceptions.ExpiredSignatureError, jwt.exceptions.DecodeError):
+            data = jwt.decode(token, secret_key, algorithms=self.ALGORITHM)
+            schemas.TokenPayload.model_validate(data)
+        except (
+                jwt.exceptions.InvalidTokenError,
+                jwt.exceptions.ExpiredSignatureError,
+                jwt.exceptions.DecodeError,
+                ValidationError
+        ):
             return False
         return True
 

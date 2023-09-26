@@ -3,11 +3,11 @@ from typing import Literal
 
 from src import exceptions
 from src.models import schemas
-from src.models.access import AccessTags
+from src.models.permission import Permission
 from src.models.auth import BaseUser
 from src.models.state import ArticleState, UserState, RateState
 from src.services.auth.filters import state_filter
-from src.services.auth.filters import access_filter
+from src.services.auth.filters import permission_filter
 from src.services.repository import CommentTreeRepo, LikeRepo
 from src.services.repository import CommentRepo
 from src.services.repository import ArticleRepo
@@ -64,7 +64,7 @@ class ArticleApplicationService:
                 (
                         state != ArticleState.PUBLISHED,
                         owner_id != self._current_user.id,
-                        AccessTags.CAN_GET_PRIVATE_ARTICLES.value not in self._current_user.access
+                        Permission.GET_PRIVATE_ARTICLES.value not in self._current_user.permissions
                 )
         ):
             raise exceptions.AccessDenied("Вы не можете получить список приватных статей")
@@ -73,7 +73,7 @@ class ArticleApplicationService:
                 (
                         state != ArticleState.PUBLISHED,
                         owner_id == self._current_user.id,
-                        AccessTags.CAN_GET_SELF_ARTICLES.value not in self._current_user.access
+                        Permission.GET_SELF_ARTICLES.value not in self._current_user.permissions
                 )
         ):
             raise exceptions.AccessDenied("Вы не можете получить свой список приватных статей")
@@ -81,7 +81,7 @@ class ArticleApplicationService:
         if all(
                 (
                         state == ArticleState.PUBLISHED,
-                        AccessTags.CAN_GET_PUBLIC_ARTICLES.value not in self._current_user.access
+                        Permission.GET_PUBLIC_ARTICLES.value not in self._current_user.permissions
                 )
         ):
             raise exceptions.AccessDenied("Вы не можете получить список опубликованных статей")
@@ -122,7 +122,7 @@ class ArticleApplicationService:
                 (
                         article.state != ArticleState.PUBLISHED,
                         article.owner_id != self._current_user.id,
-                        AccessTags.CAN_GET_PRIVATE_ARTICLES.value not in self._current_user.access
+                        Permission.GET_PRIVATE_ARTICLES.value not in self._current_user.permissions
                 )
         ):
             raise exceptions.AccessDenied("Материал не опубликован")
@@ -131,7 +131,7 @@ class ArticleApplicationService:
                 (
                         article.state != ArticleState.PUBLISHED,
                         article.owner_id == self._current_user.id,
-                        AccessTags.CAN_GET_SELF_ARTICLES.value not in self._current_user.access
+                        Permission.GET_SELF_ARTICLES.value not in self._current_user.permissions
                 )
         ):
             raise exceptions.AccessDenied("Вы не можете просматривать свои приватные публикации")
@@ -139,7 +139,7 @@ class ArticleApplicationService:
         if all(
                 (
                         article.state == ArticleState.PUBLISHED,
-                        AccessTags.CAN_GET_PUBLIC_ARTICLES.value not in self._current_user.access
+                        Permission.GET_PUBLIC_ARTICLES.value not in self._current_user.permissions
                 )
         ):
             raise exceptions.AccessDenied("Вы не можете просматривать публичные публикации")
@@ -155,7 +155,7 @@ class ArticleApplicationService:
 
         return schemas.Article.model_validate(article)
 
-    @access_filter(AccessTags.CAN_CREATE_SELF_ARTICLES)
+    @permission_filter(Permission.CREATE_SELF_ARTICLES)
     @state_filter(UserState.ACTIVE)
     async def create_article(self, data: schemas.ArticleCreate) -> schemas.Article:
         _ = await self._repo.create(
@@ -181,13 +181,13 @@ class ArticleApplicationService:
 
         if (
                 article.owner_id != self._current_user.id and
-                AccessTags.CAN_UPDATE_USER_ARTICLES.value not in self._current_user.access
+                Permission.UPDATE_USER_ARTICLES.value not in self._current_user.permissions
         ):
             raise exceptions.AccessDenied("Вы не являетесь владельцем статьи")
 
         if (
                 article.owner_id == self._current_user.id and
-                AccessTags.CAN_UPDATE_SELF_ARTICLES.value not in self._current_user.access
+                Permission.UPDATE_SELF_ARTICLES.value not in self._current_user.permissions
         ):
             raise exceptions.AccessDenied("Вы не можете редактировать свои статьи")
 
@@ -202,7 +202,7 @@ class ArticleApplicationService:
 
         await self._repo.update(article_id, **data.model_dump(exclude_unset=True, exclude={"tags"}))
 
-    @access_filter(AccessTags.CAN_RATE_ARTICLES)
+    @permission_filter(Permission.RATE_ARTICLES)
     @state_filter(UserState.ACTIVE)
     async def rate_article(self, article_id: uuid.UUID, state: RateState) -> None:
         article = await self._repo.get(id=article_id)
@@ -230,13 +230,13 @@ class ArticleApplicationService:
 
         if (
                 article.owner_id != self._current_user.id and
-                AccessTags.CAN_DELETE_USER_ARTICLES.value not in self._current_user.access
+                Permission.DELETE_USER_ARTICLES.value not in self._current_user.permissions
         ):
             raise exceptions.AccessDenied("Вы не являетесь владельцем статьи")
 
         if (
                 article.owner_id == self._current_user.id and
-                AccessTags.CAN_DELETE_SELF_ARTICLES.value not in self._current_user.access
+                Permission.DELETE_SELF_ARTICLES.value not in self._current_user.permissions
         ):
             raise exceptions.AccessDenied("Вы не можете удалять свои статьи")
 

@@ -23,7 +23,7 @@ async def create_comment(
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_CREATE_COMMENT
+    Требуемые права доступа: CREATE_COMMENT
     """
     return CommentResponse(content=await service.comment.add_comment(article_id, data, parent_id))
 
@@ -35,7 +35,7 @@ async def get_comments(article_id: uuid.UUID, service: ServiceFactory = Depends(
 
     Требуемое состояние: -
 
-    Требуемые права доступа: CAN_GET_PUBLIC_COMMENTS
+    Требуемые права доступа: GET_PUBLIC_COMMENTS
     """
     return CommentsResponse(content=await service.comment.get_comments(article_id))
 
@@ -47,11 +47,11 @@ async def get_comment(comment_id: uuid.UUID, service: ServiceFactory = Depends(g
 
     Требуемое состояние: -
 
-    Требуемые права доступа: CAN_GET_PUBLIC_COMMENTS / CAN_GET_DELETED_COMMENTS
+    Требуемые права доступа: GET_PUBLIC_COMMENTS / GET_DELETED_COMMENTS
 
-    Пользователь с доступом CAN_GET_PUBLIC_COMMENTS может получить публичный комментарий
+    Пользователь с доступом GET_PUBLIC_COMMENTS может получить публичный комментарий
 
-    Пользователь с доступом CAN_GET_DELETED_COMMENTS может получить удаленный комментарий
+    Пользователь с доступом GET_DELETED_COMMENTS может получить удаленный комментарий
     """
     return CommentResponse(content=await service.comment.get_comment(comment_id))
 
@@ -67,11 +67,11 @@ async def update_comment(
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_UPDATE_USER_COMMENT / CAN_UPDATE_SELF_COMMENT
+    Требуемые права доступа: UPDATE_USER_COMMENT / UPDATE_SELF_COMMENT
 
-    Пользователь с доступом CAN_UPDATE_USER_COMMENT может обновить чужой комментарий
+    Пользователь с доступом UPDATE_USER_COMMENT может обновить чужой комментарий
 
-    Пользователь с доступом CAN_UPDATE_SELF_COMMENT может обновить свой комментарий не позднее 24 часов после создания
+    Пользователь с доступом UPDATE_SELF_COMMENT может обновить свой комментарий не позднее 24 часов после создания
     """
     await service.comment.update_comment(comment_id, data)
 
@@ -85,11 +85,11 @@ async def delete_comment(comment_id: uuid.UUID, service: ServiceFactory = Depend
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_DELETE_USER_COMMENT / CAN_DELETE_SELF_COMMENT
+    Требуемые права доступа: DELETE_USER_COMMENT / DELETE_SELF_COMMENT
 
-    Пользователь с доступом CAN_DELETE_USER_COMMENT может удалить чужой комментарий
+    Пользователь с доступом DELETE_USER_COMMENT может удалить чужой комментарий
 
-    Пользователь с доступом CAN_DELETE_SELF_COMMENT может удалить свой комментарий
+    Пользователь с доступом DELETE_SELF_COMMENT может удалить свой комментарий
     """
     await service.comment.delete_comment(comment_id)
 
@@ -101,6 +101,6 @@ async def delete_all_comments(article_id: uuid.UUID, service: ServiceFactory = D
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_DELETE_USER_COMMENT
+    Требуемые права доступа: DELETE_USER_COMMENT
     """
     await service.comment.delete_all_comments(article_id)

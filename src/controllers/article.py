@@ -28,10 +28,10 @@ async def get_articles(
 
     Требуемое состояние: -
 
-    Требуемые права доступа: CAN_GET_PUBLIC_ARTICLES / CAN_GET_PRIVATE_ARTICLES / CAN_GET_SELF_ARTICLES
+    Требуемые права доступа: GET_PUBLIC_ARTICLES / GET_PRIVATE_ARTICLES / GET_SELF_ARTICLES
 
     Если указан owner_id, то возвращаются только статьи этого пользователя,
-    причем пользователь с доступом CAN_GET_PRIVATE_ARTICLES может просматривать чужие публикации.
+    причем пользователь с доступом GET_PRIVATE_ARTICLES может просматривать чужие публикации.
     """
     return ArticlesResponse(
         content=await services.article.get_articles(page, per_page, order_by, query, state, owner_id)
@@ -45,7 +45,7 @@ async def new_article(article: schemas.ArticleCreate, services: ServiceFactory =
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_CREATE_SELF_ARTICLES
+    Требуемые права доступа: CREATE_SELF_ARTICLES
 
     Максимальный размер статьи - 32000 символов
     """
@@ -59,7 +59,7 @@ async def get_article(article_id: uuid.UUID, services: ServiceFactory = Depends(
 
     Требуемое состояние: -
 
-    Требуемые права доступа: CAN_GET_PUBLIC_ARTICLES / CAN_GET_PRIVATE_ARTICLES / CAN_GET_SELF_ARTICLES
+    Требуемые права доступа: GET_PUBLIC_ARTICLES / GET_PRIVATE_ARTICLES / GET_SELF_ARTICLES
     """
     return ArticleResponse(content=await services.article.get_article(article_id))
 
@@ -75,9 +75,9 @@ async def update_article(
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_UPDATE_SELF_ARTICLES / CAN_UPDATE_USER_ARTICLES
+    Требуемые права доступа: UPDATE_SELF_ARTICLES / UPDATE_USER_ARTICLES
 
-    Причем пользователь с доступом CAN_UPDATE_USER_ARTICLES может редактировать чужие публикации.
+    Причем пользователь с доступом UPDATE_USER_ARTICLES может редактировать чужие публикации.
     """
     await services.article.update_article(article_id, data)
 
@@ -89,9 +89,9 @@ async def delete_article(article_id: uuid.UUID, services: ServiceFactory = Depen
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_DELETE_SELF_ARTICLES / CAN_DELETE_USER_ARTICLES
+    Требуемые права доступа: DELETE_SELF_ARTICLES / DELETE_USER_ARTICLES
 
-    Причем пользователь с доступом CAN_DELETE_USER_ARTICLES может удалять чужие публикации.
+    Причем пользователь с доступом DELETE_USER_ARTICLES может удалять чужие публикации.
     """
     await services.article.delete_article(article_id)
 
@@ -103,6 +103,6 @@ async def rate_article(article_id: uuid.UUID, state: RateState, services: Servic
 
     Требуемое состояние: ACTIVE
 
-    Требуемые права доступа: CAN_RATE_ARTICLES
+    Требуемые права доступа: RATE_ARTICLES
     """
     await services.article.rate_article(article_id, state)
