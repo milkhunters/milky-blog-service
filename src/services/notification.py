@@ -1,12 +1,12 @@
 import uuid
 
 from src.models import schemas
-from src.models.access import AccessTags
+from src.models.permission import Permission
 from src.models.auth import BaseUser
 from src import exceptions
 from src.models.state import UserState
 from src.services.auth.filters import state_filter
-from src.services.auth.filters import access_filter
+from src.services.auth.filters import permission_filter
 from src.services.repository import NotificationRepo
 
 
@@ -20,7 +20,7 @@ class NotificationApplicationService:
         self._current_user = current_user
         self._repo = notify_repo
 
-    @access_filter(AccessTags.CAN_GET_SELF_NOTIFICATIONS)
+    @permission_filter(Permission.GET_SELF_NOTIFICATIONS)
     @state_filter(UserState.ACTIVE)
     async def get_notifications(self, page: int, per_page: int = 10) -> list[schemas.Notification]:
         """
@@ -47,7 +47,7 @@ class NotificationApplicationService:
         )
         return [schemas.Notification.model_validate(notification) for notification in notifications]
 
-    @access_filter(AccessTags.CAN_GET_SELF_NOTIFICATIONS)
+    @permission_filter(Permission.GET_SELF_NOTIFICATIONS)
     @state_filter(UserState.ACTIVE)
     async def get_total(self) -> int:
         """
@@ -57,7 +57,7 @@ class NotificationApplicationService:
         """
         return await self._repo.count(owner_id=self._current_user.id)
 
-    @access_filter(AccessTags.CAN_DELETE_SELF_NOTIFICATION)
+    @permission_filter(Permission.DELETE_SELF_NOTIFICATION)
     @state_filter(UserState.ACTIVE)
     async def delete_notification(self, notification_id: uuid.UUID) -> None:
         """

@@ -4,7 +4,7 @@ from . import repository
 from .article import ArticleApplicationService
 from .comment import CommentApplicationService
 from .notification import NotificationApplicationService
-from .access import AccessApplicationService
+from .permission import PermissionApplicationService
 from .stats import StatsApplicationService
 
 
@@ -50,5 +50,5 @@ class ServiceFactory:
         return StatsApplicationService(config=self._config)
 
     @property
-    def access(self) -> AccessApplicationService:
-        return AccessApplicationService()
+    def permission(self) -> PermissionApplicationService:
+        return PermissionApplicationService()
