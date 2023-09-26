@@ -64,7 +64,7 @@ async def get_article(article_id: uuid.UUID, services: ServiceFactory = Depends(
     return ArticleResponse(content=await services.article.get_article(article_id))
 
 
-@router.post("/update/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+@router.put("/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def update_article(
         article_id: uuid.UUID,
         data: schemas.ArticleUpdate,
@@ -82,7 +82,7 @@ async def update_article(
     await services.article.update_article(article_id, data)
 
 
-@router.delete("/delete/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+@router.delete("/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_article(article_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
     """
     Удалить статью по id

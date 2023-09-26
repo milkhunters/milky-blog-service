@@ -11,7 +11,7 @@ from src.views.comment import CommentResponse, CommentsResponse
 router = APIRouter()
 
 
-@router.post("/create", response_model=CommentResponse, status_code=http_status.HTTP_201_CREATED)
+@router.post("/new", response_model=CommentResponse, status_code=http_status.HTTP_201_CREATED)
 async def create_comment(
         article_id: uuid.UUID,
         data: schemas.CommentCreate,
@@ -40,7 +40,7 @@ async def get_comments(article_id: uuid.UUID, service: ServiceFactory = Depends(
     return CommentsResponse(content=await service.comment.get_comments(article_id))
 
 
-@router.get("/get", response_model=CommentResponse, status_code=http_status.HTTP_200_OK)
+@router.get("/{comment_id}", response_model=CommentResponse, status_code=http_status.HTTP_200_OK)
 async def get_comment(comment_id: uuid.UUID, service: ServiceFactory = Depends(get_services)):
     """
     Получить комментарий
@@ -56,7 +56,7 @@ async def get_comment(comment_id: uuid.UUID, service: ServiceFactory = Depends(g
     return CommentResponse(content=await service.comment.get_comment(comment_id))
 
 
-@router.post("/update/{comment_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+@router.put("/{comment_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def update_comment(
         comment_id: uuid.UUID,
         data: schemas.CommentUpdate,
@@ -76,7 +76,7 @@ async def update_comment(
     await service.comment.update_comment(comment_id, data)
 
 
-@router.delete("/delete/{comment_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+@router.delete("/{comment_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_comment(comment_id: uuid.UUID, service: ServiceFactory = Depends(get_services)):
     """
     Удалить комментарий
@@ -94,7 +94,7 @@ async def delete_comment(comment_id: uuid.UUID, service: ServiceFactory = Depend
     await service.comment.delete_comment(comment_id)
 
 
-@router.delete("/delete_all/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+@router.delete("/article/{article_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_all_comments(article_id: uuid.UUID, service: ServiceFactory = Depends(get_services)):
     """
     Удалить все комментарии статьи

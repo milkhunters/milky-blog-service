@@ -36,7 +36,7 @@ async def get_total(services: ServiceFactory = Depends(get_services)):
     return NotificationCountResponse(content=await services.notification.get_total())
 
 
-@router.delete("/delete/{notification_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+@router.delete("/{notification_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
 async def read_notification(notification_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
     """
     Удалить уведомление пользователя
