@@ -1,8 +1,7 @@
 from functools import wraps
 
-from src.exceptions import AccessDenied, Unauthorized
+from src.exceptions import AccessDenied
 from src.models.permission import Permission
-from src.models.auth import UnauthenticatedUser
 from src.models.state import UserState
 
 
@@ -26,9 +25,6 @@ def permission_filter(*tags: Permission):
 
             if {tag.value for tag in tags}.issubset(current_user.permissions):
                 return await func(*args, **kwargs)
-
-            if isinstance(current_user, UnauthenticatedUser):
-                raise Unauthorized('Вы не авторизованы')
 
             raise AccessDenied('У Вас нет прав для выполнения этого действия')
 
