@@ -4,6 +4,7 @@ from src.version import __version__
 
 import consul
 
+
 @dataclass
 class PostgresConfig:
     DATABASE: str

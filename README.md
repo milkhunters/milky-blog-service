@@ -11,29 +11,8 @@
 git clone https://github.com/milkhunters/milky-blog-service.git
 ```
 
-Перейдите в директорию проекта, создайте виртуальное окружение и активируйте его:
-```bash
-cd milky-blog-service
-python3 -m venv venv
-source venv/bin/activate
-```
+...
 
-Установите зависимости:
-
-```bash
-pip install -r requirements.txt
-```
-
-Следует определить переменные окружения:
-```bash
-export DEBUG=1
-export CONSUL_ROOT=milk-blog-dev
-```
-
-Запустите приложение:
-```bash
-uvicorn src.app:app --proxy-headers --host 0.0.0.0 --port 8000
-```
 
 ## Docker
 
@@ -44,5 +23,5 @@ docker build -t milky-backend .
 
 Запустите контейнер на основе образа:
 ```bash
-docker run -d --restart=always -u 0 --name milky-backend -e DEBUG=1 -e CONSUL_ROOT=milk-back-dev -p 8000:8000 -m 1024m --cpus=2 milky-backend
+docker run -d --restart=always -u 0 --name milky-blog-dev -e DEBUG=1 -e CONSUL_ROOT=milk-back-dev -p 8000:8000 -m 1024m --cpus=2 milky-blog-dev
 ```
