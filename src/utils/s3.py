@@ -43,19 +43,19 @@ class S3Storage:
     async def close(self):
         await self._client.__aexit__()
 
-    async def info(self, file_id: uuid.UUID) -> MetaData | None:
+    async def info(self, file_path: str) -> MetaData | None:
         try:
-            response = await self._client.head_object(Bucket=self._bucket, Key=self._storage_path + str(file_id))
+            response = await self._client.head_object(Bucket=self._bucket, Key=self._storage_path + file_path)
             return MetaData(
-                filename=response['ResponseMetadata']['HTTPHeaders']['x-amz-meta-filename'],
-                content_type=response['ResponseMetadata']['HTTPHeaders']['x-amz-meta-content_type']
+                filename=response['ResponseMetadata']['HTTPHeaders'].get('x-amz-meta-filename'),
+                content_type=response['ResponseMetadata']['HTTPHeaders'].get('content-type')
             )
         except ClientError:
             return None
 
     async def generate_upload_url(
             self,
-            file_id: uuid.UUID,
+            file_path: str,
             content_type: str,
             content_length: tuple[int, int] = (1048576, 20971520),
             expires_in: int = 3600,
@@ -65,7 +65,7 @@ class S3Storage:
 
         response = await self._client.generate_presigned_post(
             Bucket=self._bucket,
-            Key=self._storage_path + str(file_id),
+            Key=self._storage_path + file_path,
             Fields={
                 "Content-Type": content_type,
             },
@@ -80,9 +80,9 @@ class S3Storage:
 
     def generate_download_public_url(
             self,
-            file_id: uuid.UUID,
+            file_path: str,
             content_type: str,
-            rcd: typing.Literal["inline", "attachment"],
+            rcd: typing.Literal["inline", "attachment"] | str,
             filename: str = None
     ) -> str:
         """
@@ -90,7 +90,7 @@ class S3Storage:
         :param rcd:
         :param content_type:
         :param filename:
-        :param file_id:
+        :param file_path:
         :return:
 
         ---
@@ -106,7 +106,7 @@ class S3Storage:
             self._external_host,
             self._bucket,
             self._storage_path,
-            str(file_id)
+            file_path
         ] if item != "")
 
         query_params = urlencode({
@@ -115,38 +115,5 @@ class S3Storage:
         })
         return f"{base_url}?{query_params}"
 
-
-"""
-
-"Action": [
-                "s3:GetObject",
-                "s3:ListMultipartUploadParts",
-                "s3:PutObject",
-                "s3:AbortMultipartUpload",
-                "s3:DeleteObject"
-                "s3:ListBucketMultipartUploads",
-                "s3:GetBucketLocation",
-                "s3:ListBucket",
-            ],
-            
-            
-            {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": [
-                    "*"
-                ]
-            },
-            "Action": [
-                "s3:GetObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::milky-ums-dev/*"
-            ]
-        }
-    ]
-}
-"""
+    def delete(self, file_path):
+        return self._client.delete_object(Bucket=self._bucket, Key=self._storage_path + file_path)
