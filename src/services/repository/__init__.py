@@ -3,6 +3,7 @@ from .comment import CommentRepo, CommentTreeRepo
 from .like import LikeRepo
 from .notification import NotificationRepo
 from .tag import TagRepo
+from .file import FileRepo
 
 
 class RepoFactory:
@@ -32,3 +33,7 @@ class RepoFactory:
     @property
     def like(self) -> LikeRepo:
         return LikeRepo(self._session)
+
+    @property
+    def file(self) -> FileRepo:
+        return FileRepo(self._session)

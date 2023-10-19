@@ -15,10 +15,12 @@ class ServiceFactory:
             *,
             current_user: BaseUser,
             config,
+            file_storage,
     ):
         self._repo = repo_factory
         self._current_user = current_user
         self._config = config
+        self._file_storage = file_storage
 
     @property
     def article(self) -> ArticleApplicationService:
@@ -29,6 +31,8 @@ class ServiceFactory:
             comment_repo=self._repo.comment,
             comment_tree_repo=self._repo.comment_tree,
             like_repo=self._repo.like,
+            file_repo=self._repo.file,
+            file_storage=self._file_storage,
         )
 
     @property
