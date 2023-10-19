@@ -13,6 +13,7 @@ from src.services.blog_service_control import BlogService
 
 from src.db import create_psql_async_session
 from src.services.auth.scheduler import update_reauth_list
+from src.utils.s3 import S3Storage
 
 
 async def init_db(app: FastAPI, config: Config):
@@ -51,10 +52,23 @@ async def init_reauth_checker(app: FastAPI, config: Config):
     scheduler.start()
 
 
+async def init_s3_storage(app: FastAPI, config: Config):
+    app.state.file_storage = await S3Storage(
+        bucket=config.DB.S3.BUCKET,
+        external_host=config.DB.S3.PUBLIC_ENDPOINT_URL
+    ).create_session(
+        endpoint_url=config.DB.S3.ENDPOINT_URL,
+        region_name=config.DB.S3.REGION,
+        access_key_id=config.DB.S3.ACCESS_KEY_ID,
+        secret_access_key=config.DB.S3.ACCESS_KEY,
+    )
+
+
 def create_start_app_handler(app: FastAPI, config: Config) -> Callable:
     async def start_app() -> None:
         logging.debug("Выполнение FastAPI startup event handler.")
         await init_db(app, config)
+        await init_s3_storage(app, config)
 
         app.state.reauth_session_dict = dict()
         await init_reauth_checker(app, config)

@@ -16,7 +16,7 @@ class Article(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(VARCHAR(255), nullable=False)
-    poster_url = Column(VARCHAR(255), nullable=True)
+    poster = Column(UUID(as_uuid=True), nullable=True)
     content = Column(VARCHAR(32000), nullable=False)
     state = Column(Enum(ArticleState), default=ArticleState.DRAFT)
     views = Column(BIGINT(), nullable=False, default=0)
@@ -24,6 +24,7 @@ class Article(Base):
     likes = relationship("models.tables.like.Like", back_populates="article")
     tags = relationship('models.tables.tag.Tag', secondary='article_tags', back_populates='articles')
     comments_tree = relationship("models.tables.comment.CommentTree", back_populates="article")
+    files = relationship("models.tables.file.File", back_populates="article")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -17,4 +17,5 @@ async def get_services(
         repos,
         current_user=local_scope.get("user"),
         config=global_scope.config,
+        file_storage=global_scope.file_storage,
     )

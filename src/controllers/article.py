@@ -9,6 +9,7 @@ from src.models import schemas
 from src.models.state import ArticleState, RateState
 from src.services import ServiceFactory
 from src.views import ArticleResponse, ArticlesResponse
+from src.views.article import ArticleFilesResponse, ArticleFileUploadResponse, ArticleFileResponse
 
 router = APIRouter()
 
@@ -106,3 +107,108 @@ async def rate_article(article_id: uuid.UUID, state: RateState, services: Servic
     Требуемые права доступа: RATE_ARTICLES
     """
     await services.article.rate_article(article_id, state)
+
+
+@router.get("/files/{article_id}", response_model=ArticleFilesResponse, status_code=http_status.HTTP_200_OK)
+async def get_article_files(article_id: uuid.UUID, services: ServiceFactory = Depends(get_services)):
+    """
+    Получить список файлов статьи по id
+
+    Требуемое состояние: -
+
+    Требуемые права доступа: GET_PUBLIC_ARTICLES / GET_PRIVATE_ARTICLES / GET_SELF_ARTICLES
+    """
+    return ArticleFilesResponse(content=await services.article.get_article_files(article_id))
+
+
+@router.get("/files/{article_id}/{file_id}", response_model=ArticleFileResponse, status_code=http_status.HTTP_200_OK)
+async def get_article_file(
+        article_id: uuid.UUID,
+        file_id: uuid.UUID,
+        download: bool = False,
+        services: ServiceFactory = Depends(get_services)
+):
+    """
+    Получить файл статьи по id
+
+    Требуемое состояние: -
+
+    Требуемые права доступа: GET_PUBLIC_ARTICLES / GET_PRIVATE_ARTICLES / GET_SELF_ARTICLES
+    """
+    return ArticleFileResponse(content=await services.article.get_article_file(article_id, file_id, download))
+
+
+@router.post(
+    "/files/{article_id}",
+    response_model=ArticleFileUploadResponse,
+    status_code=http_status.HTTP_200_OK
+)
+async def upload_article_file(
+        article_id: uuid.UUID,
+        data: schemas.ArticleFileCreate,
+        services: ServiceFactory = Depends(get_services)
+):
+    """
+    Загрузить файл статьи по id
+
+    Требуемое состояние: ACTIVE
+
+    Требуемые права доступа: UPDATE_SELF_ARTICLES / UPDATE_USER_ARTICLES
+
+    Причем пользователь с доступом UPDATE_USER_ARTICLES может редактировать чужие публикации.
+    """
+    return ArticleFileUploadResponse(content=await services.article.upload_article_file(article_id, data))
+
+
+@router.post("/files/{article_id}/{file_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def confirm_article_file(
+        article_id: uuid.UUID,
+        file_id: uuid.UUID,
+        services: ServiceFactory = Depends(get_services)
+):
+    """
+    Подтвердить загрузку файла статьи по id
+
+    Требуемое состояние: ACTIVE
+
+    Требуемые права доступа: UPDATE_SELF_ARTICLES / UPDATE_USER_ARTICLES
+
+    Причем пользователь с доступом UPDATE_USER_ARTICLES может редактировать чужие публикации.
+    """
+    await services.article.confirm_article_file_upload(article_id, file_id)
+
+
+@router.delete("/files/{article_id}/{file_id}", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def delete_article_file(
+        article_id: uuid.UUID,
+        file_id: uuid.UUID,
+        services: ServiceFactory = Depends(get_services)
+):
+    """
+    Удалить файл статьи по id
+
+    Требуемое состояние: ACTIVE
+
+    Требуемые права доступа: UPDATE_SELF_ARTICLES / UPDATE_USER_ARTICLES
+
+    Причем пользователь с доступом UPDATE_USER_ARTICLES может редактировать чужие публикации.
+    """
+    await services.article.delete_article_file(article_id, file_id)
+
+
+@router.post("/poster", response_model=None, status_code=http_status.HTTP_204_NO_CONTENT)
+async def set_poster(
+        article_id: uuid.UUID,
+        file_id: uuid.UUID,
+        services: ServiceFactory = Depends(get_services)
+):
+    """
+    Установить постер статьи по id
+
+    Требуемое состояние: ACTIVE
+
+    Требуемые права доступа: UPDATE_SELF_ARTICLES / UPDATE_USER_ARTICLES
+
+    Причем пользователь с доступом UPDATE_USER_ARTICLES может редактировать чужие публикации.
+    """
+    await services.article.set_article_poster(article_id, file_id)
