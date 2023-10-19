@@ -68,6 +68,7 @@ def create_start_app_handler(app: FastAPI, config: Config) -> Callable:
     async def start_app() -> None:
         logging.debug("Выполнение FastAPI startup event handler.")
         await init_db(app, config)
+        await init_s3_storage(app, config)
 
         app.state.reauth_session_dict = dict()
         await init_reauth_checker(app, config)
