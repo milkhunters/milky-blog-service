@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey, BIGINT
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, deferred
 
 from src.db import Base
 
@@ -17,7 +17,8 @@ class Article(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title = Column(VARCHAR(255), nullable=False)
     poster = Column(UUID(as_uuid=True), nullable=True)
-    content = Column(VARCHAR(32000), nullable=False)
+    content = deferred(Column(VARCHAR(32000), nullable=False))
+    description = func.substr(content, 1, 100)
     state = Column(Enum(ArticleState), default=ArticleState.DRAFT)
     views = Column(BIGINT(), nullable=False, default=0)
     owner_id = Column(UUID(as_uuid=True), nullable=False)
