@@ -1,0 +1,41 @@
+import uuid
+import datetime
+
+from mbs.domain.models import Article, ArticleState, FileId, UserId
+
+
+class ArticleService:
+
+    def create_article(self, title: str, content: str, state: ArticleState, author_id: UserId, poster: FileId = None):
+        return Article(
+            id=uuid.uuid4(),
+            title=title,
+            poster=poster,
+            content=content,
+            state=state,
+            views=0,
+            author_id=author_id,
+            created_at=datetime.datetime.now(datetime.UTC),
+            updated_at=None
+        )
+
+    def update_article(
+            self,
+            article: Article,
+            title: str,
+            content: str,
+            state: ArticleState,
+            views: int,
+            poster: FileId = None
+    ):
+        return Article(
+            id=article.id,
+            title=title,
+            poster=poster,
+            content=content,
+            state=state,
+            views=views,
+            author_id=article.author_id,
+            created_at=article.created_at,
+            updated_at=datetime.datetime.now(datetime.UTC)
+        )
