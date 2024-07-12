@@ -90,9 +90,9 @@ class CommentTreeRepo(BaseRepository[tables.CommentTree]):
         #                 AND tableTree.ancestor_id = tableData.id
         #             ORDER BY tableData.id ASC
         #         """
-        # smt = select(tables.Comment, tables.CommentTree).select_from(
-        #     tables.Comment.join(tables.CommentTree)
-        # ).where(tables.CommentTree.article_id == article_id)
+        # smt = select(models.Comment, models.CommentTree).select_from(
+        #     models.Comment.join(models.CommentTree)
+        # ).where(models.CommentTree.article_id == article_id)
 
         query = (
             select(

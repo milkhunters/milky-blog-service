@@ -18,7 +18,7 @@ class Comment(Base):
     content = Column(VARCHAR(1000), nullable=False)
     state = Column(Enum(CommentState), default=CommentState.PUBLISHED)
 
-    owner_id = Column(UUID(as_uuid=True), nullable=False)
+    author_id = Column(UUID(as_uuid=True), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -43,12 +43,12 @@ class CommentTree(Base):
 
     __tablename__ = "comment_tree"
 
-    id = Column(BigInteger(), primary_key=True, autoincrement=True)
+    id = Column(UUID(), primary_key=True, autoincrement=True)
     ancestor_id = Column(UUID(as_uuid=True), nullable=False)
     descendant_id = Column(UUID(as_uuid=True), nullable=False)
     nearest_ancestor_id = Column(UUID(as_uuid=True), nullable=True)
     article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
-    article = relationship("models.tables.article.Article", back_populates="comments_tree")
+    article = relationship("models.models.article.Article", back_populates="comments_tree")
     level = Column(Integer())
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

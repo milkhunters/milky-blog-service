@@ -20,11 +20,11 @@ class Article(Base):
     content = Column(VARCHAR(32000), nullable=False)
     state = Column(Enum(ArticleState), default=ArticleState.DRAFT)
     views = Column(BIGINT(), nullable=False, default=0)
-    owner_id = Column(UUID(as_uuid=True), nullable=False)
-    likes = relationship("models.tables.like.Like", back_populates="article")
-    tags = relationship('models.tables.tag.Tag', secondary='article_tags', back_populates='articles')
-    comments_tree = relationship("models.tables.comment.CommentTree", back_populates="article")
-    files = relationship("models.tables.file.File", back_populates="article")
+    author_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    likes = relationship("models.models.like.Like", back_populates="article")
+    tags = relationship('models.models.tag.Tag', secondary='article_tags', back_populates='articles')
+    comments_tree = relationship("models.models.comment.CommentTree", back_populates="article")
+    files = relationship("models.models.file.File", secondary='article_files', back_populates="article")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -39,9 +39,21 @@ class ArticleTag(Base):
     """
     __tablename__ = "article_tags"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
     tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'
+
+
+class ArticleFile(Base):
+    """
+    Many-to-many table for Article and Files
+    """
+    __tablename__ = "article_files"
+
+    article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
+    file_id = Column(UUID(as_uuid=True), ForeignKey("files.id"), nullable=False)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}: {self.id}>'

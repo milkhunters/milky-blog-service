@@ -1,17 +1,17 @@
 import uuid
 
 from sqlalchemy import select, text, func, or_, and_
-from sqlalchemy.orm import subqueryload
+from sqlalchemy.orm import subqueryload, Session
 
 from mbs.models import tables
 from .base import BaseRepository
-from ...models.tables import Like
+from mbs.adapters.database.models import Like
+from ...application.common.uow import UoW
 
 
-class ArticleRepo(BaseRepository[tables.Article]):
-    table = tables.Article
+class ArticleGateway(ArticleReader, ArticleWriter, ArticleRemover):
 
-    async def add_tag(self, article_id: uuid.UUID, tag_id: uuid.UUID) -> None:
+    async def add_tag(self, uow: Sq, article_id: uuid.UUID, tag_id: uuid.UUID) -> None:
         obj = await self.table.get(id=article_id)
         obj.tags.add(tables.Tag.get(id=tag_id))
         await obj.save()

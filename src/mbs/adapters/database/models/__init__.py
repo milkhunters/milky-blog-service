@@ -1,3 +1,5 @@
+from mbs.db import Base
+
 from .article import ArticleTag
 from .article import Article
 from .tag import Tag

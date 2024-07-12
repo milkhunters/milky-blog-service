@@ -1,21 +1,22 @@
 import uuid
 
-from sqlalchemy import Column, UUID, VARCHAR, DateTime, func
+from sqlalchemy import Column, UUID, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship
 
 from mbs.db import Base
 
 
-class Tag(Base):
+class Like(Base):
     """
-    The Tag model
+    The Like model
 
     """
-    __tablename__ = "tags"
+    __tablename__ = "likes"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    title = Column(VARCHAR(32), nullable=False)
-    articles = relationship("models.tables.article.Article", secondary='article_tags', back_populates='tags')
+    author_id = Column(UUID(as_uuid=True), nullable=False)
+    article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
+    article = relationship("models.models.article.Article", back_populates="likes")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
