@@ -1,7 +1,5 @@
 from typing import Protocol
 
-from pydantic import BaseModel
-
 from mbs.application.common.article_gateway import ArticleReader, ArticleRater
 from mbs.application.common.exceptions import NotFound, Unauthorized, Forbidden
 from mbs.application.common.id_provider import IdProvider
