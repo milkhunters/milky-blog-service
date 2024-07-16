@@ -4,7 +4,8 @@ from sqlalchemy import Column, UUID, VARCHAR, Enum, DateTime, func, ForeignKey, 
 from sqlalchemy.orm import relationship
 
 from mbs.db import Base
-from src import CommentState
+
+from mbs.domain.models import CommentState
 
 
 class Comment(Base):
@@ -51,8 +52,32 @@ class CommentTree(Base):
     article = relationship("models.models.article.Article", back_populates="comments_tree")
     level = Column(Integer())
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'
+
+
+class CommentFile(Base):
+    """
+    Many-to-many table for Comment and Files
+    """
+    __tablename__ = "comment_files"
+
+    comment_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
+    file_id = Column(UUID(as_uuid=True), ForeignKey("files.id"), nullable=False)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: {self.id}>'
+
+
+class CommentLike(Base):
+    """
+    The CommentLike model
+
+    """
+    __tablename__ = "comment_likes"
+
+    author_id = Column(UUID(as_uuid=True), nullable=False)
+    comment_id = Column(UUID(as_uuid=True), ForeignKey("comments.id"), nullable=False)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}: {self.id}>'
