@@ -7,7 +7,7 @@ from mbs.application.common.comment_gateway import CommentReader, CommentRater
 from mbs.application.common.exceptions import NotFound, Forbidden, Unauthorized
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
-from mbs.domain.models import CommentState, CommentId, UserId, ArticleId
+from mbs.domain.models import CommentState, CommentId, UserId, ArticleId, File
 from mbs.domain.services.access import AccessService
 import mbs.domain.exceptions as domain_exceptions
 
@@ -20,6 +20,7 @@ class CommentResult(BaseModel):
     parent_id: CommentId | None
     is_rated: bool
     state: CommentState
+    files: list[File]
 
     created_at: datetime
     updated_at: datetime | None
@@ -42,7 +43,7 @@ class GetComment(Interactor[CommentId, CommentResult]):
         self._id_provider = id_provider
 
     async def __call__(self, data: CommentId) -> CommentResult:
-        comment = await self._comment_gateway.get_comment(data)
+        comment, files = await self._comment_gateway.get_comment_with_files(data)
         if comment is None:
             raise NotFound(f"Комментарий не найден")
 
@@ -75,6 +76,7 @@ class GetComment(Interactor[CommentId, CommentResult]):
             parent_id=comment.parent_id,
             is_rated=is_rated,
             state=comment.state,
+            files=files,
             created_at=comment.created_at,
             updated_at=comment.updated_at
         )

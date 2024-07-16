@@ -9,7 +9,7 @@ from mbs.application.common.comment_gateway import CommentReader, CommentRater
 from mbs.application.common.exceptions import NotFound, Forbidden
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
-from mbs.domain.models import CommentState, CommentId, UserId, ArticleId
+from mbs.domain.models import CommentState, CommentId, UserId, ArticleId, File
 from mbs.domain.services.access import AccessService
 
 
@@ -22,6 +22,7 @@ class CommentNode(BaseModel):
     is_rated: bool
     answers: list['CommentNode']
     level: int
+    files: list[File]
 
     created_at: datetime
     updated_at: datetime | None
@@ -75,7 +76,7 @@ class GetArticleComments(Interactor[ArticleId, list[CommentNode]]):
         )
 
         comment_list = []
-        for (comment, level), is_rated in zip(raw_comments, rated_states):
+        for (comment, level, files), is_rated in zip(raw_comments, rated_states):
             if comment.state == CommentState.DELETED and not can_look_deleted:
                 comment.content = "Комментарий удален"
 
@@ -84,7 +85,8 @@ class GetArticleComments(Interactor[ArticleId, list[CommentNode]]):
                 is_rated=is_rated,
                 answers=[],
                 parent_id=comment.parent_id,
-                level=level
+                level=level,
+                files=files
             ))
 
         comment_tree = []

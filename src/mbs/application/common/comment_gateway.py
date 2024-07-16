@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol
 
-from mbs.domain.models import Comment, CommentId, ArticleId, UserId
+from mbs.domain.models import Comment, CommentId, ArticleId, UserId, File
 
 
 class CommentReader(Protocol):
@@ -9,8 +9,11 @@ class CommentReader(Protocol):
     async def get_comment(self, comment_id: CommentId) -> Comment | None:
         pass
 
+    async def get_comment_with_files(self, comment_id: CommentId) -> tuple[Comment, list[File]] | None:
+        pass
+
     @abstractmethod
-    async def get_comments(self, article_id: ArticleId) -> list[tuple[Comment, int]]:
+    async def get_comments(self, article_id: ArticleId) -> list[tuple[Comment, int, list[File]]]:
         pass
 
 

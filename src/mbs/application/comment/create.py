@@ -8,7 +8,7 @@ from mbs.application.common.comment_gateway import CommentWriter, CommentReader
 from mbs.application.common.exceptions import NotFound, Forbidden, Unauthorized, InvalidData
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
-from mbs.domain.models import CommentState, CommentId, UserId, ArticleId, ArticleState
+from mbs.domain.models import CommentState, CommentId, UserId, ArticleId, ArticleState, File
 from mbs.domain.services.access import AccessService
 from mbs.domain.services.comment import CommentService
 import mbs.domain.exceptions as domain_exceptions
@@ -29,6 +29,7 @@ class CommentResult(BaseModel):
     parent_id: CommentId | None
     is_rated: bool
     state: CommentState
+    files: list[File]
 
     created_at: datetime
     updated_at: datetime | None
@@ -110,6 +111,7 @@ class CreateComment(Interactor[CreateCommentDTO, CommentResult]):
             parent_id=new_comment.parent_id,
             is_rated=False,
             state=new_comment.state,
+            files=[],
             created_at=new_comment.created_at,
             updated_at=new_comment.updated_at,
         )
