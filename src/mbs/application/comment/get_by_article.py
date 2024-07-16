@@ -68,7 +68,7 @@ class GetArticleComments(Interactor[ArticleId, list[CommentNode]]):
         except domain_exceptions.DomainError:
             can_look_deleted = False
 
-        raw_comments = await self._comment_gateway.get_comments(data)
+        raw_comments = await self._comment_gateway.get_comments_with_files(data)
 
         rated_states = await self._comment_gateway.is_comments_rated(
             comment_ids=[comment.id for comment, _ in raw_comments],

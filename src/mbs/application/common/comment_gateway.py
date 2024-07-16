@@ -13,7 +13,7 @@ class CommentReader(Protocol):
         pass
 
     @abstractmethod
-    async def get_comments(self, article_id: ArticleId) -> list[tuple[Comment, int, list[File]]]:
+    async def get_comments_with_files(self, article_id: ArticleId) -> list[tuple[Comment, int, list[File]]]:
         pass
 
 
