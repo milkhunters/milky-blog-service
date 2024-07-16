@@ -1,10 +1,6 @@
 from mbs.db import Base
 
-from .article import ArticleTag
-from .article import Article
+from .article import Article, ArticleTag, ArticleLike, ArticleFile
 from .tag import Tag
-from .comment import Comment
-from .comment import CommentTree
-from .notification import Notification
-from .like import Like
+from .comment import Comment, CommentTree, CommentLike, CommentFile
 from .file import File
