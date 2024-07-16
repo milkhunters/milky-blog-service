@@ -26,19 +26,20 @@ class RateArticle(Interactor[ArticleId, None]):
         self._id_provider = id_provider
 
     async def __call__(self, data: ArticleId) -> None:
+        article = await self._article_gateway.get_article(data)
+        if not article:
+            raise NotFound("Публикация не найдена")
+
         try:
             self._access_service.ensure_can_rate_article(
                 is_auth=self._id_provider.is_auth(),
                 permissions=self._id_provider.permissions(),
                 user_state=self._id_provider.user_state(),
+                article_state=article.state
             )
         except domain_exceptions.AccessDenied as error:
             raise Forbidden(str(error))
         except domain_exceptions.AuthenticationError as error:
             raise Unauthorized(str(error))
-
-        article = await self._article_gateway.get_article(data)
-        if not article:
-            raise NotFound("Статья не найдена")
 
         await self._article_gateway.rate_article(data, self._id_provider.user_id())

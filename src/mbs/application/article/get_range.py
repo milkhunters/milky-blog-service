@@ -1,10 +1,10 @@
 import textwrap
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Protocol
 
 from pydantic import BaseModel
 
-from mbs.application.common.article_gateway import ArticleReader
+from mbs.application.common.article_gateway import ArticleReader, ArticleRater
 from mbs.application.common.exceptions import Forbidden, Unauthorized
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
@@ -30,6 +30,7 @@ class ArticleItem(BaseModel):
     views: int
     likes: int
     tags: list[str]
+    is_rated: bool
     state: ArticleState
     author_id: UserId
 
@@ -37,15 +38,19 @@ class ArticleItem(BaseModel):
     updated_at: datetime | None
 
 
+class ArticleGateway(ArticleReader, ArticleRater, Protocol):
+    pass
+
+
 class GetArticleRange(Interactor[GetArticleRangeDTO, list[ArticleItem]]):
 
     def __init__(
             self,
-            article_reader: ArticleReader,
+            article_gateway: ArticleGateway,
             access_service: AccessService,
             id_provider: IdProvider,
     ):
-        self._article_reader = article_reader
+        self._article_gateway = article_gateway
         self._access_service = access_service
         self._id_provider = id_provider
 
@@ -64,13 +69,19 @@ class GetArticleRange(Interactor[GetArticleRangeDTO, list[ArticleItem]]):
         except domain_exceptions.AccessDenied as error:
             raise Forbidden(str(error))
 
-        articles = await self._article_reader.get_articles(
+        # todo: to gather
+        articles = await self._article_gateway.get_articles(
             limit=data.per_page,
             offset=(data.page - 1) * data.per_page,
             order_by=data.order_by,
             query=data.query,
             state=data.state,
             author_id=data.author_id
+        )
+
+        rated_states = await self._article_gateway.is_articles_rated(
+            article_ids=[article.id for article in articles],
+            user_id=self._id_provider.user_id()
         )
 
         return [
@@ -82,10 +93,11 @@ class GetArticleRange(Interactor[GetArticleRangeDTO, list[ArticleItem]]):
                 views=article.views,
                 likes=article.likes,
                 tags=article.tags,
+                is_rated=is_rated,
                 state=article.state,
                 author_id=article.owner_id,
                 created_at=article.created_at,
                 updated_at=article.updated_at,
             )
-            for article in articles
+            for article, is_rated in zip(articles, rated_states)
         ]

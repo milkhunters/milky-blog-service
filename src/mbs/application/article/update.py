@@ -63,7 +63,7 @@ class UpdateArticle(Interactor[UpdateArticleDTO, ArticleResult]):
     async def __call__(self, data: UpdateArticleDTO) -> ArticleResult:
         article = await self._article_gateway.get_article(data.id)
         if not article:
-            raise NotFound("Статья не найдена")
+            raise NotFound("Публикация не найдена")
 
         try:
             self._access_service.ensure_can_update_article(

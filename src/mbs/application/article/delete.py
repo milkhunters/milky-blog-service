@@ -32,7 +32,7 @@ class DeleteArticle(Interactor[ArticleId, None]):
 
         article = await self._article_gateway.get_article(data)
         if not article:
-            raise NotFound("Статья не найдена")
+            raise NotFound("Публикация не найдена")
 
         try:
             self._access_service.ensure_can_delete_article(
@@ -48,4 +48,4 @@ class DeleteArticle(Interactor[ArticleId, None]):
             raise Forbidden(str(error))
 
         await self._article_gateway.remove_article(data)
-        await self._comment_remover.delete_comments_by_article(data)
+        await self._comment_remover.delete_article_comments(data)

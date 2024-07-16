@@ -31,6 +31,7 @@ class CreateArticleResult(BaseModel):
     views: int
     likes: int
     tags: list[str]
+    is_rated: bool
     state: ArticleState
     author_id: UserId
 
@@ -113,6 +114,7 @@ class CreateArticle(Interactor[CreateArticleDTO, CreateArticleResult]):
             likes=article.likes,
             tags=article.tags,
             state=article.state,
+            is_rated=False,
             author_id=article.author_id,
             created_at=article.created_at,
             updated_at=article.updated_at

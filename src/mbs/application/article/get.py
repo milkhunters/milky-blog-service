@@ -3,7 +3,7 @@ from typing import Protocol
 
 from pydantic import BaseModel
 
-from mbs.application.common.article_gateway import ArticleReader, ArticleWriter
+from mbs.application.common.article_gateway import ArticleReader, ArticleWriter, ArticleRater
 from mbs.application.common.exceptions import NotFound, Forbidden, Unauthorized
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
@@ -23,6 +23,7 @@ class ArticleResult(BaseModel):
     views: int
     likes: int
     tags: list[str]
+    is_rated: bool
     state: ArticleState
     author_id: UserId
 
@@ -30,7 +31,7 @@ class ArticleResult(BaseModel):
     updated_at: datetime | None
 
 
-class ArticleGateway(ArticleReader, ArticleWriter, Protocol):
+class ArticleGateway(ArticleReader, ArticleWriter, ArticleRater, Protocol):
     pass
 
 
@@ -53,7 +54,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
     async def __call__(self, data: ArticleId) -> ArticleResult:
         article = await self._article_gateway.get_article(data)
         if not article:
-            raise NotFound("Статья не найдена")
+            raise NotFound("Публикация не найдена")
 
         try:
             self._access_service.ensure_can_get_article(
@@ -79,7 +80,10 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             likes=article.likes,
             tags=article.tags,
         )
+
+        # todo gather
         await self._article_gateway.save_article(updated_article)
+        is_rated = await self._article_gateway.is_rated(article.id, self._id_provider.user_id())
 
         return ArticleResult(
             id=article.id,
@@ -89,6 +93,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             views=article.views,
             likes=article.likes,
             tags=article.tags,
+            is_rated=is_rated,
             state=article.state,
             author_id=article.author_id,
             created_at=article.created_at,
