@@ -21,7 +21,6 @@ class Article(Base):
     state = Column(Enum(ArticleState), default=ArticleState.DRAFT)
     views = Column(BIGINT(), nullable=False, default=0)
     author_id = Column(UUID(as_uuid=True), nullable=False)
-    likes = relationship("models.models.like.Like", back_populates="article")
     tags = relationship('models.models.tag.Tag', secondary='article_tags', back_populates='articles')
     comments_tree = relationship("models.models.comment.CommentTree", back_populates="article")
 
@@ -67,7 +66,6 @@ class ArticleLike(Base):
 
     author_id = Column(UUID(as_uuid=True), nullable=False)
     article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
-    article = relationship("models.models.article.Article", back_populates="likes")
 
     def __repr__(self):
         return f'<{self.__class__.__name__}: {self.id}>'

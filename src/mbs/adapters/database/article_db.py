@@ -1,10 +1,10 @@
 from sqlalchemy import select, text, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import subqueryload
+from sqlalchemy.orm import subqueryload, aliased
 
 from mbs.adapters.database import models
 from mbs.application.common.article_gateway import ArticleReader, ArticleWriter, ArticleRemover, ArticleRater
-from mbs.domain.models import Article, ArticleId, ArticleState, UserId
+from mbs.domain.models import Article, ArticleId, ArticleState, UserId, File
 
 
 class ArticleGateway(ArticleReader, ArticleWriter, ArticleRemover, ArticleRater):
@@ -13,23 +13,91 @@ class ArticleGateway(ArticleReader, ArticleWriter, ArticleRemover, ArticleRater)
         self._session = session
 
     async def get_article(self, article_id: ArticleId) -> Article | None:
-        stmt = select(models.Article).options(
-            subqueryload(models.Article.tags),
-            subqueryload(models.Article.likes)
+        stmt = (
+            select(
+                models.Article,
+                func.count(models.ArticleLike.author_id).label('likes'),
+            )
+            .join(
+                models.ArticleLike,
+                models.ArticleLike.article_id == models.Article.id,
+                isouter=True
+            )
+            .options(
+                subqueryload(models.Article.tags)
+            )
         )
 
-        if result := (await self._session.execute(stmt)).scalars().first():
+        result, likes = (await self._session.execute(stmt)).scalars().first()
+
+        if result:
             return Article(
                 id=result.id,
                 title=result.title,
                 content=result.content,
                 author_id=result.author_id,
                 state=ArticleState(result.state),
-                likes=len(result.likes),
+                likes=likes,
                 tags=[tag.title for tag in result.tags],
                 created_at=result.created_at,
                 updated_at=result.updated_at,
             )
+
+    async def get_article_with_files(self, article_id: ArticleId) -> tuple[Article, list[File]] | None:
+        files_subquery = (
+            select(
+                models.ArticleFile.article_id,
+                func.array_agg(models.File.id).label("files")
+            )
+            .join(models.File, models.ArticleFile.file_id == models.File.id)
+            .group_by(models.ArticleFile.article_id)
+            .subquery()
+        )
+
+        files_alias = aliased(files_subquery, name="files")
+
+        stmt = (
+            select(
+                models.Article,
+                func.count(models.ArticleLike.author_id).label('likes'),
+                files_alias.c.files
+            )
+            .join(
+                models.ArticleLike,
+                models.ArticleLike.article_id == models.Article.id,
+                isouter=True
+            )
+            .outerjoin(
+                files_alias, models.Article.id == files_alias.c.article_id
+            )
+            .options(
+                subqueryload(models.Article.tags)
+            )
+        )
+
+        result, likes, files = (await self._session.execute(stmt)).scalars().first()
+
+        if result:
+            return Article(
+                id=result.id,
+                title=result.title,
+                content=result.content,
+                author_id=result.author_id,
+                state=ArticleState(result.state),
+                likes=likes,
+                tags=[tag.title for tag in result.tags],
+                created_at=result.created_at,
+                updated_at=result.updated_at,
+            ), [
+                File(
+                    id=file.id,
+                    filename=file.filename,
+                    content_type=file.content_type,
+                    created_at=file.created_at,
+                    updated_at=file.updated_at
+                )
+                for file in files
+            ]
 
     async def get_articles(
             self,
@@ -46,8 +114,7 @@ class ArticleGateway(ArticleReader, ArticleWriter, ArticleRemover, ArticleRater)
                 models.Article,
                 func.count(models.ArticleLike.author_id).label('likes')
             )
-            .select_from(models.ArticleLike)
-            .join(models.ArticleLike.article)
+            .join(models.ArticleLike, models.ArticleLike.article_id == models.Article.id, isouter=True)
             .options(subqueryload(models.Article.tags))
             .order_by(text(order_by))
             .group_by(models.Article)

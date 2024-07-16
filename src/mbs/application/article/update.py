@@ -9,7 +9,7 @@ from mbs.application.common.exceptions import NotFound, Unauthorized, Forbidden,
 from mbs.application.common.file_gateway import FileReader
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
-from mbs.domain.models import ArticleState, FileId, ArticleId, UserId
+from mbs.domain.models import ArticleState, FileId, ArticleId, UserId, File
 from mbs.domain.services.access import AccessService
 from mbs.domain.services.article import ArticleService
 from mbs.domain.services.validator import ValidatorService
@@ -32,6 +32,7 @@ class ArticleResult(BaseModel):
     likes: int
     tags: list[str]
     state: ArticleState
+    files: list[File]
     author_id: UserId
 
     created_at: datetime
@@ -61,7 +62,7 @@ class UpdateArticle(Interactor[UpdateArticleDTO, ArticleResult]):
         self._id_provider = id_provider
 
     async def __call__(self, data: UpdateArticleDTO) -> ArticleResult:
-        article = await self._article_gateway.get_article(data.id)
+        article, files = await self._article_gateway.get_article_with_files(data.id)
         if not article:
             raise NotFound("Публикация не найдена")
 
@@ -132,6 +133,7 @@ class UpdateArticle(Interactor[UpdateArticleDTO, ArticleResult]):
             likes=updated_article.likes,
             tags=updated_article.tags,
             state=updated_article.state,
+            files=files,
             author_id=updated_article.author_id,
             created_at=updated_article.created_at,
             updated_at=updated_article.updated_at,

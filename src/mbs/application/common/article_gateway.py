@@ -10,6 +10,10 @@ class ArticleReader(Protocol):
         pass
 
     @abstractmethod
+    async def get_article_with_files(self, article_id: ArticleId) -> tuple[Article, list[File]] | None:
+        pass
+
+    @abstractmethod
     async def get_articles(
             self,
             limit: int,

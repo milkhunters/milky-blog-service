@@ -9,7 +9,7 @@ from mbs.application.common.exceptions import Unauthorized, InvalidData, Forbidd
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
 from mbs.application.common.tag_gateway import TagReader, TagLinker, TagWriter
-from mbs.domain.models import ArticleState, ArticleId, FileId, UserId
+from mbs.domain.models import ArticleState, ArticleId, FileId, UserId, File
 from mbs.domain.services.access import AccessService
 from mbs.domain.services.article import ArticleService
 from mbs.domain.services.tag import TagService
@@ -33,6 +33,7 @@ class CreateArticleResult(BaseModel):
     tags: list[str]
     is_rated: bool
     state: ArticleState
+    files: list[File]
     author_id: UserId
 
     created_at: datetime
@@ -114,6 +115,7 @@ class CreateArticle(Interactor[CreateArticleDTO, CreateArticleResult]):
             likes=article.likes,
             tags=article.tags,
             state=article.state,
+            files=[],
             is_rated=False,
             author_id=article.author_id,
             created_at=article.created_at,

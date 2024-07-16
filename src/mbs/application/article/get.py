@@ -3,6 +3,7 @@ from typing import Protocol
 
 from pydantic import BaseModel
 
+from mbs.adapters.database.models import File
 from mbs.application.common.article_gateway import ArticleReader, ArticleWriter, ArticleRater
 from mbs.application.common.exceptions import NotFound, Forbidden, Unauthorized
 from mbs.application.common.id_provider import IdProvider
@@ -25,6 +26,7 @@ class ArticleResult(BaseModel):
     tags: list[str]
     is_rated: bool
     state: ArticleState
+    files: list[File]
     author_id: UserId
 
     created_at: datetime
@@ -52,7 +54,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
         self._id_provider = id_provider
 
     async def __call__(self, data: ArticleId) -> ArticleResult:
-        article = await self._article_gateway.get_article(data)
+        article, files = await self._article_gateway.get_article_with_files(data)
         if not article:
             raise NotFound("Публикация не найдена")
 
@@ -83,7 +85,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
 
         # todo gather
         await self._article_gateway.save_article(updated_article)
-        is_rated = await self._article_gateway.is_rated(article.id, self._id_provider.user_id())
+        is_rated = await self._article_gateway.is_article_rated(article.id, self._id_provider.user_id())
 
         return ArticleResult(
             id=article.id,
@@ -95,6 +97,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             tags=article.tags,
             is_rated=is_rated,
             state=article.state,
+            files=files,
             author_id=article.author_id,
             created_at=article.created_at,
             updated_at=article.updated_at,
