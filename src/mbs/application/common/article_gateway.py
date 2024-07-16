@@ -16,6 +16,7 @@ class ArticleReader(Protocol):
             offset: int,
             order_by: str,
             state: ArticleState,
+            tag: str = None,
             query: str = None,
             author_id: UserId = None,
     ) -> list[Article]:

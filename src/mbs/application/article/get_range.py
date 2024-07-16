@@ -18,6 +18,7 @@ class GetArticleRangeDTO(BaseModel):
     per_page: int
     order_by: Literal["title", "updated_at", "created_at"] = "created_at"
     query: str | None
+    tag: str | None
     state: ArticleState = ArticleState.PUBLISHED
     author_id: UserId | None
 
@@ -75,6 +76,7 @@ class GetArticleRange(Interactor[GetArticleRangeDTO, list[ArticleItem]]):
             offset=(data.page - 1) * data.per_page,
             order_by=data.order_by,
             query=data.query,
+            tag=data.tag,
             state=data.state,
             author_id=data.author_id
         )
