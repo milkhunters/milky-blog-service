@@ -19,6 +19,8 @@ class Permission(AutoName):
     DeleteArticle = auto()
     DeleteSelfArticle = auto()
     RateArticle = auto()
+    UploadArticleFile = auto()
+    DeleteArticleFile = auto()
 
     CreateComment = auto()
     GetComment = auto()
@@ -28,11 +30,8 @@ class Permission(AutoName):
     DeleteComment = auto()
     DeleteSelfComment = auto()
     RateComment = auto()
-
-    CreateArticleFile = auto()
-    ConfirmArticleFile = auto()
-    GetArticleFile = auto()
-    DeleteArticleFile = auto()
+    UploadCommentFile = auto()
+    DeleteCommentFile = auto()
 
     GetTag = auto()
     GetTagStats = auto()
