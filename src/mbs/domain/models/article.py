@@ -18,6 +18,8 @@ class Article(BaseModel):
     content: str
     state: ArticleState
     views: int
+    likes: int
+    tags: list[str]
     author_id: UserId
 
     created_at: datetime
