@@ -22,6 +22,7 @@ class ValidatorService:
 
         self.per_page_limit = 100
 
+        self.filename_max_length = 255
 
     def validate_article_title(self, title: str):
         if len(title) < self.article_title_min_length:
@@ -57,3 +58,7 @@ class ValidatorService:
             raise ValidationError("Неверное количество элементов на странице")
         if per_page > self.per_page_limit:
             raise ValidationError(f"Количество элементов на странице не может быть больше {self.per_page_limit}")
+
+    def validate_filename(self, filename: str):
+        if len(filename) > self.filename_max_length:
+            raise ValidationError(f"Имя файла не может содержать больше {self.filename_max_length} символов")
