@@ -239,11 +239,14 @@ class AccessService:
         if comment_state != CommentState.PUBLISHED:
             raise AccessDenied()
 
-    def ensure_can_create_article_file(
+    def ensure_can_upload_article_file(
             self,
             is_auth: bool,
+            user_id: UserId | None,
             permissions: list[PermissionTextId],
-            user_state: UserState | None
+            user_state: UserState | None,
+            article_author_id: UserId,
+            article_state: ArticleState
     ):
         if not is_auth:
             raise AuthenticationError()
@@ -251,14 +254,24 @@ class AccessService:
         if user_state != UserState.ACTIVE:
             raise AccessDenied()
 
-        if Permission.CreateArticleFile not in permissions:
+        if user_id != article_author_id:
             raise AccessDenied()
 
-    def ensure_can_confirm_article_file(
+        if article_state == ArticleState.DELETED:
+            raise AccessDenied()
+
+        if Permission.UploadArticleFile not in permissions:
+            raise AccessDenied()
+
+    def ensure_can_upload_comment_file(
             self,
             is_auth: bool,
+            user_id: UserId | None,
             permissions: list[PermissionTextId],
-            user_state: UserState | None
+            user_state: UserState | None,
+            comment_author_id: UserId,
+            comment_state: CommentState,
+            article_state: ArticleState
     ):
         if not is_auth:
             raise AuthenticationError()
@@ -266,29 +279,26 @@ class AccessService:
         if user_state != UserState.ACTIVE:
             raise AccessDenied()
 
-        if Permission.ConfirmArticleFile not in permissions:
+        if user_id != comment_author_id:
             raise AccessDenied()
 
-    def ensure_can_get_article_file(
-            self,
-            is_auth: bool,
-            permissions: list[PermissionTextId],
-            user_state: UserState | None
-    ):
-        if not is_auth:
-            raise AuthenticationError()
-
-        if user_state != UserState.ACTIVE:
+        if comment_state == CommentState.DELETED:
             raise AccessDenied()
 
-        if Permission.GetArticleFile not in permissions:
+        if article_state != ArticleState.PUBLISHED:
+            raise AccessDenied()
+
+        if Permission.UploadCommentFile not in permissions:
             raise AccessDenied()
 
     def ensure_can_delete_article_file(
             self,
             is_auth: bool,
+            user_id: UserId | None,
             permissions: list[PermissionTextId],
-            user_state: UserState | None
+            user_state: UserState | None,
+            article_author_id: UserId,
+            article_state: ArticleState
     ):
         if not is_auth:
             raise AuthenticationError()
@@ -296,14 +306,40 @@ class AccessService:
         if user_state != UserState.ACTIVE:
             raise AccessDenied()
 
+        if article_state == ArticleState.DELETED:
+            raise AccessDenied()
+
+        if user_id != article_author_id:
+            raise AccessDenied()
+
         if Permission.DeleteArticleFile not in permissions:
             raise AccessDenied()
 
-    def ensure_can_get_tag(
+    def ensure_can_delete_comment_file(
             self,
-            permissions: list[PermissionTextId]
+            is_auth: bool,
+            user_id: UserId | None,
+            permissions: list[PermissionTextId],
+            user_state: UserState | None,
+            comment_author_id: UserId,
+            comment_state: CommentState,
+            article_state: ArticleState
     ):
-        if Permission.GetTag in permissions:
-            return
+        if not is_auth:
+            raise AuthenticationError()
 
-        raise AccessDenied()
+        if user_state != UserState.ACTIVE:
+            raise AccessDenied()
+
+        if comment_state == CommentState.DELETED:
+            raise AccessDenied()
+
+        if user_id != comment_author_id:
+            raise AccessDenied()
+
+        if article_state != ArticleState.PUBLISHED:
+            raise AccessDenied()
+
+        if Permission.DeleteCommentFile not in permissions:
+            raise AccessDenied()
+
