@@ -4,7 +4,7 @@ from mbs.domain.models import (
     PermissionTextId,
     Permission,
     UserState,
-    UserId
+    UserId, CommentState
 )
 
 
@@ -28,9 +28,10 @@ class AccessService:
     def ensure_can_update_article(
             self,
             is_auth: bool,
-            user_id: UserId,
+            user_id: UserId | None,
             article_author_id: UserId,
             permissions: list[PermissionTextId],
+            article_state: ArticleState,
             user_state: UserState | None
     ):
         if not is_auth:
@@ -39,7 +40,11 @@ class AccessService:
         if user_state != UserState.ACTIVE:
             raise AccessDenied()
 
-        if user_id == article_author_id and Permission.UpdateSelfArticle in permissions:
+        if (
+                article_state != ArticleState.DELETED and
+                user_id == article_author_id and
+                Permission.UpdateSelfArticle in permissions
+        ):
             return
 
         if Permission.UpdateArticle in permissions:
@@ -50,7 +55,7 @@ class AccessService:
     def ensure_can_delete_article(
             self,
             is_auth: bool,
-            user_id: UserId,
+            user_id: UserId | None,
             article_author_id: UserId,
             permissions: list[PermissionTextId],
             user_state: UserState | None
@@ -72,16 +77,16 @@ class AccessService:
     def ensure_can_get_article(
             self,
             is_auth: bool,
-            user_id: UserId,
+            user_id: UserId | None,
             article_state: ArticleState,
-            article_author_id: UserId,
+            article_author_id: UserId | None,
             permissions: list[PermissionTextId],
             user_state: UserState | None
     ):
         if not is_auth:
             if (
-                    (article_state == ArticleState.PUBLISHED and
-                     Permission.GetPublishedArticle in permissions) or
+                    article_state == ArticleState.PUBLISHED and
+                    Permission.GetPublishedArticle in permissions or
                     Permission.GetArticle in permissions
             ):
                 return
@@ -105,7 +110,8 @@ class AccessService:
             self,
             is_auth: bool,
             permissions: list[PermissionTextId],
-            user_state: UserState | None
+            user_state: UserState | None,
+            article_state: ArticleState
     ):
         if not is_auth:
             raise AuthenticationError()
@@ -116,11 +122,15 @@ class AccessService:
         if Permission.RateArticle not in permissions:
             raise AccessDenied()
 
+        if article_state != ArticleState.PUBLISHED:
+            raise AccessDenied()
+
     def ensure_can_create_comment(
             self,
             is_auth: bool,
             permissions: list[PermissionTextId],
-            user_state: UserState | None
+            user_state: UserState | None,
+            article_state: ArticleState
     ):
         if not is_auth:
             raise AuthenticationError()
@@ -131,12 +141,16 @@ class AccessService:
         if Permission.CreateComment not in permissions:
             raise AccessDenied()
 
+        if article_state != ArticleState.PUBLISHED:
+            raise AccessDenied()
+
     def ensure_can_update_comment(
             self,
             is_auth: bool,
-            user_id: UserId,
+            user_id: UserId | None,
             comment_author_id: UserId,
             permissions: list[PermissionTextId],
+            comment_state: CommentState,
             user_state: UserState | None
     ):
         if not is_auth:
@@ -145,7 +159,11 @@ class AccessService:
         if user_state != UserState.ACTIVE:
             raise AccessDenied()
 
-        if user_id == comment_author_id and Permission.UpdateSelfComment in permissions:
+        if (
+                user_id == comment_author_id and
+                Permission.UpdateSelfComment in permissions and
+                comment_state == CommentState.PUBLISHED
+        ):
             return
 
         if Permission.UpdateComment in permissions:
@@ -156,7 +174,7 @@ class AccessService:
     def ensure_can_delete_comment(
             self,
             is_auth: bool,
-            user_id: UserId,
+            user_id: UserId | None,
             comment_author_id: UserId,
             permissions: list[PermissionTextId],
             user_state: UserState | None
@@ -190,7 +208,6 @@ class AccessService:
         if Permission.GetComment not in permissions:
             raise AccessDenied()
 
-
     def ensure_can_get_published_comment(
             self,
             permissions: list[PermissionTextId]
@@ -202,6 +219,25 @@ class AccessService:
             return
 
         raise AccessDenied()
+
+    def ensure_can_rate_comment(
+            self,
+            is_auth: bool,
+            permissions: list[PermissionTextId],
+            user_state: UserState | None,
+            comment_state: CommentState
+    ):
+        if not is_auth:
+            raise AuthenticationError()
+
+        if user_state != UserState.ACTIVE:
+            raise AccessDenied()
+
+        if Permission.RateComment not in permissions:
+            raise AccessDenied()
+
+        if comment_state != CommentState.PUBLISHED:
+            raise AccessDenied()
 
     def ensure_can_create_article_file(
             self,
