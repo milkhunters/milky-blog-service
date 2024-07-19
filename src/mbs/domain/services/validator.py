@@ -1,9 +1,6 @@
-import uuid
-import datetime
+import re
 
 from mbs.domain.exceptions import ValidationError
-from mbs.domain.models import Article
-from mbs.domain.models.article_state import ArticleState
 
 
 class ValidatorService:
@@ -23,6 +20,9 @@ class ValidatorService:
         self.per_page_limit = 100
 
         self.filename_max_length = 255
+
+        self.mime_type_max_length = 255  # RFC 4288 and RFC 6838
+        self.mime_type_regex = re.compile(r"\w+/[-+.\w]+")
 
     def validate_article_title(self, title: str):
         if len(title) < self.article_title_min_length:
@@ -62,3 +62,9 @@ class ValidatorService:
     def validate_filename(self, filename: str):
         if len(filename) > self.filename_max_length:
             raise ValidationError(f"Имя файла не может содержать больше {self.filename_max_length} символов")
+
+    def validate_mime_content_type(self, content_type: str):
+        if len(content_type) > self.mime_type_max_length:
+            raise ValidationError(f"Тип содержимого не может содержать больше {self.mime_type_max_length} символов")
+        if not self.mime_type_regex.match(content_type):
+            raise ValidationError("Неверный тип содержимого")
