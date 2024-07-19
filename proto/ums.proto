@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+package ums.control;
+
+service UMSControl {
+  rpc SyncService (SyncServiceRequest) returns (google.protobuf.Empty);
+  rpc SendNotify (SendNotifyRequest) returns (google.protobuf.Empty);
+}
+
+message PermissionsList {
+  repeated string permission_text_ids = 1;
+}
+
+message SyncServiceRequest {
+  string text_id = 1;
+  repeated string permission_text_ids = 2;
+}
+
+enum NotifyType {
+    SecurityNewLogin = 0;
+    CommentAnswer = 1;
+    CommentArticle = 2;
+    LikeArticle = 3;
+    LikeComment = 4;
+    ViewArticleReward = 5;
+}
+
+message SendNotifyRequest {
+  string user_id = 1;
+  NotifyType notify_type = 2;
+  string content = 3;
+  string content_id = 4;
+}
