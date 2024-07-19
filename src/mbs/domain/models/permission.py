@@ -27,6 +27,7 @@ class Permission(AutoName):
     UpdateSelfComment = auto()
     DeleteComment = auto()
     DeleteSelfComment = auto()
+    RateComment = auto()
 
     CreateArticleFile = auto()
     ConfirmArticleFile = auto()
