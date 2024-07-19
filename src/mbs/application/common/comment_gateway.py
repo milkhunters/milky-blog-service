@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol
 
-from mbs.domain.models import Comment, CommentId, ArticleId, UserId, File
+from mbs.domain.models import Comment, CommentId, ArticleId, UserId, File, FileId
 
 
 class CommentReader(Protocol):
@@ -46,4 +46,18 @@ class CommentRater(Protocol):
 
     @abstractmethod
     async def is_comments_rated(self, comment_ids: list[CommentId], user_id: UserId) -> list[bool]:
+        pass
+
+
+class CommentFile(Protocol):
+    @abstractmethod
+    async def is_file_linked_to_comment(self, comment_id: CommentId, file_id: FileId) -> bool:
+        pass
+
+    @abstractmethod
+    async def link_file_to_comment(self, comment_id: CommentId, file_id: FileId) -> None:
+        pass
+
+    @abstractmethod
+    async def unlink_file_from_comment(self, comment_id: CommentId, file_id: FileId) -> None:
         pass
