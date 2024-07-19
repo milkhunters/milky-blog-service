@@ -15,7 +15,7 @@ class File(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     filename = Column(VARCHAR(255), nullable=False)
-    content_type = Column(VARCHAR(255), nullable=False)
+    content_type = Column(VARCHAR(255), nullable=False)  # RFC 4288 and RFC 6838
     is_uploaded = Column(BOOLEAN(), default=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
