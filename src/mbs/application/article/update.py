@@ -119,7 +119,6 @@ class UpdateArticle(Interactor[UpdateArticleDTO, ArticleResult]):
             state=data.state,
             poster=data.poster,
             views=article.views,
-            likes=article.likes,
             tags=data.tags,
         )
 
