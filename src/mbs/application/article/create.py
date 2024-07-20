@@ -30,14 +30,23 @@ class CreateArticleResult(BaseModel):
     poster: FileId | None
     views: int
     likes: int
+    comments: int
     tags: list[str]
     is_rated: bool
     state: ArticleState
-    files: list[File]
+    files: list['FileItem']
     author_id: UserId
 
     created_at: datetime
     updated_at: datetime | None
+
+
+class FileItem(BaseModel):
+    id: FileId
+    url: str
+    filename: str
+    content_type: str
+    created_at: datetime
 
 
 class TagGateway(TagReader, TagWriter, TagLinker, Protocol):
@@ -112,7 +121,8 @@ class CreateArticle(Interactor[CreateArticleDTO, CreateArticleResult]):
             content=article.content,
             poster=article.poster,
             views=article.views,
-            likes=article.likes,
+            likes=0,
+            comments=0,
             tags=article.tags,
             state=article.state,
             files=[],
