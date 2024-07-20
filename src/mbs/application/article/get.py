@@ -10,6 +10,7 @@ from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
 
 import mbs.domain.exceptions as domain_exceptions
+from mbs.application.common.storage_gateway import StorageAccessLinkMaker
 from mbs.application.common.tag_gateway import TagReader
 from mbs.domain.models import ArticleState, ArticleId, FileId, UserId
 from mbs.domain.services.access import AccessService
@@ -26,11 +27,19 @@ class ArticleResult(BaseModel):
     tags: list[str]
     is_rated: bool
     state: ArticleState
-    files: list[File]
+    files: list['FileItem']
     author_id: UserId
 
     created_at: datetime
     updated_at: datetime | None
+
+
+class FileItem(BaseModel):
+    id: FileId
+    url: str
+    filename: str
+    content_type: str
+    created_at: datetime
 
 
 class ArticleGateway(ArticleReader, ArticleWriter, ArticleRater, Protocol):
@@ -43,12 +52,14 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             self,
             article_gateway: ArticleGateway,
             article_service: ArticleService,
+            storage_access_link_maker: StorageAccessLinkMaker,
             tag_reader: TagReader,
             access_service: AccessService,
             id_provider: IdProvider,
     ):
         self._article_gateway = article_gateway
         self._article_service = article_service
+        self._storage_access_link_maker = storage_access_link_maker
         self._tag_reader = tag_reader
         self._access_service = access_service
         self._id_provider = id_provider
@@ -79,7 +90,6 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             state=article.state,
             views=article.views + 1,  # Could there be problems due to a non-atomic operation? 🤔
             poster=article.poster_id,
-            likes=article.likes,
             tags=article.tags,
         )
 
@@ -97,7 +107,18 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             tags=article.tags,
             is_rated=is_rated,
             state=article.state,
-            files=files,
+            files=[
+                FileItem(
+                    id=file.id,
+                    url=await self._storage_access_link_maker.make_article_download_link(  # todo gather
+                        article_id=article.id,
+                        file_id=file.id
+                    ),
+                    filename=file.filename,
+                    content_type=file.content_type,
+                    created_at=file.created_at
+                ) for file in files
+            ],
             author_id=article.author_id,
             created_at=article.created_at,
             updated_at=article.updated_at,
