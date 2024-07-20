@@ -3,13 +3,11 @@ from typing import Protocol
 
 from pydantic import BaseModel
 
-from mbs.adapters.database.models import File
+import mbs.domain.exceptions as domain_exceptions
 from mbs.application.common.article_gateway import ArticleReader, ArticleWriter, ArticleRater
 from mbs.application.common.exceptions import NotFound, Forbidden, Unauthorized
 from mbs.application.common.id_provider import IdProvider
 from mbs.application.common.interactor import Interactor
-
-import mbs.domain.exceptions as domain_exceptions
 from mbs.application.common.storage_gateway import StorageAccessLinkMaker
 from mbs.application.common.tag_gateway import TagReader
 from mbs.domain.models import ArticleState, ArticleId, FileId, UserId
@@ -84,31 +82,24 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
         except domain_exceptions.AccessDenied as error:
             raise Forbidden(str(error))
 
-        updated_article = self._article_service.update_article(
-            article,
-            title=article.title,
-            content=article.content,
-            state=article.state,
-            views=article.views + 1,  # TODO: Could there be problems due to a non-atomic operation? 🤔
-            poster=article.poster_id,
-            tags=article.tags,
-        )
+        # TODO: Could there be problems due to a non-atomic operation? 🤔
+        updated_article = self._article_service.inc_views_article(article)
 
         # todo gather
         await self._article_gateway.save_article(updated_article)
         is_rated = await self._article_gateway.is_article_rated(article.id, self._id_provider.user_id())
 
         return ArticleResult(
-            id=updated_article.id,
-            title=updated_article.title,
-            content=updated_article.content,
-            poster=updated_article.poster_id,
+            id=article.id,
+            title=article.title,
+            content=article.content,
+            poster=article.poster_id,
             views=updated_article.views,
             likes=article.likes,
             comments=article.comments,
-            tags=updated_article.tags,
+            tags=article.tags,
             is_rated=is_rated,
-            state=updated_article.state,
+            state=article.state,
             files=[
                 FileItem(
                     id=file.id,
@@ -121,7 +112,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
                     created_at=file.created_at
                 ) for file in article.files
             ],
-            author_id=updated_article.author_id,
-            created_at=updated_article.created_at,
-            updated_at=updated_article.updated_at,
+            author_id=article.author_id,
+            created_at=article.created_at,
+            updated_at=article.updated_at,
         )

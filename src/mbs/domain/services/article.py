@@ -50,3 +50,20 @@ class ArticleService:
             created_at=article.created_at,
             updated_at=datetime.datetime.now(datetime.UTC)
         )
+
+    def inc_views_article(
+            self,
+            article: Article,
+    ):
+        return Article(
+            id=article.id,
+            title=article.title,
+            poster=article.poster,
+            content=article.content,
+            state=article.state,
+            views=article.views + 1,
+            tags=article.tags,
+            author_id=article.author_id,
+            created_at=article.created_at,
+            updated_at=article.updated_at
+        )
