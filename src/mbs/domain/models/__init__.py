@@ -1,4 +1,4 @@
-from .article import Article, ArticleId
+from .article import Article, ArticleId, ArticleWithLikeComment, ArticleWithLikeCommentFile
 from .article_state import ArticleState
 
 from .comment import Comment, CommentId
