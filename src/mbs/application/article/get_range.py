@@ -30,6 +30,7 @@ class ArticleItem(BaseModel):
     poster: FileId | None
     views: int
     likes: int
+    comments: int
     tags: list[str]
     is_rated: bool
     state: ArticleState
@@ -71,7 +72,7 @@ class GetArticleRange(Interactor[GetArticleRangeDTO, list[ArticleItem]]):
             raise Forbidden(str(error))
 
         # todo: to gather
-        articles = await self._article_gateway.get_articles(
+        articles = await self._article_gateway.get_articles_with_like_comment(
             limit=data.per_page,
             offset=(data.page - 1) * data.per_page,
             order_by=data.order_by,
@@ -94,6 +95,7 @@ class GetArticleRange(Interactor[GetArticleRangeDTO, list[ArticleItem]]):
                 poster=article.poster,
                 views=article.views,
                 likes=article.likes,
+                comments=article.comments,
                 tags=article.tags,
                 is_rated=is_rated,
                 state=article.state,

@@ -24,6 +24,7 @@ class ArticleResult(BaseModel):
     poster: FileId | None
     views: int
     likes: int
+    comments: int
     tags: list[str]
     is_rated: bool
     state: ArticleState
@@ -65,7 +66,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
         self._id_provider = id_provider
 
     async def __call__(self, data: ArticleId) -> ArticleResult:
-        article, files = await self._article_gateway.get_article_with_files(data)
+        article = await self._article_gateway.get_article_with_like_comment_file(data)
         if not article:
             raise NotFound("Публикация не найдена")
 
@@ -73,7 +74,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             self._access_service.ensure_can_get_article(
                 is_auth=self._id_provider.is_auth(),
                 user_id=self._id_provider.user_id(),
-                article_author_id=article.owner_id,
+                article_author_id=article.author_id,
                 permissions=self._id_provider.permissions(),
                 user_state=self._id_provider.user_state(),
                 article_state=article.state,
@@ -88,7 +89,7 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
             title=article.title,
             content=article.content,
             state=article.state,
-            views=article.views + 1,  # Could there be problems due to a non-atomic operation? 🤔
+            views=article.views + 1,  # TODO: Could there be problems due to a non-atomic operation? 🤔
             poster=article.poster_id,
             tags=article.tags,
         )
@@ -98,15 +99,16 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
         is_rated = await self._article_gateway.is_article_rated(article.id, self._id_provider.user_id())
 
         return ArticleResult(
-            id=article.id,
-            title=article.title,
-            content=article.content,
-            poster=article.poster_id,
-            views=article.views,
+            id=updated_article.id,
+            title=updated_article.title,
+            content=updated_article.content,
+            poster=updated_article.poster_id,
+            views=updated_article.views,
             likes=article.likes,
-            tags=article.tags,
+            comments=article.comments,
+            tags=updated_article.tags,
             is_rated=is_rated,
-            state=article.state,
+            state=updated_article.state,
             files=[
                 FileItem(
                     id=file.id,
@@ -117,9 +119,9 @@ class GetArticle(Interactor[ArticleId, ArticleResult]):
                     filename=file.filename,
                     content_type=file.content_type,
                     created_at=file.created_at
-                ) for file in files
+                ) for file in article.files
             ],
-            author_id=article.author_id,
-            created_at=article.created_at,
-            updated_at=article.updated_at,
+            author_id=updated_article.author_id,
+            created_at=updated_article.created_at,
+            updated_at=updated_article.updated_at,
         )

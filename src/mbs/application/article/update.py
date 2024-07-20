@@ -30,6 +30,7 @@ class ArticleResult(BaseModel):
     poster: FileId | None
     views: int
     likes: int
+    comments: int
     tags: list[str]
     state: ArticleState
     files: list[File]
@@ -62,7 +63,7 @@ class UpdateArticle(Interactor[UpdateArticleDTO, ArticleResult]):
         self._id_provider = id_provider
 
     async def __call__(self, data: UpdateArticleDTO) -> ArticleResult:
-        article, files = await self._article_gateway.get_article_with_files(data.id)
+        article, files = await self._article_gateway.get_article_with_like_comment_file(data.id)
         if not article:
             raise NotFound("Публикация не найдена")
 
@@ -129,7 +130,8 @@ class UpdateArticle(Interactor[UpdateArticleDTO, ArticleResult]):
             title=updated_article.title,
             poster=updated_article.poster,
             views=updated_article.views,
-            likes=updated_article.likes,
+            likes=article.likes,
+            comments=article.comments,
             tags=updated_article.tags,
             state=updated_article.state,
             files=files,
