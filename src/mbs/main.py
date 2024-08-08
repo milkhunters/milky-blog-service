@@ -8,12 +8,13 @@ from mbs.config import load_consul_config
 
 def create_app():
 
+    log_level = os.getenv("LOG_LEVEL", "INFO")
     consul_root = os.getenv('CONSUL_ROOT')
     consul_addr = os.getenv("CONSUL_ADDR")
     service_name = os.getenv("SERVICE_NAME")
 
     config = load_consul_config(consul_root, addr=consul_addr)
-    logging.basicConfig(level=config.log_level)
+    logging.basicConfig(level=log_level)
 
     app = FastAPI(
         title=config.BASE.TITLE,
