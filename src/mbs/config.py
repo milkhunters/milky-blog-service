@@ -1,8 +1,7 @@
-import os
 from dataclasses import dataclass
-from mbs.version import __version__
 
 import consul
+import urllib.parse
 
 
 @dataclass
@@ -11,7 +10,7 @@ class PostgresConfig:
     USERNAME: str
     PASSWORD: str
     HOST: str
-    PORT: int = 5432
+    PORT: int
 
 
 @dataclass
@@ -38,12 +37,6 @@ class Contact:
 
 
 @dataclass
-class JWT:
-    ACCESS_SECRET_KEY: str
-    REFRESH_SECRET_KEY: str
-
-
-@dataclass
 class Base:
     TITLE: str
     DESCRIPTION: str
@@ -53,8 +46,6 @@ class Base:
 
 @dataclass
 class Config:
-    DEBUG: bool
-    JWT: JWT
     BASE: Base
     DB: DbConfig
 
@@ -85,29 +76,26 @@ class KVManager:
 def load_consul_config(
         root_name: str,
         *,
-        host='127.0.0.1',
-        port=8500,
-        token=None,
-        scheme='http',
+        addr: str = "http://localhost:8500",
+        token: str = None,
         **kwargs
 ) -> Config:
     """
     Load config from consul
 
     """
-
+    url = urllib.parse.urlparse(addr)
     config = KVManager(
         consul.Consul(
-            host=host,
-            port=port,
+            host=url.hostname,
+            port=url.port,
             token=token,
-            scheme=scheme,
+            scheme=url.scheme,
             **kwargs
         ).kv,
         root_name=root_name
     )
     return Config(
-        DEBUG=to_bool(os.getenv('DEBUG', 1)),
         BASE=Base(
             TITLE=config("BASE", "TITLE"),
             DESCRIPTION=config("BASE", "DESCRIPTION"),
@@ -117,10 +105,6 @@ def load_consul_config(
                 URL=config("BASE", "CONTACT", "URL"),
                 EMAIL=config("BASE", "CONTACT", "EMAIL")
             ),
-        ),
-        JWT=JWT(
-            ACCESS_SECRET_KEY=config("JWT", "ACCESS_SECRET_KEY"),
-            REFRESH_SECRET_KEY=config("JWT", "REFRESH_SECRET_KEY")
         ),
         DB=DbConfig(
             POSTGRESQL=PostgresConfig(
