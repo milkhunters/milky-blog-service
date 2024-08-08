@@ -7,8 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-fastapi = "^0.111"
-uvicorn = "^0.29"
+fastapi = "^0.112"
+uvicorn = "^0.30"
 python-multipart = "^0.0.9"
 
 # Database
@@ -18,7 +18,7 @@ psycopg2-binary = "^2.9"
 
 # Misc
 python-consul = "^1.1"
-grpcio = "^1.59"
+grpcio = "^1.65"
 APScheduler = "^3.10"
 aiobotocore = "^2.7"
 
