@@ -2,7 +2,7 @@
 
 pub type TagId = uuid::Uuid;
 pub const TAG_TITLE_MAX: usize = 64;
-pub const TAG_TITLE_MIN: usize = 1;
+pub const TAG_TITLE_MIN: usize = 2;
 
 pub struct Tag {
     pub id: TagId,

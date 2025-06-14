@@ -8,6 +8,7 @@ use crate::domain::models::{
 pub type ArticleId = uuid::Uuid;
 pub const ARTICLE_TITLE_MAX: usize = 255;
 pub const ARTICLE_TITLE_MIN: usize = 1;
+pub const ARTICLE_CONTENT_MAX: usize = 32000;
 
 pub struct Article {
     pub id: ArticleId,
@@ -16,7 +17,6 @@ pub struct Article {
     pub content: String,
     pub state: ArticleState,
     pub views: u32,
-    pub tags: Vec<String>,
     pub author_id: UserId,
 
     pub created_at: DateTime<Utc>,
@@ -28,14 +28,16 @@ impl Article {
         title: String,
         poster: Option<FileId>,
         content: String,
-        author_id: UserId,
-        tags: Vec<String>
+        author_id: UserId
     ) -> Self {
         if title.len() > ARTICLE_TITLE_MAX {
             panic!("Article title exceeds maximum length of {}", ARTICLE_TITLE_MAX);
         }
         if title.len() < ARTICLE_TITLE_MIN {
             panic!("Article title must be at least {} characters long", ARTICLE_TITLE_MIN);
+        }
+        if content.len() > ARTICLE_CONTENT_MAX {
+            panic!("Article content exceeds maximum length of {}", ARTICLE_CONTENT_MAX);
         }
         Self {
             id: ArticleId::new_v4(),
@@ -44,20 +46,27 @@ impl Article {
             content,
             state: ArticleState::Draft,
             views: 0,
-            tags,
             author_id,
             created_at: Utc::now(),
             updated_at: None
         }
     }
 
-    pub fn update(&mut self, new_content: String) {
-        self.content = new_content;
+    pub fn update(
+        &mut self,
+        title: String,
+        poster: Option<FileId>,
+        content: String,
+        state: ArticleState,
+    ) {
+        self.title = title;
+        self.poster = poster;
+        self.content = content;
+        self.state = state;
         self.updated_at = Some(Utc::now());
     }
-
-    pub fn mark_published(&mut self) {
-        self.state = ArticleState::Published;
-        self.updated_at = Some(Utc::now());
+    
+    pub fn increment_views(&mut self) {
+        self.views += 1;
     }
 }
