@@ -3,30 +3,21 @@
 #[derive(PartialEq)]
 pub enum Permission {
     CreateArticle,
-    UpdateSelfArticle,
-    UpdateAnyArticle,
-    DeleteSelfArticle,
-    DeleteAnyArticle,
-    
-    GetSelfArticle,
-    GetPubArticle,
     GetAnyArticle,
-    
+    GetPubArticle,
+    GetSelfArticle,
+    UpdateAnyArticle,
+    UpdateSelfArticle,
+    DeleteAnyArticle,
+    DeleteSelfArticle,
     RateArticle,
-    UploadArticleFile,
-    DeleteArticleFile,
 
     CreateComment,
-    GetComment,
-    GetPublishedComment,
-    UpdateComment,
+    GetAnyComment,
+    GetPubComment,
+    UpdateAnyComment,
     UpdateSelfComment,
-    DeleteComment,
+    DeleteAnyComment,
     DeleteSelfComment,
-    RateComment,
-    UploadCommentFile,
-    DeleteCommentFile,
-
-    GetTag,
-    GetTagStats
+    RateComment
 }
