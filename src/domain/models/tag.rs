@@ -11,12 +11,6 @@ pub struct Tag {
 
 impl Tag {
     pub fn new(title: String) -> Self {
-        if title.len() > TAG_TITLE_MAX {
-            panic!("Tag title exceeds maximum length of {}", TAG_TITLE_MAX);
-        }
-        if title.len() < TAG_TITLE_MIN {
-            panic!("Tag title must be at least {} characters long", TAG_TITLE_MIN);
-        }
         Self { id: TagId::new_v4(), title }
     }
 }

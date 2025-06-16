@@ -22,9 +22,6 @@ pub struct Comment {
 
 impl Comment {
     pub fn new(content: String, author_id: UserId, article_id: ArticleId, parent_id: Option<CommentId>) -> Self {
-        if content.len() > COMMENT_CONTENT_MAX {
-            panic!("Comment content exceeds maximum length of {}", COMMENT_CONTENT_MAX);
-        }
         Self {
             id: CommentId::new_v4(),
             content,
@@ -38,9 +35,6 @@ impl Comment {
     }
 
     pub fn update(&mut self, new_content: String) {
-        if new_content.len() > COMMENT_CONTENT_MAX {
-            panic!("Comment content exceeds maximum length of {}", COMMENT_CONTENT_MAX);
-        }
         self.content = new_content;
         self.updated_at = Some(Utc::now());
     }

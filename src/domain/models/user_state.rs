@@ -2,7 +2,7 @@
 #[derive(PartialEq)]
 pub enum UserState {
     Active,
-    NotVerify, // todo not verified
+    NotVerify,
     Banned,
     Deleted,
 }

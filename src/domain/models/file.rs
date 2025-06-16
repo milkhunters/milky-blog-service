@@ -4,7 +4,6 @@ use regex::Regex;
 
 pub type FileId = uuid::Uuid;
 pub const FILE_NAME_MAX: usize = 255;
-pub const FILE_NAME_MIN: usize = 1;
 pub const FILE_MIME_TYPE_MAX: usize = 255; // RFC 4288 and RFC 6838
 pub static FILE_MIME_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\w+/[-+.\w]+").expect("Invalid MIME type regex"));
 
@@ -21,15 +20,6 @@ pub struct File {
 
 impl File {
     pub fn new(filename: String, content_type: String) -> Self {
-        if filename.len() > FILE_NAME_MAX {
-            panic!("Filename exceeds maximum length of {}", FILE_NAME_MAX);
-        }
-        if filename.len() < FILE_NAME_MIN {
-            panic!("Filename must be at least {} characters long", FILE_NAME_MIN);
-        }
-        if content_type.len() > FILE_MIME_TYPE_MAX {
-            panic!("Content type exceeds maximum length of {}", FILE_MIME_TYPE_MAX);
-        }
         Self {
             id: FileId::new_v4(),
             filename,

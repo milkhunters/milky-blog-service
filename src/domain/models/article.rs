@@ -30,15 +30,6 @@ impl Article {
         content: String,
         author_id: UserId
     ) -> Self {
-        if title.len() > ARTICLE_TITLE_MAX {
-            panic!("Article title exceeds maximum length of {}", ARTICLE_TITLE_MAX);
-        }
-        if title.len() < ARTICLE_TITLE_MIN {
-            panic!("Article title must be at least {} characters long", ARTICLE_TITLE_MIN);
-        }
-        if content.len() > ARTICLE_CONTENT_MAX {
-            panic!("Article content exceeds maximum length of {}", ARTICLE_CONTENT_MAX);
-        }
         Self {
             id: ArticleId::new_v4(),
             title,
