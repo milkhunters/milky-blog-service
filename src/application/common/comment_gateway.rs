@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use crate::domain::models::{
     article::ArticleId,
     comment::{Comment, CommentId},
@@ -9,6 +10,7 @@ pub enum CommentGatewayError {
     Critical(String)
 }
 
+#[async_trait]
 pub trait CommentReader {
 
     async fn get_comment(&self, id: &CommentId) -> Result<Option<Comment>, CommentGatewayError>;
@@ -20,11 +22,13 @@ pub trait CommentReader {
     ) -> Result<Vec<Comment>, CommentGatewayError>;
 }
 
+#[async_trait]
 pub trait CommentWriter {
 
     async fn save_comment(&self, comment: &Comment) -> Result<(), CommentGatewayError>;
 }
 
+#[async_trait]
 pub trait CommentRemover {
 
     async fn remove_article_comments(
@@ -33,6 +37,7 @@ pub trait CommentRemover {
     ) -> Result<(), CommentGatewayError>;
 }
 
+#[async_trait]
 pub trait CommentRater {
 async fn rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
     async fn unrate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;

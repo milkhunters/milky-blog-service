@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use crate::domain::models::{
     article::{Article, ArticleId},
     article_state::ArticleState,
@@ -9,6 +10,7 @@ pub enum ArticleGatewayError {
     Critical(String)
 }
 
+#[async_trait]
 pub trait ArticleReader {
     async fn get_article(&self, id: &ArticleId) -> Result<Option<Article>, ArticleGatewayError>;
     async fn find_articles(
@@ -23,15 +25,17 @@ pub trait ArticleReader {
     ) -> Result<Vec<Article>, ArticleGatewayError>;
 }
 
+#[async_trait]
 pub trait ArticleWriter {
-    async fn save_article(&self, article: &Article) -> Result<(), ArticleGatewayError>; 
+    async fn save_article(&self, article: &Article) -> Result<(), ArticleGatewayError>;
 }
 
+#[async_trait]
 pub trait ArticleRemover {
     async fn remove_article(&self, article_id: &ArticleId) -> Result<(), ArticleGatewayError>;
 }
 
-
+#[async_trait]
 pub trait ArticleRater {
     async fn rate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
     async fn unrate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
