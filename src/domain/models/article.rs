@@ -17,6 +17,7 @@ pub struct Article {
     pub content: String,
     pub state: ArticleState,
     pub views: u32,
+    pub rating: i32,
     pub author_id: UserId,
 
     pub created_at: DateTime<Utc>,
@@ -37,6 +38,7 @@ impl Article {
             content,
             state: ArticleState::Draft,
             views: 0,
+            rating: 0,
             author_id,
             created_at: Utc::now(),
             updated_at: None

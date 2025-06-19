@@ -14,6 +14,7 @@ pub struct Comment {
     pub author_id: UserId,
     pub article_id: ArticleId,
     pub parent_id: Option<CommentId>,
+    pub rating: i32,
     pub state: CommentState,
 
     pub created_at: DateTime<Utc>,
@@ -28,6 +29,7 @@ impl Comment {
             author_id,
             article_id,
             parent_id,
+            rating: 0,
             state: CommentState::Published,
             created_at: Utc::now(),
             updated_at: None,
