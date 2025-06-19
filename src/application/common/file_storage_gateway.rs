@@ -4,13 +4,15 @@ use crate::domain::models::{
     file::FileId
 };
 
+pub enum FileStorageError {
+    Critical(String)
+}
+
 pub trait FileStorageReader {
-    type Error;
-    async fn is_exist_file(&self, article_id: &ArticleId, id: &FileId) -> Result<bool, Self::Error>;
+    async fn is_exist_file(&self, article_id: &ArticleId, id: &FileId) -> Result<bool, FileStorageError>;
 }
 
 pub trait FileStorageLinker {
-    type Error;
     async fn upload_link(
         &self,
         article_id: &ArticleId,
@@ -18,18 +20,17 @@ pub trait FileStorageLinker {
         content_type: &str,
         content_length: (u64, u64),
         expires_in: u64,
-    ) -> Result<PreSignedUrl, Self::Error>;
+    ) -> Result<PreSignedUrl, FileStorageError>;
     
     async fn download_link(
         &self,
         article_id: &ArticleId,
         file_id: &FileId
-    ) -> Result<String, Self::Error>;
+    ) -> Result<String, FileStorageError>;
 }
 
 pub trait FileStorageRemover {
-    type Error;
-    async fn remove_file(&self, article_id: &ArticleId, file_id: &FileId) -> Result<(), Self::Error>;
+    async fn remove_file(&self, article_id: &ArticleId, file_id: &FileId) -> Result<(), FileStorageError>;
 }
 
 pub trait FileStorageGateway: FileStorageReader + FileStorageLinker + FileStorageRemover {}

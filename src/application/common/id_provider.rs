@@ -7,5 +7,4 @@ pub trait IdProvider {
     fn user_state(&self) -> &UserState;
     fn permissions(&self) -> &Vec<Permission>;
     fn is_auth(&self) -> bool; // TODO REMOVE IF NOT USED
-    
 }

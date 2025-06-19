@@ -3,27 +3,28 @@ use crate::domain::models::{
     file::{File, FileId}
 };
 
+
+pub enum FileMapGatewayError {
+    Critical(String)
+}
+
 pub trait FileMapReader {
-    type Error;
-    async fn get_file(&self, id: &FileId) -> Result<Option<File>, Self::Error>;
+    async fn get_file(&self, id: &FileId) -> Result<Option<File>, FileMapGatewayError>;
 }
 
 pub trait FileMapWriter {
-    type Error;
-    async fn save_file(&self, file: &File) -> Result<(), Self::Error>;
+    async fn save_file(&self, file: &File) -> Result<(), FileMapGatewayError>;
 }
 
 pub trait FileMapRemover {
-    type Error;
-    async fn remove_file(&self, file_id: &FileId) -> Result<(), Self::Error>;
+    async fn remove_file(&self, file_id: &FileId) -> Result<(), FileMapGatewayError>;
 }
 
 pub trait FileArticle {
-    type Error;
-    async fn get_linked_files(&self, article_id: &ArticleId) -> Result<Vec<File>, Self::Error>;
-    async fn is_file_linked(&self, article_id: &ArticleId, file_id: &FileId) -> Result<bool, Self::Error>;
-    async fn link_file(&self, article_id: &ArticleId, file: &File) -> Result<(), Self::Error>;
-    async fn unlink_file(&self, article_id: &ArticleId) -> Result<(), Self::Error>;
+    async fn get_linked_files(&self, article_id: &ArticleId) -> Result<Vec<File>, FileMapGatewayError>;
+    async fn is_file_linked(&self, article_id: &ArticleId, file_id: &FileId) -> Result<bool, FileMapGatewayError>;
+    async fn link_file(&self, article_id: &ArticleId, file: &File) -> Result<(), FileMapGatewayError>;
+    async fn unlink_file(&self, article_id: &ArticleId) -> Result<(), FileMapGatewayError>;
 }
 
-pub trait FileGateway: FileMapReader + FileMapWriter + FileMapRemover {}
+pub trait FileGateway: FileMapReader + FileMapWriter + FileMapRemover + FileArticle {}

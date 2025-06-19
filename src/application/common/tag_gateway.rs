@@ -3,24 +3,22 @@ use crate::domain::models::{
     tag::{Tag, TagId}
 };
 
-pub trait TagReader {
-    type Error;
+pub enum TagGatewayError {
+    Critical(String)
+}
 
-    async fn get_tags(&self, tag_ids: &[TagId]) -> Result<Vec<Tag>, Self::Error>;
-    async fn get_tags_by_article(&self, article_id: &ArticleId) -> Result<Vec<Tag>, Self::Error>;
+pub trait TagReader {
+    async fn get_tags(&self, tag_ids: &[TagId]) -> Result<Vec<Tag>, TagGatewayError>;
+    async fn get_tags_by_article(&self, article_id: &ArticleId) -> Result<Vec<Tag>, TagGatewayError>;
 }
 
 pub trait TagWriter {
-    type Error;
-
-    async fn save_tag(&self, tag: &Tag) -> Result<(), Self::Error>;
-    async fn save_tags(&self, tags: &[Tag]) -> Result<(), Self::Error>;
+    async fn save_tag(&self, tag: &Tag) -> Result<(), TagGatewayError>;
+    async fn save_tags(&self, tags: &[Tag]) -> Result<(), TagGatewayError>;
 }
 
 pub trait TagLinker {
-    type Error;
-
-    async fn link_tags(&self, article_id: &ArticleId, tag_ids: &[TagId]) -> Result<(), Self::Error>;
+    async fn link_tags(&self, article_id: &ArticleId, tag_ids: &[TagId]) -> Result<(), TagGatewayError>;
 }
 
 pub trait TagGateway: TagReader + TagWriter + TagLinker {}

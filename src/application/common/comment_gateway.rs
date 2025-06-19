@@ -4,43 +4,44 @@ use crate::domain::models::{
     user_id::UserId
 };
 
+
+pub enum CommentGatewayError {
+    Critical(String)
+}
+
 pub trait CommentReader {
-    type Error;
-    
-    async fn get_comment(&self, id: &CommentId) -> Result<Option<Comment>, Self::Error>;
+
+    async fn get_comment(&self, id: &CommentId) -> Result<Option<Comment>, CommentGatewayError>;
     async fn get_comments(
         &self,
         article_id: &ArticleId,
         offset: u32,
         limit: u32
-    ) -> Result<Vec<Comment>, Self::Error>;
+    ) -> Result<Vec<Comment>, CommentGatewayError>;
 }
 
 pub trait CommentWriter {
-    type Error;
-    
-    async fn save_comment(&self, comment: &Comment) -> Result<(), Self::Error>;
+
+    async fn save_comment(&self, comment: &Comment) -> Result<(), CommentGatewayError>;
 }
 
 pub trait CommentRemover {
-    type Error;
-    
+
     async fn remove_article_comments(
         &self,
         article_id: &ArticleId,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<(), CommentGatewayError>;
 }
 
 pub trait CommentRater {
-    type Error;
-    async fn rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, Self::Error>;
-    async fn unrate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, Self::Error>;
-    async fn is_user_rate_comment(comment_id: &CommentId, user_id: &UserId) -> Result<bool, Self::Error>;
+async fn rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
+    async fn unrate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
+    async fn is_user_rate_comment(comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
     async fn is_user_rate_comments(
         &self,
         comment_ids: &[CommentId],
         user_id: &UserId,
-    ) -> Result<Vec<bool>, Self::Error>;
+    ) -> Result<Vec<bool>, CommentGatewayError>;
 }
 
 pub trait CommentGateway: 
