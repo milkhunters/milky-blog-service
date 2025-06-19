@@ -88,6 +88,34 @@ pub fn ensure_can_get_article(
     Err(DomainError::Access)
 }
 
+pub fn ensure_can_find_articles(
+    permissions: &Vec<Permission>,
+    user_state: &UserState,
+    article_state: &ArticleState,
+    article_author_id: &Option<UserId>,
+    user_id: &UserId,
+) -> Result<(), DomainError> {
+    if user_state != &UserState::Active {
+        return Err(DomainError::Access);
+    }
+
+    if permissions.contains(&Permission::FindAnyArticle) {
+        return Ok(());
+    }
+
+    if permissions.contains(&Permission::FindPubArticle) && article_state == &ArticleState::Published {
+        return Ok(());
+    }
+    
+    if let Some(author_id) = article_author_id {
+        if permissions.contains(&Permission::FindSelfArticle) && user_id == author_id {
+            return Ok(());
+        }
+    }
+
+    Err(DomainError::Access)
+}
+
 pub fn ensure_can_rate_article(
     permissions: &Vec<Permission>,
     user_state: &UserState,
