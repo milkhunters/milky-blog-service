@@ -54,6 +54,16 @@ pub fn validate_article_tag(tag: &str) -> Result<(), DomainError> {
     Ok(())
 }
 
+pub fn validate_article_tags(tags: &[String]) -> Result<(), DomainError> {
+    if tags.is_empty() {
+        return Err(DomainError::Validation("tags cannot be empty".into()));
+    }
+    for tag in tags {
+        validate_article_tag(tag)?;
+    }
+    Ok(())
+}
+
 pub fn validate_comment_content(content: &str) -> Result<(), DomainError> {
     if content.is_empty() {
         return Err(DomainError::Validation("content cannot be empty".into()));
