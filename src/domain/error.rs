@@ -1,11 +1,8 @@
-use thiserror::Error;
 
-#[derive(Error, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub enum DomainError {
-    #[error("you must be authenticated to perform this action")]
-    NotAuth,
-    #[error("access denied")]
+    // #[error("you must be authenticated to perform this action")]
+    // NotAuth,
     Access,
-    #[error("validation: {0}")]
     Validation(String)
 }

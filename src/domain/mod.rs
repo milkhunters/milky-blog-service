@@ -1,3 +1,3 @@
 pub mod models;
 pub mod services;
-mod error;
+pub mod error;
