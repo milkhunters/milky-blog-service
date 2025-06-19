@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use crate::application::article::find::OrderBy;
 use crate::domain::models::{
     article::{Article, ArticleId},
     article_state::ArticleState,
@@ -16,13 +17,14 @@ pub trait ArticleReader {
     async fn find_articles(
         &self,
         query: Option<String>,
-        limit: usize,
-        offset: usize,
-        order_by: &str,
+        limit: u8,
+        offset: u32,
+        order_by: &OrderBy,
         state: &ArticleState,
         tags: &[TagId],
-        author_id: Option<&UserId>,
+        author_id: &Option<UserId>,
     ) -> Result<Vec<Article>, ArticleGatewayError>;
+    async fn get_article_author_id(&self, article_id: &ArticleId) -> Result<Option<UserId>, ArticleGatewayError>;
 }
 
 #[async_trait]
@@ -39,7 +41,7 @@ pub trait ArticleRemover {
 pub trait ArticleRater {
     async fn rate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
     async fn unrate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
-    async fn is_user_rated_article(article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
+    async fn is_user_rated_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
     async fn is_user_rated_articles(
         &self,
         article_ids: &[ArticleId],
@@ -47,4 +49,5 @@ pub trait ArticleRater {
     ) -> Result<Vec<bool>, ArticleGatewayError>;
 }
 
+#[async_trait]
 pub trait ArticleGateway: ArticleReader + ArticleWriter + ArticleRemover + ArticleRater {}

@@ -25,11 +25,11 @@ pub trait FileStorageLinker {
         expires_in: u64,
     ) -> Result<PreSignedUrl, FileStorageError>;
     
-    async fn download_link(
+    fn download_link(
         &self,
         article_id: &ArticleId,
         file_id: &FileId
-    ) -> Result<String, FileStorageError>;
+    ) -> String;
 }
 
 #[async_trait]
