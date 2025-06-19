@@ -2,7 +2,8 @@ use chrono::{DateTime, Utc};
 use crate::domain::models::{
     article_state::ArticleState,
     file::FileId,
-    user_id::UserId
+    user_id::UserId,
+    tag::Tag
 };
 
 pub type ArticleId = uuid::Uuid;
@@ -19,6 +20,7 @@ pub struct Article {
     pub views: u32,
     pub rating: i32,
     pub author_id: UserId,
+    pub tags: Vec<Tag>,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>
@@ -29,6 +31,8 @@ impl Article {
         title: String,
         poster: Option<FileId>,
         content: String,
+        tags: Vec<Tag>,
+        state: ArticleState,
         author_id: UserId
     ) -> Self {
         Self {
@@ -36,10 +40,11 @@ impl Article {
             title,
             poster,
             content,
-            state: ArticleState::Draft,
+            state,
             views: 0,
             rating: 0,
             author_id,
+            tags,
             created_at: Utc::now(),
             updated_at: None
         }
@@ -51,11 +56,13 @@ impl Article {
         poster: Option<FileId>,
         content: String,
         state: ArticleState,
+        tags: Vec<Tag>,
     ) {
         self.title = title;
         self.poster = poster;
         self.content = content;
         self.state = state;
+        self.tags = tags;
         self.updated_at = Some(Utc::now());
     }
     
