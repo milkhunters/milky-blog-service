@@ -1,11 +1,11 @@
 use crate::domain::error::DomainError;
 use crate::domain::models::{
+    article_state::ArticleState,
+    comment_state::CommentState,
     permissions::Permission,
+    user_id::UserId,
     user_state::UserState
 };
-use crate::domain::models::article_state::ArticleState;
-use crate::domain::models::comment_state::CommentState;
-use crate::domain::models::user_id::UserId;
 
 pub fn ensure_can_create_article(
     permissions: &Vec<Permission>,
@@ -155,13 +155,15 @@ pub fn ensure_can_update_comment(
     user_id: &UserId,
     comment_author_id: &UserId,
     comment_state: &CommentState,
+    article_state: &ArticleState
 ) -> Result<(), DomainError> {
     if user_state != &UserState::Active {
         return Err(DomainError::Access);
     }
     if permissions.contains(&Permission::UpdateSelfComment) && 
        user_id == comment_author_id &&
-       comment_state == &CommentState::Published 
+       comment_state == &CommentState::Published &&
+       article_state == &ArticleState::Published
     {
         return Ok(());
     }
@@ -177,6 +179,7 @@ pub fn ensure_can_delete_comment(
     user_id: &UserId,
     comment_author_id: &UserId,
     comment_state: &CommentState,
+    article_state: &ArticleState
 ) -> Result<(), DomainError> {
     if user_state != &UserState::Active {
         return Err(DomainError::Access);
@@ -184,7 +187,10 @@ pub fn ensure_can_delete_comment(
     if comment_state == &CommentState::Deleted {
         return Err(DomainError::Access);
     }
-    if permissions.contains(&Permission::DeleteSelfComment) && user_id == comment_author_id {
+    if permissions.contains(&Permission::DeleteSelfComment) && 
+       user_id == comment_author_id &&
+       article_state == &ArticleState::Published
+    {
         return Ok(());
     }
     if permissions.contains(&Permission::DeleteAnyComment) {
@@ -217,12 +223,39 @@ pub fn ensure_can_get_comment(
     Err(DomainError::Access)
 }
 
+pub fn ensure_can_get_comments(
+    permissions: &Vec<Permission>,
+    user_state: &UserState,
+    article_state: &ArticleState,
+) -> Result<(), DomainError> {
+    if user_state != &UserState::Active {
+        return Err(DomainError::Access);
+    }
+
+    if permissions.contains(&Permission::GetAnyComment) {
+        return Ok(());
+    }
+
+    if permissions.contains(&Permission::GetPubComment) &&
+        article_state != &ArticleState::Draft
+    {
+        return Ok(());
+    }
+
+    Err(DomainError::Access)
+}
+
+
 pub fn ensure_can_rate_comment(
     permissions: &Vec<Permission>,
     user_state: &UserState,
     comment_state: &CommentState,
+    article_state: &ArticleState,
 ) -> Result<(), DomainError> {
     if user_state != &UserState::Active {
+        return Err(DomainError::Access);
+    }
+    if article_state != &ArticleState::Published {
         return Err(DomainError::Access);
     }
     if comment_state != &CommentState::Published {
