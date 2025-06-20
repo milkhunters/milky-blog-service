@@ -14,6 +14,8 @@ pub enum Permission {
     DeleteAnyArticle,
     DeleteSelfArticle,
     RateArticle,
+    
+    FindTag,
 
     CreateComment,
     GetAnyComment,
