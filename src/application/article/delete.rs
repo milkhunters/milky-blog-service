@@ -22,7 +22,7 @@ pub struct DeleteArticle<'interactor> {
 
 impl Interactor<DeleteArticleInput, ()> for DeleteArticle<'_> {
     async fn execute(&self, input: DeleteArticleInput) -> Result<(), AppError> {
-        let article_author_id = match self.article_gateway.get_article_author_id(&input.id).await? {
+        let article_author_id = match self.article_gateway.get_article_author(&input.id).await? {
             Some(author_id) => author_id,
             None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
         };
@@ -35,8 +35,8 @@ impl Interactor<DeleteArticleInput, ()> for DeleteArticle<'_> {
         )?;
         
         let (res1, res2) = tokio::join!(
-            self.article_gateway.remove_article(&input.id),
-            self.comment_remover.remove_article_comments(&input.id)
+            self.article_gateway.remove(&input.id),
+            self.comment_remover.remove_by_article(&input.id)
         );
         res1?;
         res2?;

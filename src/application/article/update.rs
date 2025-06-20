@@ -43,7 +43,7 @@ pub struct UpdateArticle<'interactor> {
 
 impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {
     async fn execute(&self, input: UpdateArticleInput) -> Result<UpdateArticleOutput, AppError> {
-        let article_author_id = match self.article_gateway.get_article_author_id(&input.id).await? {
+        let article_author_id = match self.article_gateway.get_article_author(&input.id).await? {
             Some(author_id) => author_id,
             None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
         };
@@ -71,12 +71,12 @@ impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {
         }
         
         if let Some(file_id) = input.poster {
-            match self.file_map_gateway.get_file(&input.id, &file_id).await? {
+            match self.file_map_gateway.get_file(&file_id).await? {
                 Some(file) => {
                     if !file.is_uploaded {
                         return Err(AppError::Validation(ErrorContent::Message("poster file is not uploaded".into())));
                     }
-                    if !self.file_map_gateway.is_file_linked(&input.id, &file_id).await? {
+                    if !file.article_id.eq(&input.id) {
                         return Err(AppError::Validation(ErrorContent::Message("poster file is not linked to this article".into())));
                     }
                 },

@@ -1,7 +1,7 @@
 use crate::application::common::{
     article_gateway::ArticleGateway,
     error::{AppError, ErrorContent},
-    file_map_gateway::FileMapArticle,
+    file_map_gateway::FileMapReader,
     file_storage_gateway::FileStorageLinker,
     id_provider::IdProvider,
     interactor::Interactor
@@ -52,7 +52,7 @@ pub struct GetArticleOutput {
 pub struct GetArticle<'interactor> {
     id_provider: &'interactor dyn IdProvider,
     article_gateway: &'interactor dyn ArticleGateway,
-    file_map_gateway: &'interactor dyn FileMapArticle,
+    file_map_reader: &'interactor dyn FileMapReader,
     file_storage_linker: &'interactor dyn FileStorageLinker,
 }
 
@@ -73,7 +73,7 @@ impl Interactor<GetArticleInput, GetArticleOutput> for GetArticle<'_> {
         
         let (is_self_rated, files, inc_res) = tokio::join!(
             self.article_gateway.is_user_rated_article(&article.id, self.id_provider.user_id()),
-            self.file_map_gateway.get_linked_files(&article.id),
+            self.file_map_reader.get_article_files(&article.id),
             self.article_gateway.increment_article_views(&article.id)
         );
         
