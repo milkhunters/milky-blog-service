@@ -34,7 +34,7 @@ pub trait FileStorageLinker {
 
 #[async_trait]
 pub trait FileStorageRemover {
-    async fn remove_file(&self, article_id: &ArticleId, file_id: &FileId) -> Result<(), FileStorageError>;
+    async fn remove(&self, article_id: &ArticleId, file_id: &FileId) -> Result<(), FileStorageError>;
 }
 
 

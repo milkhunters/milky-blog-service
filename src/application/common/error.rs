@@ -38,7 +38,6 @@ impl From<HashMap<String, String>> for ErrorContent {
 pub enum AppError {
     Validation(ErrorContent),
     NotFound(ErrorContent),
-    Conflict(ErrorContent),
     AccessDenied(ErrorContent),
     Critical(ErrorContent),
 }

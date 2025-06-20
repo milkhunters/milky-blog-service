@@ -1,8 +1,6 @@
+use crate::domain::models::tag::Tag;
+use crate::application::article::tag::find::OrderBy;
 use async_trait::async_trait;
-use crate::domain::models::{
-    article::ArticleId,
-    tag::{Tag, TagId}
-};
 
 pub enum TagGatewayError {
     Critical(String)
@@ -12,11 +10,11 @@ pub enum TagGatewayError {
 pub trait TagReader {
     async fn find_tags(
         &self,
-        limit: usize,
-        offset: usize,
-        order_by_linked: &bool, // true - by linked articles or false - by last add
+        limit: u8,
+        offset: u32,
+        order_by: &OrderBy,
         query: Option<String>,
-    ) -> Result<Vec<Tag>, TagGatewayError>;
+    ) -> Result<Vec<(Tag, u32)>, TagGatewayError>;
 }
 
 pub trait TagGateway: TagReader {}

@@ -24,7 +24,7 @@ pub trait ArticleReader {
         tags: &[TagId],
         author_id: &Option<UserId>,
     ) -> Result<Vec<Article>, ArticleGatewayError>;
-    async fn get_article_author_id(&self, article_id: &ArticleId) -> Result<Option<UserId>, ArticleGatewayError>;
+    async fn get_article_author(&self, article_id: &ArticleId) -> Result<Option<UserId>, ArticleGatewayError>;
     async fn get_article_state(
         &self,
         article_id: &ArticleId,
@@ -39,7 +39,7 @@ pub trait ArticleWriter {
 
 #[async_trait]
 pub trait ArticleRemover {
-    async fn remove_article(&self, article_id: &ArticleId) -> Result<(), ArticleGatewayError>;
+    async fn remove(&self, article_id: &ArticleId) -> Result<(), ArticleGatewayError>;
 }
 
 #[async_trait]
