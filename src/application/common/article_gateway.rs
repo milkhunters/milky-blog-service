@@ -25,6 +25,10 @@ pub trait ArticleReader {
         author_id: &Option<UserId>,
     ) -> Result<Vec<Article>, ArticleGatewayError>;
     async fn get_article_author_id(&self, article_id: &ArticleId) -> Result<Option<UserId>, ArticleGatewayError>;
+    async fn get_article_state(
+        &self,
+        article_id: &ArticleId,
+    ) -> Result<Option<ArticleState>, ArticleGatewayError>;
 }
 
 #[async_trait]

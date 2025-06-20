@@ -16,6 +16,24 @@ pub enum ErrorContent {
     Map(HashMap<String, String>),
 }
 
+impl From<String> for ErrorContent {
+    fn from(value: String) -> Self {
+        ErrorContent::Message(value)
+    }
+}
+
+impl From<&str> for ErrorContent {
+    fn from(value: &str) -> Self {
+        ErrorContent::Message(value.to_string())
+    }
+}
+
+impl From<HashMap<String, String>> for ErrorContent {
+    fn from(value: HashMap<String, String>) -> Self {
+        ErrorContent::Map(value)
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub enum AppError {
     Validation(ErrorContent),

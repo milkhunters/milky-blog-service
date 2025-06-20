@@ -16,16 +16,14 @@ pub trait CommentReader {
     async fn get_comment(&self, id: &CommentId) -> Result<Option<Comment>, CommentGatewayError>;
     async fn get_comments(
         &self,
-        article_id: &ArticleId,
-        offset: u32,
-        limit: u32
-    ) -> Result<Vec<Comment>, CommentGatewayError>;
+        article_id: &ArticleId
+    ) -> Result<Vec<(Comment, u32)>, CommentGatewayError>;
 }
 
 #[async_trait]
 pub trait CommentWriter {
 
-    async fn save_comment(&self, comment: &Comment) -> Result<(), CommentGatewayError>;
+    async fn save(&self, comment: &Comment) -> Result<(), CommentGatewayError>;
 }
 
 #[async_trait]
@@ -41,7 +39,7 @@ pub trait CommentRemover {
 pub trait CommentRater {
 async fn rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
     async fn unrate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
-    async fn is_user_rate_comment(comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
+    async fn is_user_rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
     async fn is_user_rate_comments(
         &self,
         comment_ids: &[CommentId],
