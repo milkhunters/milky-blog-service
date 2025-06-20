@@ -33,7 +33,6 @@ pub struct ArticleFile {
 }
 
 pub struct GetArticleOutput {
-    pub id: ArticleId,
     pub title: String,
     pub poster: Option<FileId>,
     pub content: String, // todo: server rendering 
@@ -81,7 +80,6 @@ impl Interactor<GetArticleInput, GetArticleOutput> for GetArticle<'_> {
         inc_res?;
         
         Ok(GetArticleOutput {
-            id: article.id,
             title: article.title,
             poster: article.poster,
             content: article.content,
