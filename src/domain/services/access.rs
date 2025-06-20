@@ -267,3 +267,18 @@ pub fn ensure_can_rate_comment(
     Ok(())
 }
 
+pub fn ensure_can_find_tags(
+    permissions: &Vec<Permission>,
+    user_state: &UserState,
+) -> Result<(), DomainError> {
+    if user_state != &UserState::Active {
+        return Err(DomainError::Access);
+    }
+
+    if permissions.contains(&Permission::FindTag) {
+        return Ok(());
+    }
+
+    Err(DomainError::Access)
+}
+
