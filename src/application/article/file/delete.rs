@@ -2,8 +2,7 @@ use crate::application::common::{
     article_gateway::ArticleReader,
     error::{AppError, ErrorContent},
     file_map_gateway::FileMapGateway,
-    file_storage_gateway::FileStorageRemover
-    ,
+    file_storage_gateway::FileStorageRemover,
     id_provider::IdProvider,
     interactor::Interactor
 };
@@ -40,17 +39,23 @@ impl Interactor<DeleteArticleFileInput, ()> for DeleteArticleFile<'_> {
             self.id_provider.user_id(),
             &article_author
         )?;
-
-        let (res1, res2) = tokio::join!(
-            self.file_map_gateway.remove(&file.article_id),
-            self.file_storage_remover.remove(
-                &file.article_id,
-                &file.id
-            )
+        
+        let rem_file_map_fut = self.file_map_gateway.remove(&file.article_id);
+        let rem_file_storage_fut = self.file_storage_remover.remove(
+            &file.article_id,
+            &file.id
         );
-
-        res1?;
-        res2?;
+        
+        if file.is_uploaded {
+            let (res1, res2) = tokio::join!(
+                rem_file_map_fut,
+                rem_file_storage_fut
+            );
+            res1?;
+            res2?;
+        } else {
+            rem_file_map_fut.await?;
+        }
         
         Ok(())
     }

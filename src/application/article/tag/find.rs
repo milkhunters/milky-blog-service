@@ -17,7 +17,7 @@ pub enum OrderBy {
     CreatedAtAsc,
 }
 
-pub struct FindTagInput {
+pub struct FindArticleTagsInput {
     pub page: u32,
     pub per_page: u8,
     pub query: Option<String>,
@@ -31,15 +31,15 @@ pub struct TagItem {
     pub created_at: DateTime<Utc>
 }
 
-pub type FindTagOutput = Vec<TagItem>;
+pub type FindArticleTagsOutput = Vec<TagItem>;
 
-pub struct FindTag<'interactor> {
+pub struct FindArticleTags<'interactor> {
     id_provider: &'interactor dyn IdProvider,
     tag_reader: &'interactor dyn TagReader
 }
 
-impl Interactor<FindTagInput, FindTagOutput> for FindTag<'_> {
-    async fn execute(&self, input: FindTagInput) -> Result<FindTagOutput, AppError> {
+impl Interactor<FindArticleTagsInput, FindArticleTagsOutput> for FindArticleTags<'_> {
+    async fn execute(&self, input: FindArticleTagsInput) -> Result<FindArticleTagsOutput, AppError> {
         ensure_can_find_tags(
             self.id_provider.permissions(),
             self.id_provider.user_state(),
@@ -59,6 +59,6 @@ impl Interactor<FindTagInput, FindTagOutput> for FindTag<'_> {
                 article_count,
                 created_at: tag.created_at
             }
-        }).collect::<FindTagOutput>())
+        }).collect::<FindArticleTagsOutput>())
     }
 }
