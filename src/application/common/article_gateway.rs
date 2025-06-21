@@ -33,7 +33,7 @@ pub trait ArticleReader {
 
 #[async_trait]
 pub trait ArticleWriter {
-    async fn save_article(&self, article: &Article) -> Result<(), ArticleGatewayError>;
+    async fn save(&self, article: &Article) -> Result<(), ArticleGatewayError>;
     async fn increment_article_views(&self, id: &ArticleId) -> Result<(), ArticleGatewayError>;
 }
 

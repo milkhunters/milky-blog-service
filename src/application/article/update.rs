@@ -95,7 +95,7 @@ impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {
             input.tags.into_iter().map(Tag::new).collect::<Vec<Tag>>()
         );
         
-        self.article_gateway.save_article(&article).await?;
+        self.article_gateway.save(&article).await?;
 
         Ok(UpdateArticleOutput { id: article.id })
     }

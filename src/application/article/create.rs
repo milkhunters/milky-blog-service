@@ -70,7 +70,7 @@ impl Interactor<CreateArticleInput, CreateArticleOutput> for CreateArticle<'_> {
             *self.id_provider.user_id(),
         );
 
-        self.article_writer.save_article(&article).await?;
+        self.article_writer.save(&article).await?;
         
         Ok(CreateArticleOutput { id: article.id })
     }
