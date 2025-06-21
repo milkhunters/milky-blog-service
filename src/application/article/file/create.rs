@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::application::common::{
     article_gateway::ArticleReader,
     error::{AppError, ErrorContent},
@@ -12,9 +13,15 @@ use crate::domain::{
         article::ArticleId,
         file::{File, CONTENT_LENGTH_RANGE, FILE_UPLOAD_EXPIRATION}
     },
-    services::access::ensure_can_update_article
+    services::{
+        access::ensure_can_update_article,
+        validator::{
+            validate_filename,
+            validate_mime_content_type
+        }
+    }
 };
-
+use crate::domain::error::DomainError;
 
 pub struct CreateArticleFileInput {
     pub article_id: ArticleId,
@@ -44,6 +51,17 @@ impl Interactor<CreateArticleFileInput, CreateArticleFileOutput> for CreateArtic
             self.id_provider.user_id(),
             &article_author
         )?;
+        
+        let mut validation_errors = HashMap::<String, String>::new();
+        if let Err(DomainError::Validation(err)) = validate_filename(&input.filename) {
+            validation_errors.insert("content_type".into(), err);
+        }
+        if let Err(DomainError::Validation(err)) = validate_mime_content_type(&input.content_type) {
+            validation_errors.insert("content_type".into(), err);
+        }
+        if !validation_errors.is_empty() {
+            return Err(AppError::Validation(ErrorContent::Map(validation_errors)));
+        }
         
         let file = File::new(
             input.filename,
