@@ -100,38 +100,17 @@ CREATE TABLE IF NOT EXISTS comment_rate (
 );
 
 -- CommentTree -------------------------------------------------------------
--- """
---     The CommentSubset model
---     («Closure Table» и «Adjacency List»)
--- 
---     # Описание полей
---     ancestor: предок
---     descendant: потомок
---     nearest_ancestor: ближайший предок
---     article: пост
---     level: уровень вложенности
--- 
---     """
--- 
---     __tablename__ = "comment_tree"
--- 
---     id = Column(UUID(), primary_key=True, autoincrement=True)
---     ancestor_id = Column(UUID(as_uuid=True), nullable=False)
---     descendant_id = Column(UUID(as_uuid=True), nullable=False)
---     nearest_ancestor_id = Column(UUID(as_uuid=True), nullable=True)
---     article_id = Column(UUID(as_uuid=True), ForeignKey("articles.id"), nullable=False)
---     article = relationship("models.models.article.Article", back_populates="comments_tree")
---     level = Column(Integer())
 
 CREATE TABLE IF NOT EXISTS comment_tree (
-    id uuid UNIQUE PRIMARY KEY,
     parent_id uuid NOT NULL,
     nearest_parent_id uuid NULL,
     child_id uuid NOT NULL,
-    
+
     article_id uuid NOT NULL,
     level integer NOT NULL,
 
+--     todo: check that PRIMARY KEY is correct
+    PRIMARY KEY (parent_id, child_id),
     FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE,
     FOREIGN KEY (child_id) REFERENCES comments(id) ON DELETE CASCADE,
     FOREIGN KEY (nearest_parent_id) REFERENCES comments(id) ON DELETE CASCADE,
