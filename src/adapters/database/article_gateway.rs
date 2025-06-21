@@ -1,16 +1,28 @@
-use sqlx::Arguments;
 use std::collections::HashMap;
-use crate::application::article::find::OrderBy;
-use crate::application::common::article_gateway::{ArticleGateway, ArticleGatewayError, ArticleRater, ArticleReader, ArticleRemover, ArticleWriter};
-use crate::domain::models::article::{Article, ArticleId};
-use crate::domain::models::article_state::ArticleState;
-use crate::domain::models::tag::{Tag, TagId};
-use crate::domain::models::user_id::UserId;
 use async_trait::async_trait;
-use sqlx::{Database, Decode, Encode, Postgres, Row};
-use sqlx::encode::IsNull;
-use sqlx::error::BoxDynError;
-use sqlx::postgres::PgArguments;
+use crate::application::{
+    article::find::OrderBy,
+    common::article_gateway::{
+        ArticleGateway, 
+        ArticleGatewayError, 
+        ArticleRater, 
+        ArticleReader, 
+        ArticleRemover, 
+        ArticleWriter
+    }
+};
+use crate::domain::models::{
+    article::{Article, ArticleId},
+    article_state::ArticleState,
+    tag::{Tag, TagId},
+    user_id::UserId
+};
+use sqlx::{
+    encode::IsNull,
+    error::BoxDynError,
+    postgres::PgArguments,
+    Database, Decode, Encode, Postgres, Row, Arguments
+};
 
 impl From<sqlx::Error> for ArticleGatewayError {
     fn from(err: sqlx::Error) -> Self {
@@ -124,7 +136,7 @@ impl ArticleReader for PostgresArticleGateway {
             content: article_row.try_get("content")?,
             state: article_row.try_get("state")?,
             views: article_row.try_get::<i64, _>("views")? as u32,
-            rating: article_row.try_get::<i64, _>("rating")? as i32,
+            rating: article_row.try_get::<i64, _>("rating")?,
             author_id: article_row.try_get("author_id")?,
             tags,
             created_at: article_row.try_get("created_at")?,
@@ -262,7 +274,7 @@ impl ArticleReader for PostgresArticleGateway {
                 content: row.get("content"),
                 state: row.try_get("state")?,
                 views: row.get::<i32, _>("views") as u32,
-                rating: row.get::<i64, _>("rating") as i32,
+                rating: row.get::<i64, _>("rating"),
                 author_id: row.get("author_id"),
                 tags: tags_map.remove(&id).unwrap_or_default(),
                 created_at: row.get("created_at"),
