@@ -1,5 +1,6 @@
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Serialize, Deserialize)]
 pub enum UserState {
     Active,
     NotVerify,

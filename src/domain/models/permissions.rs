@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 
-
-#[derive(PartialEq)]
+#[derive(PartialEq, Serialize, Deserialize)]
 pub enum Permission {
     CreateArticle,
     GetAnyArticle,
