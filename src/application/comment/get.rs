@@ -29,7 +29,7 @@ pub struct GetCommentOutput {
     pub author_id: UserId,
     pub article_id: ArticleId,
     pub parent_id: Option<CommentId>,
-    pub rating: i32,
+    pub rating: i64,
     pub state: CommentState,
     
     pub is_self_rated: bool,

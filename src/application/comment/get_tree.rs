@@ -33,7 +33,7 @@ pub struct GetCommentsTreeItem {
     pub article_id: ArticleId,
     pub parent_id: Option<CommentId>,
     pub children: Vec<GetCommentsTreeItem>,
-    pub rating: i32,
+    pub rating: i64,
     pub state: CommentState,
     pub level: u32,
     pub is_self_rated: bool,

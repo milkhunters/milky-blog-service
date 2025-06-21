@@ -44,7 +44,7 @@ pub struct ArticleItem {
     pub poster_url: Option<String>,
     pub state: ArticleState,
     pub views: u32,
-    pub rating: i32,
+    pub rating: i64,
     pub author_id: UserId,
     pub tags: Vec<Tag>,
 
