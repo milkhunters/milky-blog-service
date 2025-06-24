@@ -1,6 +1,6 @@
 use crate::application::common::{
     article_gateway::ArticleReader,
-    error::{AppError, ErrorContent},
+    error::AppError,
     file_map_gateway::FileMapGateway,
     file_storage_gateway::FileStorageReader,
     id_provider::IdProvider,
@@ -13,7 +13,7 @@ use crate::domain::{
 
 
 pub struct ConfirmArticleFileInput {
-    pub file_id: FileId
+    pub id: FileId
 }
 
 pub struct ConfirmArticleFile<'interactor> {
@@ -25,12 +25,12 @@ pub struct ConfirmArticleFile<'interactor> {
 
 impl Interactor<ConfirmArticleFileInput, ()> for ConfirmArticleFile<'_> {
     async fn execute(&self, input: ConfirmArticleFileInput) -> Result<(), AppError> {
-        let mut file = self.file_map_gateway.get_file(&input.file_id).await?
-            .ok_or(AppError::NotFound("file not found".into()))?;
+        let mut file = self.file_map_gateway.get_file(&input.id).await?
+            .ok_or(AppError::NotFound("id".into()))?;
         
         let article_author = match self.article_reader.get_article_author(&file.article_id).await? {
             Some(author_id) => author_id,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
+            None => return Err(AppError::Critical("ConfirmArticleFile file exists but article not found".into()))
         };
 
         ensure_can_update_article(
@@ -45,7 +45,7 @@ impl Interactor<ConfirmArticleFileInput, ()> for ConfirmArticleFile<'_> {
             &file.id
         ).await?
             .then(|| ())
-            .ok_or(AppError::NotFound("file not uploaded".into()))?;
+            .ok_or(AppError::NotFound("id".into()))?;
         
         file.mark_uploaded();
         

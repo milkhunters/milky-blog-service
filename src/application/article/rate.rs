@@ -1,5 +1,5 @@
 use crate::application::common::{
-    error::{AppError, ErrorContent},
+    error::AppError,
     article_gateway::{ArticleRater, ArticleReader},
     id_provider::IdProvider,
     interactor::Interactor
@@ -26,7 +26,7 @@ impl Interactor<RateArticleInput, ()> for RateArticle<'_> {
     async fn execute(&self, input: RateArticleInput) -> Result<(), AppError> {
         let article = match self.article_gateway.get_article(&input.id).await? {
             Some(article) => article,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
+            None => return Err(AppError::NotFound("id".into()))
         };
 
         ensure_can_rate_article(

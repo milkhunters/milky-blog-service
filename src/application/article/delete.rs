@@ -1,5 +1,5 @@
 use crate::application::common::{
-    error::{AppError, ErrorContent},
+    error::AppError,
     comment_gateway::CommentRemover,
     article_gateway::ArticleGateway,
     id_provider::IdProvider,
@@ -24,7 +24,7 @@ impl Interactor<DeleteArticleInput, ()> for DeleteArticle<'_> {
     async fn execute(&self, input: DeleteArticleInput) -> Result<(), AppError> {
         let article_author_id = match self.article_gateway.get_article_author(&input.id).await? {
             Some(author_id) => author_id,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
+            None => return Err(AppError::NotFound("id".into()))
         };
         
         ensure_can_delete_article(

@@ -1,5 +1,5 @@
 use crate::application::common::{
-    error::{AppError, ErrorContent},
+    error::AppError,
     article_gateway::ArticleGateway,
     file_map_gateway::FileMapGateway,
     id_provider::IdProvider,
@@ -21,7 +21,10 @@ use crate::domain::{
     }
 };
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use crate::domain::error::ValidationError;
 
+#[derive(Deserialize)]
 pub struct UpdateArticleInput {
     pub id: ArticleId,
     pub title: String,
@@ -31,6 +34,7 @@ pub struct UpdateArticleInput {
     pub tags: Vec<String>
 }
 
+#[derive(Serialize)]
 pub struct UpdateArticleOutput {
     pub id: ArticleId
 }
@@ -45,7 +49,7 @@ impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {
     async fn execute(&self, input: UpdateArticleInput) -> Result<UpdateArticleOutput, AppError> {
         let article_author_id = match self.article_gateway.get_article_author(&input.id).await? {
             Some(author_id) => author_id,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
+            None => return Err(AppError::NotFound("id".into()))
         };
         
         ensure_can_update_article(
@@ -56,36 +60,36 @@ impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {
         )?;
 
         // validate
-        let mut validator_err_map = HashMap::<String, String>::new();
-        if let Err(DomainError::Validation(err)) = validate_article_title(&input.title) {
-            validator_err_map.insert("title".into(), err);
+        let mut validator_err_map = HashMap::<String, ValidationError>::new();
+        if let Err(DomainError::Validation((key, val))) = validate_article_title(&input.title) {
+            validator_err_map.insert(key, val);
         }
-        if let Err(DomainError::Validation(err)) = validate_article_content(&input.content) {
-            validator_err_map.insert("content".into(), err);
+        if let Err(DomainError::Validation((key, val))) = validate_article_content(&input.content) {
+            validator_err_map.insert(key, val);
         }
-        if let Err(DomainError::Validation(err)) = validate_article_tags(&input.tags) {
-            validator_err_map.insert("tags".into(), err);
+        if let Err(DomainError::Validation((key, val))) = validate_article_tags(&input.tags) {
+            validator_err_map.insert(key, val);
         }
         if !validator_err_map.is_empty() {
-            return Err(AppError::Validation(ErrorContent::Map(validator_err_map)));
+            return Err(AppError::Validation(validator_err_map));
         }
         
         if let Some(file_id) = input.poster {
             match self.file_map_gateway.get_file(&file_id).await? {
                 Some(file) => {
                     if !file.is_uploaded {
-                        return Err(AppError::Validation(ErrorContent::Message("poster file is not uploaded".into())));
+                        return Err(AppError::NotFound("poster".into()));
                     }
                     if !file.article_id.eq(&input.id) {
-                        return Err(AppError::Validation(ErrorContent::Message("poster file is not linked to this article".into())));
+                        return Err(AppError::NotFound("poster".into()));
                     }
                 },
-                None => return Err(AppError::NotFound(ErrorContent::Message("poster file not found".into())))
+                None => return Err(AppError::NotFound("poster".into()))
             }
         }
         
         let mut article = self.article_gateway.get_article(&input.id).await?
-            .ok_or_else(|| AppError::NotFound(ErrorContent::Message("article not found".into())))?;
+            .ok_or_else(|| AppError::Critical("UpdateArticle article author found, but get_article not found".into()))?;
         
         article.update(
             input.title,

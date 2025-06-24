@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use serde::Deserialize;
 use crate::application::common::{
     article_gateway::ArticleReader,
-    error::{AppError, ErrorContent},
+    error::AppError,
     file_map_gateway::FileMapGateway,
     file_storage_gateway::FileStorageLinker,
     presigned_url::PreSignedUrl,
@@ -21,8 +22,9 @@ use crate::domain::{
         }
     }
 };
-use crate::domain::error::DomainError;
+use crate::domain::error::{DomainError, ValidationError};
 
+#[derive(Deserialize)]
 pub struct CreateArticleFileInput {
     pub article_id: ArticleId,
     pub filename: String,
@@ -42,7 +44,7 @@ impl Interactor<CreateArticleFileInput, CreateArticleFileOutput> for CreateArtic
     async fn execute(&self, input: CreateArticleFileInput) -> Result<CreateArticleFileOutput, AppError> {
         let article_author = match self.article_reader.get_article_author(&input.article_id).await? {
             Some(author_id) => author_id,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
+            None => return Err(AppError::NotFound("article_id".into()))
         };
 
         ensure_can_update_article(
@@ -52,15 +54,15 @@ impl Interactor<CreateArticleFileInput, CreateArticleFileOutput> for CreateArtic
             &article_author
         )?;
         
-        let mut validation_errors = HashMap::<String, String>::new();
-        if let Err(DomainError::Validation(err)) = validate_filename(&input.filename) {
-            validation_errors.insert("content_type".into(), err);
+        let mut validation_errors = HashMap::<String, ValidationError>::new();
+        if let Err(DomainError::Validation((key, val))) = validate_filename(&input.filename) {
+            validation_errors.insert(key, val);
         }
-        if let Err(DomainError::Validation(err)) = validate_mime_content_type(&input.content_type) {
-            validation_errors.insert("content_type".into(), err);
+        if let Err(DomainError::Validation((key, val))) = validate_mime_content_type(&input.content_type) {
+            validation_errors.insert(key, val);
         }
         if !validation_errors.is_empty() {
-            return Err(AppError::Validation(ErrorContent::Map(validation_errors)));
+            return Err(AppError::Validation(validation_errors));
         }
         
         let file = File::new(

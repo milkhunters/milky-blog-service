@@ -1,6 +1,6 @@
 use crate::application::common::{
     article_gateway::ArticleGateway,
-    error::{AppError, ErrorContent},
+    error::AppError,
     file_map_gateway::FileMapReader,
     file_storage_gateway::FileStorageLinker,
     id_provider::IdProvider,
@@ -10,15 +10,16 @@ use crate::domain::models::tag::TagId;
 use crate::domain::{
     models::{
         article::ArticleId,
-        article_state::ArticleState
-        ,
+        article_state::ArticleState,
         tag::Tag,
         user_id::UserId
     },
     services::access::ensure_can_find_articles
 };
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize)]
 pub enum OrderBy {
     CreatedAtDesc,
     CreatedAtAsc,
@@ -28,6 +29,7 @@ pub enum OrderBy {
     RatingAsc
 }
 
+#[derive(Deserialize)]
 pub struct FindArticleInput {
     pub page: u32,
     pub per_page: u8,
@@ -38,6 +40,7 @@ pub struct FindArticleInput {
     pub author_id: Option<UserId>,
 }
 
+#[derive(Serialize)]
 pub struct ArticleItem {
     pub id: ArticleId,
     pub title: String,
@@ -89,10 +92,10 @@ impl Interactor<FindArticleInput, FindArticleOutput> for FindArticle<'_> {
         ).await?;
 
         if articles.len() != rates.len() {
-            return Err(AppError::Critical(ErrorContent::Message(format!(
+            return Err(AppError::Critical(format!(
                 "article count({}) does not match rating count({})", 
                 articles.len(), rates.len()
-            ))));
+            )));
         }
 
         Ok(articles.into_iter().zip(rates.into_iter()).map(|(article, is_self_rated)| {

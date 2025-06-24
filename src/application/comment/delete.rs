@@ -33,12 +33,12 @@ impl Interactor<DeleteCommentInput, ()> for DeleteComment<'_> {
         let mut comment = self.comment_gateway
             .get_comment(&input.id)
             .await?
-            .ok_or(AppError::NotFound("comment not found".into()))?;
+            .ok_or(AppError::NotFound("id".into()))?;
         
         let article_state = self.article_reader
             .get_article_state(&comment.article_id)
             .await?
-            .ok_or(AppError::NotFound("article not found".into()))?; // todo: critical
+            .ok_or(AppError::Critical("DeleteComment comment found but article state not found".into()))?;
         
         ensure_can_delete_comment(
             self.id_provider.permissions(),

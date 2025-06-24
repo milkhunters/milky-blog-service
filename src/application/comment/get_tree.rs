@@ -61,8 +61,7 @@ impl Interactor<GetCommentsTreeInput, GetCommentsTreeOutput> for GetCommentsTree
         let article_state = self.article_reader
             .get_article_state(&input.article_id)
             .await?
-            .ok_or(AppError::NotFound("article not found".into()))?;
-        
+            .ok_or(AppError::NotFound("article_id".into()))?;
 
         ensure_can_get_comments(
             self.id_provider.permissions(),
@@ -79,7 +78,7 @@ impl Interactor<GetCommentsTreeInput, GetCommentsTreeOutput> for GetCommentsTree
         
         if comments.len() != rated.len() {
             return Err(AppError::Critical(format!(
-                "rated comments count mismatch ({} != {})",
+                "GetCommentsTree rated comments count mismatch ({} != {})",
                 rated.len(),
                 comments.len()
             ).into()));

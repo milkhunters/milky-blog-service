@@ -9,7 +9,9 @@ use crate::domain::{
     services::access::ensure_can_find_tags
 };
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize)]
 pub enum OrderBy {
     ArticleCountDesc,
     ArticleCountAsc,
@@ -17,6 +19,7 @@ pub enum OrderBy {
     CreatedAtAsc,
 }
 
+#[derive(Deserialize)]
 pub struct FindArticleTagsInput {
     pub page: u32,
     pub per_page: u8,
@@ -24,6 +27,7 @@ pub struct FindArticleTagsInput {
     pub order_by: OrderBy
 }
 
+#[derive(Serialize)]
 pub struct TagItem {
     pub id: TagId,
     pub title: String,

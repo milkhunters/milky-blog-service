@@ -15,6 +15,7 @@ struct JwtPayload {
     exp: usize,
 }
 
+#[derive(Debug)]
 pub enum TokenError {
     Invalid(String),
     Expired,

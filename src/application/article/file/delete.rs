@@ -1,6 +1,6 @@
 use crate::application::common::{
     article_gateway::ArticleReader,
-    error::{AppError, ErrorContent},
+    error::AppError,
     file_map_gateway::FileMapGateway,
     file_storage_gateway::FileStorageRemover,
     id_provider::IdProvider,
@@ -26,11 +26,11 @@ pub struct DeleteArticleFile<'interactor> {
 impl Interactor<DeleteArticleFileInput, ()> for DeleteArticleFile<'_> {
     async fn execute(&self, input: DeleteArticleFileInput) -> Result<(), AppError> {
         let file = self.file_map_gateway.get_file(&input.id).await?
-            .ok_or(AppError::NotFound("file not found".into()))?;
+            .ok_or(AppError::NotFound("id".into()))?;
         
         let article_author = match self.article_reader.get_article_author(&file.article_id).await? {
             Some(author_id) => author_id,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
+            None => return Err(AppError::Critical("DeleteArticleFile file exists but article not found".into()))
         };
 
         ensure_can_update_article(

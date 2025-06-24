@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
-use crate::domain::error::DomainError;
+use crate::domain::error::{DomainError, ValidationError};
 use super::{
     article_gateway::ArticleGatewayError,
     comment_gateway::CommentGatewayError,
@@ -10,43 +10,23 @@ use super::{
     file_storage_gateway::FileStorageError,
 };
 
-#[derive(Debug, Serialize, Clone)]
-pub enum ErrorContent {
-    Message(String),
-    Map(HashMap<String, String>),
-}
-
-impl From<String> for ErrorContent {
-    fn from(value: String) -> Self {
-        ErrorContent::Message(value)
-    }
-}
-
-impl From<&str> for ErrorContent {
-    fn from(value: &str) -> Self {
-        ErrorContent::Message(value.to_string())
-    }
-}
-
-impl From<HashMap<String, String>> for ErrorContent {
-    fn from(value: HashMap<String, String>) -> Self {
-        ErrorContent::Map(value)
-    }
-}
 
 #[derive(Debug, Serialize, Clone)]
-pub enum AppError {
-    Validation(ErrorContent),
-    NotFound(ErrorContent),
-    AccessDenied(ErrorContent),
-    Critical(ErrorContent),
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+    pub enum AppError {
+    Validation(HashMap<String, ValidationError>), // status, fields -> reasons ValidationError::*
+    NotFound(String), // status, field -> reason NOT_FOUND
+    AccessDenied, // status
+    Critical(String),
 }
 
 impl From<DomainError> for AppError {
     fn from(error: DomainError) -> Self {
         match error {
-            DomainError::Validation(err) => AppError::Validation(ErrorContent::Message(err)),
-            DomainError::Access => AppError::AccessDenied(ErrorContent::Message("access denied".into())),
+            DomainError::Validation(err) => AppError::Validation(
+                HashMap::from([(err.0, err.1)])
+            ),
+            DomainError::Access => AppError::AccessDenied,
         }
     }
 }
@@ -54,9 +34,9 @@ impl From<DomainError> for AppError {
 impl From<ArticleGatewayError>  for AppError {
     fn from(error: ArticleGatewayError) -> Self {
         match error {
-            ArticleGatewayError::Critical(err) => AppError::Critical(ErrorContent::Message(
+            ArticleGatewayError::Critical(err) => AppError::Critical(
                 format!("critical error in ArticleGateway: {}", err)
-            ))
+            )
         }
     }
 }
@@ -64,9 +44,9 @@ impl From<ArticleGatewayError>  for AppError {
 impl From<CommentGatewayError> for AppError {
     fn from(error: CommentGatewayError) -> Self {
         match error {
-            CommentGatewayError::Critical(err) => AppError::Critical(ErrorContent::Message(
+            CommentGatewayError::Critical(err) => AppError::Critical(
                 format!("critical error in CommentGateway: {}", err)
-            ))
+            )
         }
     }
 }
@@ -74,9 +54,9 @@ impl From<CommentGatewayError> for AppError {
 impl From<TagGatewayError> for AppError {
     fn from(error: TagGatewayError) -> Self {
         match error {
-            TagGatewayError::Critical(err) => AppError::Critical(ErrorContent::Message(
+            TagGatewayError::Critical(err) => AppError::Critical(
                 format!("critical error in TagGateway: {}", err)
-            ))
+            )
         }
     }
 }
@@ -84,9 +64,9 @@ impl From<TagGatewayError> for AppError {
 impl From<FileMapGatewayError> for AppError {
     fn from(error: FileMapGatewayError) -> Self {
         match error {
-            FileMapGatewayError::Critical(err) => AppError::Critical(ErrorContent::Message(
+            FileMapGatewayError::Critical(err) => AppError::Critical(
                 format!("critical error in FileMapGateway: {}", err)
-            ))
+            )
         }
     }
 }
@@ -94,9 +74,9 @@ impl From<FileMapGatewayError> for AppError {
 impl From<FileStorageError> for AppError {
     fn from(error: FileStorageError) -> Self {
         match error {
-            FileStorageError::Critical(err) => AppError::Critical(ErrorContent::Message(
+            FileStorageError::Critical(err) => AppError::Critical(
                 format!("critical error in FileStorage: {}", err)
-            ))
+            )
         }
     }
 }

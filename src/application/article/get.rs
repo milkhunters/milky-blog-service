@@ -1,6 +1,6 @@
 use crate::application::common::{
     article_gateway::ArticleGateway,
-    error::{AppError, ErrorContent},
+    error::AppError,
     file_map_gateway::FileMapReader,
     file_storage_gateway::FileStorageLinker,
     id_provider::IdProvider,
@@ -17,11 +17,14 @@ use crate::domain::{
     services::access::ensure_can_get_article
 };
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize)]
 pub struct GetArticleInput {
     pub id: ArticleId
 }
 
+#[derive(Serialize)]
 pub struct ArticleFile {
     pub id: FileId,
     pub filename: String,
@@ -32,6 +35,7 @@ pub struct ArticleFile {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Serialize)]
 pub struct GetArticleOutput {
     pub title: String,
     pub poster: Option<FileId>,
@@ -60,7 +64,7 @@ impl Interactor<GetArticleInput, GetArticleOutput> for GetArticle<'_> {
     async fn execute(&self, input: GetArticleInput) -> Result<GetArticleOutput, AppError> {
         let article = match self.article_gateway.get_article(&input.id).await? {
             Some(article) => article,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into())))
+            None => return Err(AppError::NotFound("id".into()))
         };
 
         ensure_can_get_article(

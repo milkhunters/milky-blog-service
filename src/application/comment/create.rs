@@ -21,6 +21,7 @@ use crate::domain::{
 };
 use std::collections::HashMap;
 use async_trait::async_trait;
+use crate::domain::error::ValidationError;
 use crate::domain::models::comment_state::CommentState;
 
 pub struct CreateCommentInput {
@@ -48,7 +49,7 @@ impl Interactor<CreateCommentInput, CreateCommentOutput> for CreateComment<'_> {
         let article = self.article_reader
             .get_article(&input.article_id)
             .await?
-            .ok_or(AppError::NotFound("article not found".into()))?;
+            .ok_or(AppError::NotFound("article_id".into()))?;
         
         ensure_can_create_comment(
             self.id_provider.permissions(),
@@ -57,21 +58,21 @@ impl Interactor<CreateCommentInput, CreateCommentOutput> for CreateComment<'_> {
         )?;
 
         // validate
-        let mut validator_err_map = HashMap::<String, String>::new();
-        if let Err(DomainError::Validation(err)) = validate_comment_content(&input.content) {
-            validator_err_map.insert("content".into(), err);
+        let mut validator_err_map = HashMap::<String, ValidationError>::new();
+        if let Err(DomainError::Validation((key, val))) = validate_comment_content(&input.content) {
+            validator_err_map.insert(key, val);
         }
         
         if let Some(parent_id) = input.parent_id {
             if let Some(parent) = self.comment_gateway.get_comment(&parent_id).await? {
                 if parent.article_id != article.id {
-                    validator_err_map.insert("parent_id".into(), "parent comment does not belong to the same article".into());
+                    return Err(AppError::NotFound("parent_id".into()));
                 }
                 if parent.state == CommentState::Deleted {
-                    validator_err_map.insert("parent_id".into(), "parent comment is deleted".into());
+                    return Err(AppError::NotFound("parent_id".into()));
                 }
             } else {
-                validator_err_map.insert("parent_id".into(), "parent comment not found".into());
+                return Err(AppError::NotFound("parent_id".into()));
             }
         }
 

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 use crate::application::common::{
     article_gateway::ArticleWriter,
-    error::{AppError, ErrorContent},
+    error::AppError,
     id_provider::IdProvider,
     interactor::Interactor
 };
@@ -20,8 +21,10 @@ use crate::domain::{
         }
     }
 };
+use crate::domain::error::ValidationError;
 use crate::domain::models::tag::Tag;
 
+#[derive(Deserialize)]
 pub struct CreateArticleInput {
     pub title: String,
     pub content: String,
@@ -29,6 +32,7 @@ pub struct CreateArticleInput {
     pub tags: Vec<String>
 }
 
+#[derive(Serialize)]
 pub struct CreateArticleOutput {
     pub id: ArticleId
 }
@@ -46,18 +50,18 @@ impl Interactor<CreateArticleInput, CreateArticleOutput> for CreateArticle<'_> {
         )?;
 
         // validate
-        let mut validator_err_map = HashMap::<String, String>::new();
-        if let Err(DomainError::Validation(err)) = validate_article_title(&input.title) {
-            validator_err_map.insert("title".into(), err);
+        let mut validator_err_map = HashMap::<String, ValidationError>::new();
+        if let Err(DomainError::Validation((key, val))) = validate_article_title(&input.title) {
+            validator_err_map.insert(key, val);
         }
-        if let Err(DomainError::Validation(err)) = validate_article_content(&input.content) {
-            validator_err_map.insert("content".into(), err);
+        if let Err(DomainError::Validation((key, val))) = validate_article_content(&input.content) {
+            validator_err_map.insert(key, val);
         }
-        if let Err(DomainError::Validation(err)) = validate_article_tags(&input.tags) {
-            validator_err_map.insert("tags".into(), err);
+        if let Err(DomainError::Validation((key, val))) = validate_article_tags(&input.tags) {
+            validator_err_map.insert(key, val);
         }
         if !validator_err_map.is_empty() {
-            return Err(AppError::Validation(ErrorContent::Map(validator_err_map)));
+            return Err(AppError::Validation(validator_err_map));
         }
         
         // save

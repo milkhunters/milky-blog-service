@@ -1,5 +1,5 @@
 use crate::application::common::{
-    error::{AppError, ErrorContent},
+    error::AppError,
     comment_gateway::{CommentRater, CommentReader},
     article_gateway::ArticleReader,
     id_provider::IdProvider,
@@ -28,12 +28,12 @@ impl Interactor<RateCommentInput, ()> for RateComment<'_> {
     async fn execute(&self, input: RateCommentInput) -> Result<(), AppError> {
         let comment = match self.comment_gateway.get_comment(&input.id).await? {
             Some(comment) => comment,
-            None => return Err(AppError::NotFound(ErrorContent::Message("comment not found".into())))
+            None => return Err(AppError::NotFound("id".into()))
         };
         
         let article_state = match self.article_reader.get_article_state(&comment.article_id).await? {
             Some(state) => state,
-            None => return Err(AppError::NotFound(ErrorContent::Message("article not found".into()))) // critical
+            None => return Err(AppError::Critical("RateComment comment found but article not found".into()))
         };
 
         ensure_can_rate_comment(
