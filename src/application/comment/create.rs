@@ -21,15 +21,18 @@ use crate::domain::{
 };
 use std::collections::HashMap;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use crate::domain::error::ValidationError;
 use crate::domain::models::comment_state::CommentState;
 
+#[derive(Deserialize)]
 pub struct CreateCommentInput {
     pub article_id: ArticleId,
     pub content: String,
     pub parent_id: Option<CommentId>,
 }
 
+#[derive(Serialize)]
 pub struct CreateCommentOutput {
     pub id: CommentId
 }

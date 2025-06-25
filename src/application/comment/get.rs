@@ -19,11 +19,13 @@ use crate::domain::{
     services::access::ensure_can_get_comment
 };
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 
 pub struct GetCommentInput {
     pub id: CommentId
 }
 
+#[derive(Serialize)]
 pub struct GetCommentOutput {
     pub content: String,
     pub author_id: UserId,

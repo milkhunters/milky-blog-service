@@ -20,12 +20,15 @@ use crate::domain::{
     services::access::ensure_can_get_comments
 };
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use crate::domain::models::permissions::Permission::GetAnyComment;
 
+#[derive(Deserialize)]
 pub struct GetCommentsTreeInput {
     pub article_id: ArticleId
 }
 
+#[derive(Serialize)]
 pub struct GetCommentsTreeItem {
     pub id: CommentId,
     pub content: String,

@@ -1,5 +1,6 @@
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Deserialize, Serialize)]
 pub enum CommentState {
     Deleted,
     Published
