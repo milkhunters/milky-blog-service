@@ -7,3 +7,4 @@ pub mod file;
 pub mod user_id;
 pub mod permissions;
 pub mod user_state;
+pub mod rate_state;

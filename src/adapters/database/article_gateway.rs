@@ -15,7 +15,8 @@ use crate::domain::models::{
     article::{Article, ArticleId},
     article_state::ArticleState,
     tag::{Tag, TagId},
-    user_id::UserId
+    user_id::UserId,
+    rate_state::RateState
 };
 use sqlx::{
     encode::IsNull,
@@ -24,17 +25,6 @@ use sqlx::{
     Database, Decode, Encode, Postgres, Row, Arguments
 };
 
-impl From<sqlx::Error> for ArticleGatewayError {
-    fn from(err: sqlx::Error) -> Self {
-        ArticleGatewayError::Critical(err.to_string())
-    }
-}
-
-impl From<Box<dyn serde::de::StdError + Send + Sync>> for ArticleGatewayError {
-    fn from(err: Box<dyn serde::de::StdError + Send + Sync>) -> Self {
-        ArticleGatewayError::Critical(err.to_string())
-    }
-}
 
 pub struct PostgresArticleGateway {
     pool: sqlx::PgPool
@@ -43,35 +33,6 @@ pub struct PostgresArticleGateway {
 impl PostgresArticleGateway {
     pub fn new(pool: sqlx::PgPool) -> Self {
         Self { pool }
-    }
-}
-
-impl Decode<'_, Postgres> for ArticleState {
-    fn decode(value: sqlx::postgres::PgValueRef<'_>) -> Result<Self, sqlx::error::BoxDynError> {
-        let state: String = Decode::<'_, Postgres>::decode(value)?;
-        match state.as_str() {
-            "Draft" => Ok(ArticleState::Draft),
-            "Published" => Ok(ArticleState::Published),
-            "Archived" => Ok(ArticleState::Archived),
-            _ => Err(sqlx::error::BoxDynError::from("Unknown article state")),
-        }
-    }
-}
-
-impl Encode<'_, Postgres> for ArticleState {
-    fn encode_by_ref(&self, buf: &mut <Postgres as Database>::ArgumentBuffer<'_>) -> Result<IsNull, BoxDynError> {
-        let state_str = match self {
-            ArticleState::Draft => "Draft",
-            ArticleState::Published => "Published",
-            ArticleState::Archived => "Archived",
-        };
-        Encode::<Postgres>::encode_by_ref(&state_str, buf)
-    }
-}
-
-impl sqlx::Type<Postgres> for ArticleState {
-    fn type_info() -> sqlx::postgres::PgTypeInfo {
-        sqlx::postgres::PgTypeInfo::with_name("article_state")
     }
 }
 
@@ -432,84 +393,62 @@ impl ArticleRemover for PostgresArticleGateway {
 
 #[async_trait]
 impl ArticleRater for PostgresArticleGateway {
-    async fn rate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError> {
+    async fn rate_article(&self, article_id: &ArticleId, user_id: &UserId, state: &RateState) -> Result<(), ArticleGatewayError> {
         let result = sqlx::query(
             r#"
-                INSERT INTO article_rate (article_id, user_id)
-                VALUES ($1, $2)
+                INSERT INTO article_rate (article_id, user_id, state)
+                VALUES ($1, $2, $3)
                 ON CONFLICT DO NOTHING
             "#
         )
             .bind(article_id)
             .bind(user_id)
+            .bind(state)
             .execute(&self.pool)
             .await;
 
         match result {
-            Ok(res) => Ok(res.rows_affected() > 0),
+            Ok(_) => Ok(()),
             Err(e) => Err(ArticleGatewayError::Critical(e.to_string())),
         }
     }
 
-    async fn unrate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError> {
-        let result = sqlx::query(
-            r#"
-                DELETE FROM article_rate
-                WHERE article_id = $1 AND user_id = $2
-            "#
-        )
-            .bind(article_id)
-            .bind(user_id)
-            .execute(&self.pool)
-            .await;
-
-        match result {
-            Ok(res) => Ok(res.rows_affected() > 0),
-            Err(e) => Err(ArticleGatewayError::Critical(e.to_string())),
-        }
-    }
-
-    async fn is_user_rated_article(
+    async fn user_rate_state(
         &self,
         article_id: &ArticleId,
         user_id: &UserId
-    ) -> Result<bool, ArticleGatewayError> {
-        sqlx::query_scalar::<_, bool>(
+    ) -> Result<RateState, ArticleGatewayError> {
+        let state: Option<RateState> = sqlx::query_scalar(
             r#"
-            SELECT EXISTS(
-                SELECT 1
-                FROM article_rate
-                WHERE article_id = $1 AND user_id = $2
-            )
+            SELECT state
+            FROM article_rate
+            WHERE article_id = $1 AND user_id = $2
         "#
         )
             .bind(article_id)
             .bind(user_id)
-            .fetch_one(&self.pool)
+            .fetch_optional(&self.pool)
             .await
-            .map_err(|e| ArticleGatewayError::Critical(e.to_string()))
+            .map_err(|e| ArticleGatewayError::Critical(e.to_string()))?;
+
+        Ok(state.unwrap_or(RateState::Neutral))
     }
 
-    async fn is_user_rated_articles(
-        &self,
-        article_ids: &[ArticleId],
-        user_id: &UserId
-    ) -> Result<Vec<bool>, ArticleGatewayError> {
+    async fn user_rate_states(&self, article_ids: &[ArticleId], user_id: &UserId) -> Result<Vec<RateState>, ArticleGatewayError> {
         if article_ids.is_empty() {
             return Ok(Vec::new());
         }
 
         let rows = sqlx::query(
             r#"
-        SELECT
-            a.id AS article_id,
-            EXISTS(
-                SELECT 1
-                FROM article_rate ar
-                WHERE ar.article_id = a.id AND ar.user_id = $2
-            ) AS is_rated
-        FROM unnest($1::uuid[]) WITH ORDINALITY AS a(id, idx)
-        ORDER BY idx
+            SELECT
+                a.id AS article_id,
+                COALESCE(ar.state, 'neutral'::rate_state) AS "state: RateState"
+            FROM unnest($1::uuid[]) WITH ORDINALITY AS a(id, idx)
+            LEFT JOIN article_rate ar 
+                ON a.id = ar.article_id 
+                AND ar.user_id = $2
+            ORDER BY a.idx
         "#
         )
             .bind(&article_ids)
@@ -518,9 +457,79 @@ impl ArticleRater for PostgresArticleGateway {
             .await
             .map_err(|e| ArticleGatewayError::Critical(e.to_string()))?;
 
-        Ok(rows.into_iter().map(|row| row.get::<bool, _>("is_rated")).collect())
+        Ok(rows.into_iter().map(|row| row.get::<RateState, _>("state")).collect())
     }
 }
 
 #[async_trait]
 impl ArticleGateway for PostgresArticleGateway {}
+
+impl Decode<'_, Postgres> for ArticleState {
+    fn decode(value: sqlx::postgres::PgValueRef<'_>) -> Result<Self, sqlx::error::BoxDynError> {
+        let state: String = Decode::<'_, Postgres>::decode(value)?;
+        match state.as_str() {
+            "Draft" => Ok(ArticleState::Draft),
+            "Published" => Ok(ArticleState::Published),
+            "Archived" => Ok(ArticleState::Archived),
+            _ => Err(sqlx::error::BoxDynError::from("unknown article state")),
+        }
+    }
+}
+
+impl Encode<'_, Postgres> for ArticleState {
+    fn encode_by_ref(&self, buf: &mut <Postgres as Database>::ArgumentBuffer<'_>) -> Result<IsNull, BoxDynError> {
+        let state_str = match self {
+            ArticleState::Draft => "Draft",
+            ArticleState::Published => "Published",
+            ArticleState::Archived => "Archived",
+        };
+        Encode::<Postgres>::encode_by_ref(&state_str, buf)
+    }
+}
+
+impl sqlx::Type<Postgres> for ArticleState {
+    fn type_info() -> sqlx::postgres::PgTypeInfo {
+        sqlx::postgres::PgTypeInfo::with_name("article_state")
+    }
+}
+
+impl Decode<'_, Postgres> for RateState {
+    fn decode(value: sqlx::postgres::PgValueRef<'_>) -> Result<Self, BoxDynError> {
+        let state: String = Decode::<'_, Postgres>::decode(value)?;
+        match state.as_str() {
+            "up" => Ok(RateState::Up),
+            "neutral" => Ok(RateState::Neutral),
+            "down" => Ok(RateState::Down),
+            _ => Err(sqlx::error::BoxDynError::from("unknown rate state")),
+        }
+    }
+}
+
+impl Encode<'_, Postgres> for RateState {
+    fn encode_by_ref(&self, buf: &mut <Postgres as Database>::ArgumentBuffer<'_>) -> Result<IsNull, BoxDynError> {
+        let state_str = match self {
+            RateState::Up => "up",
+            RateState::Neutral => "neutral",
+            RateState::Down => "down",
+        };
+        Encode::<Postgres>::encode_by_ref(&state_str, buf)
+    }
+}
+
+impl sqlx::Type<Postgres> for RateState {
+    fn type_info() -> sqlx::postgres::PgTypeInfo {
+        sqlx::postgres::PgTypeInfo::with_name("rate_state")
+    }
+}
+
+impl From<sqlx::Error> for ArticleGatewayError {
+    fn from(err: sqlx::Error) -> Self {
+        ArticleGatewayError::Critical(err.to_string())
+    }
+}
+
+impl From<Box<dyn serde::de::StdError + Send + Sync>> for ArticleGatewayError {
+    fn from(err: Box<dyn serde::de::StdError + Send + Sync>) -> Self {
+        ArticleGatewayError::Critical(err.to_string())
+    }
+}

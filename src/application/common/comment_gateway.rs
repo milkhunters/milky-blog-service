@@ -4,7 +4,7 @@ use crate::domain::models::{
     comment::{Comment, CommentId},
     user_id::UserId
 };
-
+use crate::domain::models::rate_state::RateState;
 
 pub enum CommentGatewayError {
     Critical(String)
@@ -37,14 +37,13 @@ pub trait CommentRemover {
 
 #[async_trait]
 pub trait CommentRater {
-    async fn rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
-    async fn unrate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
-    async fn is_user_rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError>;
-    async fn is_user_rate_comments(
+    async fn rate_comment(&self, comment_id: &CommentId, user_id: &UserId, state: &RateState) -> Result<(), CommentGatewayError>;
+    async fn user_rate_state(&self, comment_id: &CommentId, user_id: &UserId) -> Result<RateState, CommentGatewayError>;
+    async fn user_rate_states(
         &self,
         comment_ids: &[CommentId],
         user_id: &UserId,
-    ) -> Result<Vec<bool>, CommentGatewayError>;
+    ) -> Result<Vec<RateState>, CommentGatewayError>;
 }
 
 pub trait CommentGateway: 

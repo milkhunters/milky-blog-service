@@ -10,12 +10,14 @@ use crate::domain::{
     models::comment::CommentId
 };
 use async_trait::async_trait;
+use crate::domain::models::rate_state::RateState;
 
 #[async_trait]
 pub trait CommentReaderRaterGateway: CommentReader + CommentRater {}
 
 pub struct RateCommentInput {
-    pub id: CommentId
+    pub id: CommentId,
+    pub state: RateState
 }
 
 pub struct RateComment<'interactor> {
@@ -43,11 +45,7 @@ impl Interactor<RateCommentInput, ()> for RateComment<'_> {
             &article_state
         )?;
 
-        if self.comment_gateway.is_user_rate_comment(&comment.id, self.id_provider.user_id()).await? {
-            self.comment_gateway.unrate_comment(&comment.id, self.id_provider.user_id()).await?;
-        } else {
-            self.comment_gateway.rate_comment(&comment.id, self.id_provider.user_id()).await?;
-        }
+        self.comment_gateway.rate_comment(&comment.id, self.id_provider.user_id(), &input.state).await?;
         Ok(())
     }
 }

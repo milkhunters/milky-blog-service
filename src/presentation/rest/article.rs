@@ -28,6 +28,7 @@ use crate::presentation::{
 use crate::AppConfig;
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse};
 use serde::Deserialize;
+use crate::domain::models::rate_state::RateState;
 
 pub fn router(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -104,20 +105,21 @@ async fn find_article(
     Ok(HttpResponse::Ok().json(output))
 }
 
-#[post("rate/{id}")]
+#[post("rate/{id}/{state}")]
 async fn rate_article(
     input: web::Path<ArticleId>,
+    state: web::Path<RateState>,
     ioc: web::Data<dyn InteractorFactory>,
     app_config: web::Data<AppConfig>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
     let output = ioc.rate_article(id_provider).execute(
-        RateArticleInput { id: input.into_inner() }
+        RateArticleInput { id: input.into_inner(), state: state.into_inner() }
     ).await?;
     Ok(HttpResponse::Ok().json(output))
 }
-
+ 
 
 #[derive(Deserialize)]
 pub struct UpdateArticleJson {

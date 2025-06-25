@@ -14,7 +14,8 @@ use crate::domain::{
         article::ArticleId,
         comment::CommentId,
         comment_state::CommentState,
-        user_id::UserId
+        user_id::UserId,
+        rate_state::RateState
     },
     services::access::ensure_can_get_comment
 };
@@ -34,7 +35,7 @@ pub struct GetCommentOutput {
     pub rating: i64,
     pub state: CommentState,
     
-    pub is_self_rated: bool,
+    pub self_rate: RateState,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
@@ -72,7 +73,7 @@ impl Interactor<GetCommentInput, GetCommentOutput> for GetComment<'_> {
             &article_state
         )?;
         
-        let is_self_rated = self.comment_gateway.is_user_rate_comment(
+        let self_rate = self.comment_gateway.user_rate_state(
             &comment.id,
             self.id_provider.user_id()
         ).await?;
@@ -84,7 +85,7 @@ impl Interactor<GetCommentInput, GetCommentOutput> for GetComment<'_> {
             parent_id: comment.parent_id,
             rating: comment.rating,
             state: comment.state,
-            is_self_rated,
+            self_rate,
             created_at: comment.created_at,
             updated_at: comment.updated_at
         })

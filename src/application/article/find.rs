@@ -12,7 +12,8 @@ use crate::domain::{
         article::ArticleId,
         article_state::ArticleState,
         tag::Tag,
-        user_id::UserId
+        user_id::UserId,
+        rate_state::RateState
     },
     services::access::ensure_can_find_articles
 };
@@ -51,7 +52,7 @@ pub struct ArticleItem {
     pub author_id: UserId,
     pub tags: Vec<Tag>,
 
-    pub is_self_rated: bool,
+    pub self_rate: RateState,
 
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>
@@ -86,7 +87,7 @@ impl Interactor<FindArticleInput, FindArticleOutput> for FindArticle<'_> {
             &input.author_id
         ).await?;
 
-        let rates = self.article_gateway.is_user_rated_articles(
+        let rates = self.article_gateway.user_rate_states(
             &articles.iter().map(|item| item.id).collect::<Vec<_>>(),
             self.id_provider.user_id()
         ).await?;
@@ -98,7 +99,7 @@ impl Interactor<FindArticleInput, FindArticleOutput> for FindArticle<'_> {
             )));
         }
 
-        Ok(articles.into_iter().zip(rates.into_iter()).map(|(article, is_self_rated)| {
+        Ok(articles.into_iter().zip(rates.into_iter()).map(|(article, self_rate)| {
             ArticleItem {
                 id: article.id,
                 title: article.title,
@@ -108,7 +109,7 @@ impl Interactor<FindArticleInput, FindArticleOutput> for FindArticle<'_> {
                 rating: article.rating,
                 author_id: article.author_id,
                 tags: article.tags,
-                is_self_rated,
+                self_rate,
                 created_at: article.created_at,
                 updated_at: article.updated_at
             }

@@ -18,6 +18,7 @@ use crate::domain::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use crate::domain::models::rate_state::RateState;
 
 #[derive(Deserialize)]
 pub struct GetArticleInput {
@@ -46,7 +47,7 @@ pub struct GetArticleOutput {
     pub author_id: UserId,
     pub tags: Vec<Tag>,
     
-    pub is_self_rated: bool,
+    pub self_rate: RateState,
     pub files: Vec<ArticleFile>,
 
     pub created_at: DateTime<Utc>,
@@ -75,8 +76,8 @@ impl Interactor<GetArticleInput, GetArticleOutput> for GetArticle<'_> {
             self.id_provider.user_id(),
         )?;
         
-        let (is_self_rated, files, inc_res) = tokio::join!(
-            self.article_gateway.is_user_rated_article(&article.id, self.id_provider.user_id()),
+        let (self_rate, files, inc_res) = tokio::join!(
+            self.article_gateway.user_rate_state(&article.id, self.id_provider.user_id()),
             self.file_map_reader.get_article_files(&article.id),
             self.article_gateway.increment_article_views(&article.id)
         );
@@ -92,8 +93,8 @@ impl Interactor<GetArticleInput, GetArticleOutput> for GetArticle<'_> {
             rating: article.rating,
             author_id: article.author_id,
             tags: article.tags,
-            
-            is_self_rated: is_self_rated?,
+
+            self_rate: self_rate?,
             files: files?.into_iter().map(|file| {
                 ArticleFile {
                     id: file.id,

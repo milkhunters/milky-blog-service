@@ -18,6 +18,7 @@ use sqlx::{
     error::BoxDynError,
     Database, Decode, Encode, Postgres, Row
 };
+use crate::domain::models::rate_state::RateState;
 
 impl From<sqlx::Error> for CommentGatewayError {
     fn from(err: sqlx::Error) -> Self {
@@ -255,78 +256,71 @@ impl CommentRemover for PostgresCommentGateway {
 
 #[async_trait]
 impl CommentRater for PostgresCommentGateway {
-    async fn rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError> {
+    async fn rate_comment(&self, comment_id: &ArticleId, user_id: &UserId, state: &RateState) -> Result<(), CommentGatewayError> {
         let result = sqlx::query(
             r#"
-                INSERT INTO comment_rate (comment_id, user_id)
-                VALUES ($1, $2)
-                ON CONFLICT (comment_id, user_id) DO NOTHING
+                INSERT INTO comment_rate (comment_id, user_id, state)
+                VALUES ($1, $2, $3)
+                ON CONFLICT DO NOTHING
             "#
         )
-        .bind(comment_id)
-        .bind(user_id)
-        .execute(&self.pool)
-        .await?;
+            .bind(comment_id)
+            .bind(user_id)
+            .bind(state)
+            .execute(&self.pool)
+            .await;
 
-        Ok(result.rows_affected() > 0)
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(CommentGatewayError::Critical(e.to_string())),
+        }
     }
 
-    async fn unrate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError> {
-        let result = sqlx::query(
+    async fn user_rate_state(
+        &self,
+        comment_id: &CommentId,
+        user_id: &UserId
+    ) -> Result<RateState, CommentGatewayError> {
+        let state: Option<RateState> = sqlx::query_scalar(
             r#"
-                DELETE FROM comment_rate
-                WHERE comment_id = $1 AND user_id = $2
-            "#
-        )
-        .bind(comment_id)
-        .bind(user_id)
-        .execute(&self.pool)
-        .await?;
-
-        Ok(result.rows_affected() > 0)
-    }
-
-    async fn is_user_rate_comment(&self, comment_id: &CommentId, user_id: &UserId) -> Result<bool, CommentGatewayError> {
-        sqlx::query_scalar::<_, bool>(
-            r#"
-            SELECT EXISTS(
-                SELECT 1
-                FROM comment_rate
-                WHERE comment_id = $1 AND user_id = $2
-            )
+            SELECT state
+            FROM comment_rate
+            WHERE comment_id = $1 AND user_id = $2
         "#
         )
             .bind(comment_id)
             .bind(user_id)
-            .fetch_one(&self.pool)
+            .fetch_optional(&self.pool)
             .await
-            .map_err(CommentGatewayError::from)
+            .map_err(|e| CommentGatewayError::Critical(e.to_string()))?;
+
+        Ok(state.unwrap_or(RateState::Neutral))
     }
 
-    async fn is_user_rate_comments(&self, comment_ids: &[CommentId], user_id: &UserId) -> Result<Vec<bool>, CommentGatewayError> {
+    async fn user_rate_states(&self, comment_ids: &[CommentId], user_id: &UserId) -> Result<Vec<RateState>, CommentGatewayError> {
         if comment_ids.is_empty() {
             return Ok(Vec::new());
         }
 
         let rows = sqlx::query(
             r#"
-        SELECT
-            c.id AS comment_id,
-            EXISTS(
-                SELECT 1
-                FROM comment_rate cr
-                WHERE cr.comment_id = c.id AND cr.user_id = $2
-            ) AS is_rated
-        FROM unnest($1::uuid[]) WITH ORDINALITY AS c(id, idx)
-        ORDER BY idx
+            SELECT
+                a.id AS comment_id,
+                COALESCE(ar.state, 'neutral'::rate_state) AS "state: RateState"
+            FROM unnest($1::uuid[]) WITH ORDINALITY AS a(id, idx)
+            LEFT JOIN comment_rate ar 
+                ON a.id = ar.comment_id 
+                AND ar.user_id = $2
+            ORDER BY a.idx
         "#
         )
             .bind(&comment_ids)
             .bind(user_id)
             .fetch_all(&self.pool)
-            .await?;
+            .await
+            .map_err(|e| CommentGatewayError::Critical(e.to_string()))?;
 
-        Ok(rows.into_iter().map(|row| row.get::<bool, _>("is_rated")).collect())
+        Ok(rows.into_iter().map(|row| row.get::<RateState, _>("state")).collect())
     }
 }
 

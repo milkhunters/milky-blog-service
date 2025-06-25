@@ -6,7 +6,10 @@ use crate::application::common::{
 };
 use crate::domain::{
     services::access::ensure_can_rate_article,
-    models::article::ArticleId
+    models::{
+        rate_state::RateState,
+        article::ArticleId
+    }
 };
 use async_trait::async_trait;
 
@@ -14,13 +17,14 @@ use async_trait::async_trait;
 pub trait ArticleReaderRaterGateway: ArticleReader + ArticleRater {}
 
 pub struct RateArticleInput {
-    pub id: ArticleId
+    pub id: ArticleId,
+    pub state: RateState
 }
 
 pub struct RateArticle<'interactor> {
     id_provider: &'interactor dyn IdProvider,
     article_gateway: &'interactor dyn ArticleReaderRaterGateway
-}
+} 
 
 impl Interactor<RateArticleInput, ()> for RateArticle<'_> {
     async fn execute(&self, input: RateArticleInput) -> Result<(), AppError> {
@@ -35,11 +39,7 @@ impl Interactor<RateArticleInput, ()> for RateArticle<'_> {
             &article.state,
         )?;
 
-        if self.article_gateway.is_user_rated_article(&article.id, self.id_provider.user_id()).await? {
-            self.article_gateway.unrate_article(&article.id, self.id_provider.user_id()).await?;
-        } else {
-            self.article_gateway.rate_article(&article.id, self.id_provider.user_id()).await?;
-        }
+        self.article_gateway.rate_article(&article.id, self.id_provider.user_id(), &input.state).await?;
         Ok(())
     }
 }

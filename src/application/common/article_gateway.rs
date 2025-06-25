@@ -6,6 +6,7 @@ use crate::domain::models::{
     tag::TagId,
     user_id::UserId
 };
+use crate::domain::models::rate_state::RateState;
 
 pub enum ArticleGatewayError {
     Critical(String)
@@ -44,14 +45,13 @@ pub trait ArticleRemover {
 
 #[async_trait]
 pub trait ArticleRater {
-    async fn rate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
-    async fn unrate_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
-    async fn is_user_rated_article(&self, article_id: &ArticleId, user_id: &UserId) -> Result<bool, ArticleGatewayError>;
-    async fn is_user_rated_articles(
+    async fn rate_article(&self, article_id: &ArticleId, user_id: &UserId, state: &RateState) -> Result<(), ArticleGatewayError>;
+    async fn user_rate_state(&self, article_id: &ArticleId, user_id: &UserId) -> Result<RateState, ArticleGatewayError>;
+    async fn user_rate_states(
         &self,
         article_ids: &[ArticleId],
         user_id: &UserId,
-    ) -> Result<Vec<bool>, ArticleGatewayError>;
+    ) -> Result<Vec<RateState>, ArticleGatewayError>;
 }
 
 #[async_trait]

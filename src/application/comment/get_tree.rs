@@ -15,13 +15,14 @@ use crate::domain::{
         article::ArticleId,
         comment::CommentId,
         comment_state::CommentState,
-        user_id::UserId
+        user_id::UserId,
+        permissions::Permission::GetAnyComment,
+        rate_state::RateState
     },
     services::access::ensure_can_get_comments
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::domain::models::permissions::Permission::GetAnyComment;
 
 #[derive(Deserialize)]
 pub struct GetCommentsTreeInput {
@@ -39,7 +40,7 @@ pub struct GetCommentsTreeItem {
     pub rating: i64,
     pub state: CommentState,
     pub level: u32,
-    pub is_self_rated: bool,
+    pub self_rate: RateState,
     
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
@@ -74,7 +75,7 @@ impl Interactor<GetCommentsTreeInput, GetCommentsTreeOutput> for GetCommentsTree
         
         
         let comments = self.comment_gateway.get_comments(&input.article_id).await?;
-        let rated = self.comment_gateway.is_user_rate_comments(
+        let rated = self.comment_gateway.user_rate_states(
                 &comments.iter().map(|(c, _)| c.id).collect::<Vec<_>>(), 
                 self.id_provider.user_id()
         ).await?;
@@ -89,7 +90,7 @@ impl Interactor<GetCommentsTreeInput, GetCommentsTreeOutput> for GetCommentsTree
         
         let can_look_deleted = self.id_provider.permissions().contains(&GetAnyComment);
         let comment_rows = comments.into_iter().zip(rated.into_iter())
-            .map(|((comment, level), is_self_rated)| {
+            .map(|((comment, level), self_rate)| {
                 GetCommentsTreeItem {
                     id: comment.id,
                     content: match comment.state {
@@ -104,7 +105,7 @@ impl Interactor<GetCommentsTreeInput, GetCommentsTreeOutput> for GetCommentsTree
                     rating: comment.rating,
                     state: comment.state,
                     level,
-                    is_self_rated,
+                    self_rate,
                     created_at: comment.created_at,
                     updated_at: comment.updated_at
                 }
