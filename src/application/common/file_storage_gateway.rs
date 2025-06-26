@@ -38,4 +38,4 @@ pub trait FileStorageRemover {
 }
 
 
-pub trait FileStorageGateway: FileStorageReader + FileStorageLinker + FileStorageRemover {}
+pub trait FileStorageGateway: FileStorageReader + FileStorageLinker + FileStorageRemover + Send + Sync {}

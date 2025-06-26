@@ -26,4 +26,4 @@ pub trait FileMapRemover {
     async fn remove(&self, file_id: &FileId) -> Result<(), FileMapGatewayError>;
 }
 
-pub trait FileMapGateway: FileMapReader + FileMapWriter + FileMapRemover {}
+pub trait FileMapGateway: FileMapReader + FileMapWriter + FileMapRemover + Send + Sync {}

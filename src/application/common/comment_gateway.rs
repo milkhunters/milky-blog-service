@@ -50,4 +50,5 @@ pub trait CommentGateway:
     CommentReader + 
     CommentWriter + 
     CommentRemover + 
-    CommentRater {}
+    CommentRater +
+    Send + Sync {}

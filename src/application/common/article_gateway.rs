@@ -55,4 +55,4 @@ pub trait ArticleRater {
 }
 
 #[async_trait]
-pub trait ArticleGateway: ArticleReader + ArticleWriter + ArticleRemover + ArticleRater {}
+pub trait ArticleGateway: ArticleReader + ArticleWriter + ArticleRemover + ArticleRater + Send + Sync {}

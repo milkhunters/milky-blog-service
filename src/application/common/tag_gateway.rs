@@ -17,4 +17,4 @@ pub trait TagReader {
     ) -> Result<Vec<(Tag, u32)>, TagGatewayError>;
 }
 
-pub trait TagGateway: TagReader {}
+pub trait TagGateway: TagReader + Send + Sync {}
