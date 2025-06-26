@@ -18,6 +18,7 @@ consulrs = "0.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+
 # Data
 uuid = { version = "1.17", features = ["v4", "fast-rng", "serde"] }
 once_cell = "1.21"
@@ -34,3 +35,6 @@ utoipa = { version = "5.4", features = ["actix_extras", "uuid", "chrono"] }
 utoipauto = { version = "0.2"}
 utoipa-actix-web = "0.1"
 utoipa-swagger-ui = { version = "9.0", features = ["actix-web"] }
+
+[build-dependencies]
+tonic-build = "0.13"
