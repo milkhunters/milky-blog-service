@@ -1,12 +1,15 @@
+use base64::Engine;
 use consulrs::client::{ConsulClient, ConsulClientSettingsBuilder};
 use consulrs::kv;
+use base64::prelude::BASE64_STANDARD;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct General {
     pub host: String,
     pub port: u16,
-    pub jwt_verify_key: [u8; 32],
+    #[serde(deserialize_with = "deserialize_jwt_verify_key")]
+    pub jwt_verify_key: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -25,7 +28,6 @@ pub struct S3 {
     pub access_key: String,
     pub secret_key: String,
     pub bucket: String,
-    pub region: String,
     pub external_base_url: String
 }
 
@@ -54,10 +56,22 @@ impl Config {
         let mut res = kv::read(&client, &key, None).await.
             map_err(|e| format!("failed to read key from consul: {}", e))?;
 
-        let raw_yaml: String = res.response.pop().unwrap().value.unwrap().try_into()
+        let raw_yaml: String = res.response.pop().unwrap().value
+            .ok_or_else(|| format!("key '{}' not found in consul (may be empty)", key))?.try_into()
             .map_err(|e| format!("failed to convert consul value to string: {}", e))?;
 
         serde_yaml::from_str::<Config>(&*raw_yaml)
             .map_err(|e| format!("failed to deserialize config from yaml: {}", e))
     }
+}
+
+
+pub fn deserialize_jwt_verify_key<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    BASE64_STANDARD.decode(&s).map_err(|e| 
+        serde::de::Error::custom(format!("error decoding JWT verify key: {}", e))
+    )
 }
