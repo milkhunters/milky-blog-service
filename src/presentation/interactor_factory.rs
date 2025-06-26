@@ -24,22 +24,22 @@ use crate::application::{
     }
 };
 
-pub trait InteractorFactory {
-    fn create_article(&self, id_provider: Box<dyn IdProvider>) -> CreateArticle;
-    fn delete_article(&self, id_provider: Box<dyn IdProvider>) -> DeleteArticle;
-    fn find_article(&self, id_provider: Box<dyn IdProvider>) -> FindArticle;
-    fn get_article(&self, id_provider: Box<dyn IdProvider>) -> GetArticle;
-    fn rate_article(&self, id_provider: Box<dyn IdProvider>) -> RateArticle;
-    fn update_article(&self, id_provider: Box<dyn IdProvider>) -> UpdateArticle;
-    fn create_article_file(&self, id_provider: Box<dyn IdProvider>) -> CreateArticleFile;
-    fn confirm_article_file(&self, id_provider: Box<dyn IdProvider>) -> ConfirmArticleFile;
-    fn delete_article_file(&self, id_provider: Box<dyn IdProvider>) -> DeleteArticleFile;
-    fn find_article_tags(&self, id_provider: Box<dyn IdProvider>) -> FindArticleTags;
+pub trait InteractorFactory: Send + Sync {
+    fn create_article<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> CreateArticle<'interactor>;
+    fn delete_article<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> DeleteArticle<'interactor>;
+    fn find_article<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> FindArticle<'interactor>;
+    fn get_article<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> GetArticle<'interactor>;
+    fn rate_article<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> RateArticle<'interactor>;
+    fn update_article<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> UpdateArticle<'interactor>;
+    fn create_article_file<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> CreateArticleFile<'interactor>;
+    fn confirm_article_file<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> ConfirmArticleFile<'interactor>;
+    fn delete_article_file<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> DeleteArticleFile<'interactor>;
+    fn find_article_tags<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> FindArticleTags<'interactor>;
     // ---------------------------------------------------------------------------------------------
-    fn create_comment(&self, id_provider: Box<dyn IdProvider>) -> CreateComment;
-    fn delete_comment(&self, id_provider: Box<dyn IdProvider>) -> DeleteComment;
-    fn get_comment(&self, id_provider: Box<dyn IdProvider>) -> GetComment;
-    fn get_comments_tree(&self, id_provider: Box<dyn IdProvider>) -> GetCommentsTree;
-    fn rate_comment(&self, id_provider: Box<dyn IdProvider>) -> RateComment;
-    fn update_comment(&self, id_provider: Box<dyn IdProvider>) -> UpdateComment;
+    fn create_comment<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> CreateComment<'interactor>;
+    fn delete_comment<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> DeleteComment<'interactor>;
+    fn get_comment<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> GetComment<'interactor>;
+    fn get_comments_tree<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> GetCommentsTree<'interactor>;
+    fn rate_comment<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> RateComment<'interactor>;
+    fn update_comment<'interactor>(&'interactor self, id_provider: Box<dyn IdProvider>) -> UpdateComment<'interactor>;
 }
