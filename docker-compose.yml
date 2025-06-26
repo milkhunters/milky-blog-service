@@ -51,6 +51,21 @@ services:
          sh $$script || exit 1;
        done;"
 
+  consul:
+    image: hashicorp/consul:1.21.2
+    container_name: consul
+    restart: unless-stopped
+    ports:
+      - "8500:8500"
+    command: agent -server -bootstrap-expect=1 -client=0.0.0.0 -ui
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8500/v1/status/leader" ]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    volumes:
+      - consul_data:/consul/data
 
 volumes:
   postgres_blog_data:
+  consul_data:
