@@ -1,4 +1,4 @@
-use crate::app_state::AppConfig;
+use crate::app_state::AppState;
 use crate::application::article::create::CreateArticleOutput;
 use crate::application::{
     article::{
@@ -76,7 +76,7 @@ pub fn router(cfg: &mut web::ServiceConfig) {
 async fn create_article(
     input: web::Json<CreateArticleInput>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -95,7 +95,7 @@ async fn create_article(
 async fn delete_article(
     input: web::Path<ArticleId>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -116,7 +116,7 @@ async fn delete_article(
 async fn get_article(
     input: web::Path<ArticleId>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -137,7 +137,7 @@ async fn get_article(
 async fn find_article(
     input: web::Query<FindArticleInput>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -158,7 +158,7 @@ async fn rate_article(
     input: web::Path<ArticleId>,
     state: web::Path<RateState>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -194,7 +194,7 @@ async fn update_article(
     id: web::Path<ArticleId>,
     body: web::Json<UpdateArticleInput>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let body = body.into_inner();
@@ -222,7 +222,7 @@ async fn update_article(
 async fn confirm_article_file(
     id: web::Json<uuid::Uuid>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -245,7 +245,7 @@ async fn confirm_article_file(
 async fn create_article_file(
     input: web::Json<CreateArticleFileInput>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -268,7 +268,7 @@ async fn create_article_file(
 async fn delete_article_file(
     id: web::Path<FileId>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -289,7 +289,7 @@ async fn delete_article_file(
 async fn find_article_tags(
     input: web::Query<FindArticleTagsInput>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;

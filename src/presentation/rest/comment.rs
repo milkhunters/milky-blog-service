@@ -15,7 +15,7 @@ use crate::presentation::{
     rest::error::HttpError,
     rest::id_provider::new_jwt_id_provider
 };
-use crate::app_state::AppConfig;
+use crate::app_state::AppState;
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse};
 use serde::Deserialize;
 use crate::domain::models::rate_state::RateState;
@@ -37,7 +37,7 @@ pub fn router(cfg: &mut web::ServiceConfig) {
 async fn create_comment(
     input: web::Json<CreateCommentInput>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -49,7 +49,7 @@ async fn create_comment(
 async fn delete_comment(
     input: web::Path<CommentId>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -63,7 +63,7 @@ async fn delete_comment(
 async fn get_comment(
     input: web::Path<CommentId>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -77,7 +77,7 @@ async fn get_comment(
 async fn get_tree_comment(
     input: web::Query<GetCommentsTreeInput>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -90,7 +90,7 @@ async fn rate_comment(
     input: web::Path<CommentId>,
     state: web::Path<RateState>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
@@ -111,7 +111,7 @@ async fn update_comment(
     id: web::Path<CommentId>,
     body: web::Json<UpdateCommentJson>,
     ioc: web::Data<dyn InteractorFactory>,
-    app_config: web::Data<AppConfig>,
+    app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let body = body.into_inner();
