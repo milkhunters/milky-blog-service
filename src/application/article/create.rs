@@ -45,8 +45,8 @@ pub struct CreateArticleOutput {
 }
 
 pub struct CreateArticle<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_writer: &'interactor dyn ArticleWriter
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_writer: &'interactor dyn ArticleWriter
 }
 
 impl Interactor<CreateArticleInput, CreateArticleOutput> for CreateArticle<'_> {

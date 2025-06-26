@@ -1,9 +1,10 @@
+use crate::application::common::comment_gateway::CommentGateway;
 use crate::application::common::{
+    article_gateway::ArticleReader,
     comment_gateway::{
         CommentReader,
         CommentWriter
     },
-    article_gateway::ArticleReader,
     error::AppError,
     id_provider::IdProvider,
     interactor::Interactor
@@ -12,20 +13,15 @@ use crate::domain::{
     models::comment::CommentId,
     services::access::ensure_can_delete_comment
 };
-use async_trait::async_trait;
 
 pub struct DeleteCommentInput {
     pub id: CommentId
 }
 
-#[async_trait]
-pub trait CommentWriterReaderGateway: CommentReader + CommentWriter {}
-
-
 pub struct DeleteComment<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    comment_gateway: &'interactor dyn CommentWriterReaderGateway,
-    article_reader: &'interactor dyn ArticleReader,
+    pub id_provider: Box<dyn IdProvider>,
+    pub comment_gateway: &'interactor dyn CommentGateway,
+    pub article_reader: &'interactor dyn ArticleReader,
 }
 
 impl Interactor<DeleteCommentInput, ()> for DeleteComment<'_> {

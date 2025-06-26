@@ -1,19 +1,15 @@
+use crate::application::common::comment_gateway::CommentGateway;
 use crate::application::common::{
-    error::AppError,
-    comment_gateway::{CommentRater, CommentReader},
     article_gateway::ArticleReader,
+    error::AppError,
     id_provider::IdProvider,
     interactor::Interactor
 };
-use crate::domain::{
-    services::access::ensure_can_rate_comment,
-    models::comment::CommentId
-};
-use async_trait::async_trait;
 use crate::domain::models::rate_state::RateState;
-
-#[async_trait]
-pub trait CommentReaderRaterGateway: CommentReader + CommentRater {}
+use crate::domain::{
+    models::comment::CommentId,
+    services::access::ensure_can_rate_comment
+};
 
 pub struct RateCommentInput {
     pub id: CommentId,
@@ -21,9 +17,9 @@ pub struct RateCommentInput {
 }
 
 pub struct RateComment<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    comment_gateway: &'interactor dyn CommentReaderRaterGateway,
-    article_reader: &'interactor dyn ArticleReader
+    pub id_provider: Box<dyn IdProvider>,
+    pub comment_gateway: &'interactor dyn CommentGateway,
+    pub article_reader: &'interactor dyn ArticleReader
 }
 
 impl Interactor<RateCommentInput, ()> for RateComment<'_> {

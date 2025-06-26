@@ -1,13 +1,16 @@
+use crate::application::common::comment_gateway::CommentGateway;
 use crate::application::common::{
     article_gateway::ArticleReader,
     comment_gateway::{
-        CommentWriter,
-        CommentReader
+        CommentReader,
+        CommentWriter
     },
     error::AppError,
     id_provider::IdProvider,
     interactor::Interactor
 };
+use crate::domain::error::ValidationError;
+use crate::domain::models::comment_state::CommentState;
 use crate::domain::{
     error::DomainError,
     models::{
@@ -19,11 +22,8 @@ use crate::domain::{
         validator::validate_comment_content
     }
 };
-use std::collections::HashMap;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use crate::domain::error::ValidationError;
-use crate::domain::models::comment_state::CommentState;
+use std::collections::HashMap;
 
 #[derive(Deserialize)]
 pub struct CreateCommentInput {
@@ -37,14 +37,10 @@ pub struct CreateCommentOutput {
     pub id: CommentId
 }
 
-#[async_trait]
-pub trait CommentWriterReaderGateway: CommentWriter + CommentReader {}
-
-
 pub struct CreateComment<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_reader: &'interactor dyn ArticleReader,
-    comment_gateway: &'interactor dyn CommentWriterReaderGateway,
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_reader: &'interactor dyn ArticleReader,
+    pub comment_gateway: &'interactor dyn CommentGateway,
 }
 
 impl Interactor<CreateCommentInput, CreateCommentOutput> for CreateComment<'_> {

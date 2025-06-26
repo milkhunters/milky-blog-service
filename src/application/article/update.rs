@@ -40,9 +40,9 @@ pub struct UpdateArticleOutput {
 }
 
 pub struct UpdateArticle<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_gateway: &'interactor dyn ArticleGateway,
-    file_map_gateway: &'interactor dyn FileMapGateway
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_gateway: &'interactor dyn ArticleGateway,
+    pub file_map_gateway: &'interactor dyn FileMapGateway
 }
 
 impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {

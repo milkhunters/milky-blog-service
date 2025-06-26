@@ -17,10 +17,10 @@ pub struct ConfirmArticleFileInput {
 }
 
 pub struct ConfirmArticleFile<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_reader: &'interactor dyn ArticleReader,
-    file_map_gateway: &'interactor dyn FileMapGateway,
-    file_storage_reader: &'interactor dyn FileStorageReader,
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_reader: &'interactor dyn ArticleReader,
+    pub file_map_gateway: &'interactor dyn FileMapGateway,
+    pub file_storage_reader: &'interactor dyn FileStorageReader,
 }
 
 impl Interactor<ConfirmArticleFileInput, ()> for ConfirmArticleFile<'_> {

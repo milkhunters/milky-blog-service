@@ -36,10 +36,10 @@ pub struct CreateArticleFileInput {
 pub type CreateArticleFileOutput = PreSignedUrl;
 
 pub struct CreateArticleFile<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_reader: &'interactor dyn ArticleReader,
-    file_map_gateway: &'interactor dyn FileMapGateway,
-    file_storage_linker: &'interactor dyn FileStorageLinker,
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_reader: &'interactor dyn ArticleReader,
+    pub file_map_gateway: &'interactor dyn FileMapGateway,
+    pub file_storage_linker: &'interactor dyn FileStorageLinker,
 }
 
 impl Interactor<CreateArticleFileInput, CreateArticleFileOutput> for CreateArticleFile<'_> {

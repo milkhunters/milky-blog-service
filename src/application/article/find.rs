@@ -61,10 +61,10 @@ pub struct ArticleItem {
 pub type FindArticleOutput = Vec<ArticleItem>;
 
 pub struct FindArticle<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_gateway: &'interactor dyn ArticleGateway,
-    file_map_reader: &'interactor dyn FileMapReader,
-    file_storage_linker: &'interactor dyn FileStorageLinker,
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_gateway: &'interactor dyn ArticleGateway,
+    pub file_map_reader: &'interactor dyn FileMapReader,
+    pub file_storage_linker: &'interactor dyn FileStorageLinker,
 }
 
 impl Interactor<FindArticleInput, FindArticleOutput> for FindArticle<'_> {

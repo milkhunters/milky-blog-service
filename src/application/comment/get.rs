@@ -1,9 +1,9 @@
-use async_trait::async_trait;
+use crate::application::common::comment_gateway::CommentGateway;
 use crate::application::common::{
     article_gateway::ArticleReader,
     comment_gateway::{
-        CommentReader,
-        CommentRater
+        CommentRater,
+        CommentReader
     },
     error::AppError,
     id_provider::IdProvider,
@@ -14,8 +14,8 @@ use crate::domain::{
         article::ArticleId,
         comment::CommentId,
         comment_state::CommentState,
-        user_id::UserId,
-        rate_state::RateState
+        rate_state::RateState,
+        user_id::UserId
     },
     services::access::ensure_can_get_comment
 };
@@ -42,15 +42,10 @@ pub struct GetCommentOutput {
     
 }
 
-
-#[async_trait]
-pub trait CommentReaderRaterGateway: CommentReader + CommentRater {}
-
-
 pub struct GetComment<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    comment_gateway: &'interactor dyn CommentReaderRaterGateway,
-    article_reader: &'interactor dyn ArticleReader,
+    pub id_provider: Box<dyn IdProvider>,
+    pub comment_gateway: &'interactor dyn CommentGateway,
+    pub article_reader: &'interactor dyn ArticleReader,
 }
 
 impl Interactor<GetCommentInput, GetCommentOutput> for GetComment<'_> {

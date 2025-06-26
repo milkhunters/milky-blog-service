@@ -38,8 +38,8 @@ pub struct TagItem {
 pub type FindArticleTagsOutput = Vec<TagItem>;
 
 pub struct FindArticleTags<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    tag_reader: &'interactor dyn TagReader
+    pub id_provider: Box<dyn IdProvider>,
+    pub tag_reader: &'interactor dyn TagReader
 }
 
 impl Interactor<FindArticleTagsInput, FindArticleTagsOutput> for FindArticleTags<'_> {

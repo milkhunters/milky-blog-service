@@ -22,9 +22,9 @@ pub struct UpdateCommentInput {
 }
 
 pub struct UpdateComment<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_reader: &'interactor dyn ArticleReader,
-    comment_gateway: &'interactor dyn CommentGateway,
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_reader: &'interactor dyn ArticleReader,
+    pub comment_gateway: &'interactor dyn CommentGateway,
 }
 
 impl Interactor<UpdateCommentInput, ()> for UpdateComment<'_> {

@@ -17,10 +17,10 @@ pub struct DeleteArticleFileInput {
 }
 
 pub struct DeleteArticleFile<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_reader: &'interactor dyn ArticleReader,
-    file_map_gateway: &'interactor dyn FileMapGateway,
-    file_storage_remover: &'interactor dyn FileStorageRemover,
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_reader: &'interactor dyn ArticleReader,
+    pub file_map_gateway: &'interactor dyn FileMapGateway,
+    pub file_storage_remover: &'interactor dyn FileStorageRemover,
 }
 
 impl Interactor<DeleteArticleFileInput, ()> for DeleteArticleFile<'_> {

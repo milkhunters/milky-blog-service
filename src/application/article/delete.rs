@@ -15,9 +15,9 @@ pub struct DeleteArticleInput {
 }
 
 pub struct DeleteArticle<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_gateway: &'interactor dyn ArticleGateway,
-    comment_remover: &'interactor dyn CommentRemover
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_gateway: &'interactor dyn ArticleGateway,
+    pub comment_remover: &'interactor dyn CommentRemover
 }
 
 impl Interactor<DeleteArticleInput, ()> for DeleteArticle<'_> {

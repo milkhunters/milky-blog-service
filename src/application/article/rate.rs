@@ -1,20 +1,17 @@
+use crate::application::common::article_gateway::ArticleGateway;
 use crate::application::common::{
-    error::AppError,
     article_gateway::{ArticleRater, ArticleReader},
+    error::AppError,
     id_provider::IdProvider,
     interactor::Interactor
 };
 use crate::domain::{
-    services::access::ensure_can_rate_article,
     models::{
-        rate_state::RateState,
-        article::ArticleId
-    }
+        article::ArticleId,
+        rate_state::RateState
+    },
+    services::access::ensure_can_rate_article
 };
-use async_trait::async_trait;
-
-#[async_trait]
-pub trait ArticleReaderRaterGateway: ArticleReader + ArticleRater {}
 
 pub struct RateArticleInput {
     pub id: ArticleId,
@@ -22,8 +19,8 @@ pub struct RateArticleInput {
 }
 
 pub struct RateArticle<'interactor> {
-    id_provider: &'interactor dyn IdProvider,
-    article_gateway: &'interactor dyn ArticleReaderRaterGateway
+    pub id_provider: Box<dyn IdProvider>,
+    pub article_gateway: &'interactor dyn ArticleGateway
 } 
 
 impl Interactor<RateArticleInput, ()> for RateArticle<'_> {
