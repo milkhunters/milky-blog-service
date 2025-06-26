@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use serde::Deserialize;
+use utoipa::ToSchema;
 use crate::application::common::{
     article_gateway::ArticleReader,
     error::AppError,
@@ -12,7 +13,7 @@ use crate::application::common::{
 use crate::domain::{
     models::{
         article::ArticleId,
-        file::{File, CONTENT_LENGTH_RANGE, FILE_UPLOAD_EXPIRATION}
+        file::{File, CONTENT_LENGTH_RANGE, FILE_UPLOAD_TTL}
     },
     services::{
         access::ensure_can_update_article,
@@ -24,8 +25,9 @@ use crate::domain::{
 };
 use crate::domain::error::{DomainError, ValidationError};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateArticleFileInput {
+    #[schema(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub article_id: ArticleId,
     pub filename: String,
     pub content_type: String
@@ -78,7 +80,7 @@ impl Interactor<CreateArticleFileInput, CreateArticleFileOutput> for CreateArtic
                 &file.id,
                 &file.content_type,
                 CONTENT_LENGTH_RANGE,
-                FILE_UPLOAD_EXPIRATION
+                FILE_UPLOAD_TTL
             )
         );
         

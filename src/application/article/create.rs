@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToResponse, ToSchema};
 use crate::application::common::{
     article_gateway::ArticleWriter,
     error::AppError,
@@ -24,16 +25,22 @@ use crate::domain::{
 use crate::domain::error::ValidationError;
 use crate::domain::models::tag::Tag;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateArticleInput {
+    #[schema(example = "Super rust tips")]
     pub title: String,
+    #[schema(example = "In this article, we will explore some of the best practices in Rust programming...")]
     pub content: String,
+    /// When creating, it is better to use Draft
+    #[schema(example = "Draft")]
     pub state: ArticleState,
+    #[schema(example = "[rust, programming, tips]")]
     pub tags: Vec<String>
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct CreateArticleOutput {
+    #[schema(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub id: ArticleId
 }
 

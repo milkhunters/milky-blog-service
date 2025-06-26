@@ -7,7 +7,7 @@ pub type FileId = uuid::Uuid;
 pub const FILE_NAME_MAX: usize = 255;
 pub const FILE_MIME_TYPE_MAX: usize = 255; // RFC 4288 and RFC 6838
 pub const CONTENT_LENGTH_RANGE: (u64, u64) = (1, 50 * 1024 * 1024); // 1 b - 50 MB
-pub const FILE_UPLOAD_EXPIRATION: u64 = 3600; // 1 hour
+pub const FILE_UPLOAD_TTL: chrono::Duration = chrono::Duration::hours(1); // 1 hour
 pub static FILE_MIME_TYPE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"\w+/[-+.\w]+").expect("Invalid MIME type regex"));
 
 

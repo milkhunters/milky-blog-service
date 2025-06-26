@@ -80,3 +80,10 @@ impl From<FileStorageError> for AppError {
         }
     }
 }
+
+#[derive(Debug)]
+pub enum TokenError {
+    Invalid(String),
+    Expired,
+    Critical(String),
+}

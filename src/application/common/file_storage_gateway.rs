@@ -22,7 +22,7 @@ pub trait FileStorageLinker {
         file_id: &FileId,
         content_type: &str,
         content_length: (u64, u64),
-        expires_in: u64,
+        ttl: chrono::Duration,
     ) -> Result<PreSignedUrl, FileStorageError>;
     
     fn download_link(
