@@ -14,6 +14,10 @@ tokio = { version = "1.45", features = ["macros"] }
 chrono = { version = "0.4", features = ["serde"] }
 sqlx = { version = "0.8", features = ["postgres", "uuid", "chrono", "runtime-tokio"] }
 minio = "0.3.0"
+consulrs = "0.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
 
 # Data
 uuid = { version = "1.17", features = ["v4", "fast-rng", "serde"] }
@@ -22,7 +26,8 @@ regex = "1.11"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1"
 jsonwebtoken = "9.3"
-serde_json = "1.0.140"
+serde_json = "1.0"
+serde_yaml = "0.9.34-deprecated"
 
 # Doc
 utoipa = { version = "5.4", features = ["actix_extras", "uuid", "chrono"] }
