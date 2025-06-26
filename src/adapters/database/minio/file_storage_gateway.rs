@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use minio::s3::builders::PostPolicy;
 use minio::s3::types::S3Api;
 use minio::s3::utils::utc_now;
-use crate::application::common::file_storage_gateway::{FileStorageError, FileStorageReader, FileStorageLinker};
+use crate::application::common::file_storage_gateway::{FileStorageError, FileStorageReader, FileStorageLinker, FileStorageRemover, FileStorageGateway};
 use crate::application::common::presigned_url::PreSignedUrl;
 use crate::domain::models::article::ArticleId;
 use crate::domain::models::file::FileId;
@@ -69,3 +69,19 @@ impl FileStorageLinker for MinioFileStorageGateway {
         format!("{}/{}/{}/{}", self.external_link, self.bucket_name,  article_id, file_id)
     }
 }
+
+
+#[async_trait]
+impl FileStorageRemover for MinioFileStorageGateway {
+    async fn remove(&self, article_id: &ArticleId, file_id: &FileId) -> Result<(), FileStorageError> {
+        let object_name = format!("{}/{}", article_id, file_id);
+        match self.client.delete_object(&self.bucket_name, &object_name).send().await {
+            Ok(_) => Ok(()),
+            Err(e) => Err(FileStorageError::Critical(e.to_string())),
+        }
+    }
+}
+
+
+#[async_trait]
+impl FileStorageGateway for MinioFileStorageGateway {}
