@@ -3,12 +3,17 @@ name = "milky-blog-service"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "generate_openapi"
+path = "src/openapi.rs"
+
 [dependencies]
 # IO
 actix-web = "4.11"
 tokio = { version = "1.45", features = ["macros"] }
 chrono = { version = "0.4", features = ["serde"] }
 sqlx = { version = "0.8", features = ["postgres", "uuid", "chrono", "runtime-tokio"] }
+minio = "0.3.0"
 
 # Data
 uuid = { version = "1.17", features = ["v4", "fast-rng", "serde"] }
@@ -18,3 +23,9 @@ serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1"
 jsonwebtoken = "9.3"
 serde_json = "1.0.140"
+
+# Doc
+utoipa = { version = "5.4", features = ["actix_extras", "uuid", "chrono"] }
+utoipauto = { version = "0.2"}
+utoipa-actix-web = "0.1"
+utoipa-swagger-ui = { version = "9.0", features = ["actix-web"] }

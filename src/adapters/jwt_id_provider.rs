@@ -6,6 +6,7 @@ use crate::domain::models::{
     user_state::UserState
 };
 use serde::{Deserialize, Serialize};
+use crate::application::common::error::TokenError;
 
 #[derive(Serialize, Deserialize)]
 struct JwtPayload {
@@ -13,13 +14,6 @@ struct JwtPayload {
     permissions: Vec<Permission>,
     user_state: UserState,
     exp: usize,
-}
-
-#[derive(Debug)]
-pub enum TokenError {
-    Invalid(String),
-    Expired,
-    Critical(String),
 }
 
 pub struct JwtIdProvider {

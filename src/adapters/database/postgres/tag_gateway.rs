@@ -53,7 +53,7 @@ impl TagReader for PostgresTagGateway {
 
         // Query by title
         let mut where_added = false;
-        if let Some(q) = &query {
+        if query.is_some() {
             sql.push_str(" WHERE t.title ILIKE $1 ");
             where_added = true;
         }
