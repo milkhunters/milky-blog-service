@@ -1,25 +1,33 @@
-use crate::application::common::error::AppError;
+use crate::application::common::error::{AppError, TokenError};
 use crate::domain::error::ValidationError;
 use actix_web::http::header::ContentType;
 use actix_web::{HttpResponse, ResponseError};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fmt::{Display, Formatter};
-use crate::adapters::jwt_id_provider::TokenError;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct HttpErrorDetail {
+    #[schema(example = "id")]
     field: String,
+    #[schema(example = "NOT_FOUND")]
     reason: String,
     attrs: Vec<Value>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct HttpErrorModel {
+    #[schema(example = "NOT_FOUND")]
+    status: String,
+    details: Vec<HttpErrorDetail>,
 }
 
 
 #[derive(Debug)]
 pub struct HttpError {
     http_status: actix_web::http::StatusCode,
-    app_status: String,
-    details: Vec<HttpErrorDetail>
+    inner: HttpErrorModel
 }
 
 impl Display for HttpError {
@@ -37,12 +45,7 @@ impl ResponseError for  HttpError {
         HttpResponse::build(self.status_code())
             .insert_header(ContentType::json())
             .status(self.status_code())
-            .body(json!({
-                "status": self.app_status,
-                "details": self.details.iter()
-                                .map(|v| serde_json::to_string(v).unwrap())
-                                .collect::<Vec<_>>()
-            }).to_string())
+            .body(serde_json::to_string(&self.inner).unwrap())
     }
 }
 
@@ -88,13 +91,13 @@ impl From<AppError> for HttpError {
                 actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
                 "CRITICAL".into(),
                 vec![HttpErrorDetail {
-                    field: "APP".into(),
-                    reason: msg,
-                    attrs: vec![]
+                    field: "app".into(),
+                    reason: "CRITICAL".into(),
+                    attrs: vec![Value::String(msg)]
                 }]
             ),
         };
-        HttpError { http_status, app_status, details }
+        HttpError { http_status, inner: HttpErrorModel { status: app_status, details } }
     }
 }
 
@@ -104,7 +107,11 @@ impl From<TokenError> for HttpError {
             TokenError::Invalid(msg) => (
                 actix_web::http::StatusCode::UNAUTHORIZED,
                 "TOKEN_INVALID".into(),
-                vec![]
+                vec![HttpErrorDetail {
+                    field: "jwt".into(),
+                    reason: "TOKEN_INVALID".into(),
+                    attrs: vec![Value::String(msg)]
+                }]
             ),
             TokenError::Expired => (
                 actix_web::http::StatusCode::UNAUTHORIZED,
@@ -115,12 +122,12 @@ impl From<TokenError> for HttpError {
                 actix_web::http::StatusCode::INTERNAL_SERVER_ERROR,
                 "CRITICAL".into(),
                 vec![HttpErrorDetail {
-                    field: "JWT".into(),
+                    field: "CRITICAL".into(),
                     reason: msg,
                     attrs: vec![]
                 }]
             ),
         };
-        HttpError { http_status, app_status, details }
+        HttpError { http_status, inner: HttpErrorModel { status: app_status, details } }
     }
 }

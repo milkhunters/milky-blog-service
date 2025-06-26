@@ -1,8 +1,8 @@
-use crate::adapters::jwt_id_provider::{JwtIdProvider, TokenError};
+use crate::adapters::jwt_id_provider::{JwtIdProvider};
 use crate::application::common::id_provider::IdProvider;
-use crate::AppConfig;
+use crate::app_state::AppConfig;
 use actix_web::HttpRequest;
-use std::fmt::Display;
+use crate::application::common::error::TokenError;
 
 const COOKIE_JWT: &str = "auth_token";
 

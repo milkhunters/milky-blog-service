@@ -15,7 +15,7 @@ use crate::presentation::{
     rest::error::HttpError,
     rest::id_provider::new_jwt_id_provider
 };
-use crate::AppConfig;
+use crate::app_state::AppConfig;
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse};
 use serde::Deserialize;
 use crate::domain::models::rate_state::RateState;
