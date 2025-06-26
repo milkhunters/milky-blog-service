@@ -1,0 +1,332 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "milky-blog-service",
+    "description": "Milky blog API Documentation",
+    "license": {
+      "name": ""
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "": {
+      "get": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Find articles by criteria.",
+        "description": "Find articles by criteria specified in query parameters. Api will return\na list of found `Article` objects.",
+        "operationId": "find_article",
+        "responses": {}
+      },
+      "post": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Create new article.",
+        "description": "Post a new `Article` in request body as json to store it. Api will return\ncreated `ArticleId`\n\n",
+        "operationId": "create_article",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArticleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateArticleOutput"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpErrorModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{id}": {
+      "delete": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Delete article by id.",
+        "description": "Delete an `Article` by its `ArticleId`. Api will return deleted `ArticleId`.\n\n",
+        "operationId": "delete_article",
+        "responses": {}
+      }
+    },
+    "rate/{id}/{state}": {
+      "post": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Rate article by id.",
+        "description": "Rate an `Article` by its `ArticleId` and `RateState`. Api will return\nupdated `Article` with new rating state.\n\n",
+        "operationId": "rate_article",
+        "responses": {}
+      }
+    },
+    "{id}": {
+      "get": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Get article by id.",
+        "description": "Get an `Article` by its `ArticleId`. Api will return found `Article`.\n\n",
+        "operationId": "get_article",
+        "responses": {}
+      },
+      "put": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Update an existing article.",
+        "description": "Update an `Article` by its `ArticleId`. Api will return updated `Article`.\n\n",
+        "operationId": "update_article",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateArticleInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {}
+      },
+      "delete": {
+        "tags": [
+          "articles/files"
+        ],
+        "summary": "Delete article file by id.",
+        "description": "Delete an `ArticleFile` by its `FileId`. Api will return deleted\n`FileId`.\n\n",
+        "operationId": "delete_article_file",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "File ID to delete",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "{id}/confirm": {
+      "post": {
+        "tags": [
+          "articles/files"
+        ],
+        "summary": "Confirm article file by id.",
+        "description": "Confirm an `ArticleFile` by its `FileId`. Api will return confirmed\n`ArticleFile`.",
+        "operationId": "confirm_article_file",
+        "requestBody": {
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {}
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ArticleState": {
+        "type": "string",
+        "enum": [
+          "Draft",
+          "Published",
+          "Archived"
+        ]
+      },
+      "CreateArticleFileInput": {
+        "type": "object",
+        "required": [
+          "article_id",
+          "filename",
+          "content_type"
+        ],
+        "properties": {
+          "article_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "3ba7eca4-03ba-4960-9418-39927d7d8321"
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateArticleInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "content",
+          "state",
+          "tags"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "example": "In this article, we will explore some of the best practices in Rust programming..."
+          },
+          "state": {
+            "$ref": "#/components/schemas/ArticleState",
+            "description": "When creating, it is better to use Draft"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": "[rust, programming, tips]"
+          },
+          "title": {
+            "type": "string",
+            "example": "Super rust tips"
+          }
+        }
+      },
+      "CreateArticleOutput": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "f0489347-b8d4-4cac-a0b6-e52e5e9591df"
+          }
+        }
+      },
+      "HttpErrorDetail": {
+        "type": "object",
+        "required": [
+          "field",
+          "reason",
+          "attrs"
+        ],
+        "properties": {
+          "attrs": {
+            "type": "array",
+            "items": {}
+          },
+          "field": {
+            "type": "string",
+            "example": "id"
+          },
+          "reason": {
+            "type": "string",
+            "example": "NOT_FOUND"
+          }
+        }
+      },
+      "HttpErrorModel": {
+        "type": "object",
+        "required": [
+          "status",
+          "details"
+        ],
+        "properties": {
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HttpErrorDetail"
+            }
+          },
+          "status": {
+            "type": "string",
+            "example": "NOT_FOUND"
+          }
+        }
+      },
+      "PreSignedUrl": {
+        "type": "object",
+        "required": [
+          "url",
+          "fields"
+        ],
+        "properties": {
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateArticleInput": {
+        "type": "object",
+        "description": "Update article by id.\n\nUpdate an `Article` by its `ArticleId`. Api will return updated `Article`.\n",
+        "required": [
+          "title",
+          "content",
+          "state",
+          "tags"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "poster": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ArticleState"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
