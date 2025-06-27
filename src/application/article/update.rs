@@ -1,10 +1,11 @@
 use crate::application::common::{
-    error::AppError,
     article_gateway::ArticleGateway,
+    error::AppError,
     file_map_gateway::FileMapGateway,
     id_provider::IdProvider,
     interactor::Interactor
 };
+use crate::domain::error::ValidationError;
 use crate::domain::services::access::ensure_can_update_article;
 use crate::domain::{
     error::DomainError,
@@ -20,9 +21,8 @@ use crate::domain::{
         validate_article_title
     }
 };
+use serde::Deserialize;
 use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
-use crate::domain::error::ValidationError;
 
 #[derive(Deserialize)]
 pub struct UpdateArticleInput {
@@ -34,19 +34,14 @@ pub struct UpdateArticleInput {
     pub tags: Vec<String>
 }
 
-#[derive(Serialize)]
-pub struct UpdateArticleOutput {
-    pub id: ArticleId
-}
-
 pub struct UpdateArticle<'interactor> {
     pub id_provider: Box<dyn IdProvider>,
     pub article_gateway: &'interactor dyn ArticleGateway,
     pub file_map_gateway: &'interactor dyn FileMapGateway
 }
 
-impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {
-    async fn execute(&self, input: UpdateArticleInput) -> Result<UpdateArticleOutput, AppError> {
+impl Interactor<UpdateArticleInput, ()> for UpdateArticle<'_> {
+    async fn execute(&self, input: UpdateArticleInput) -> Result<(), AppError> {
         let article_author_id = match self.article_gateway.get_article_author(&input.id).await? {
             Some(author_id) => author_id,
             None => return Err(AppError::NotFound("id".into()))
@@ -100,7 +95,7 @@ impl Interactor<UpdateArticleInput, UpdateArticleOutput> for UpdateArticle<'_> {
         );
         
         self.article_gateway.save(&article).await?;
-
-        Ok(UpdateArticleOutput { id: article.id })
+        
+        Ok(())
     }
 }

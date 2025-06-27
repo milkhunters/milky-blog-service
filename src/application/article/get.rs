@@ -6,6 +6,7 @@ use crate::application::common::{
     id_provider::IdProvider,
     interactor::Interactor
 };
+use crate::domain::models::rate_state::RateState;
 use crate::domain::{
     models::{
         article::ArticleId,
@@ -18,33 +19,45 @@ use crate::domain::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::domain::models::rate_state::RateState;
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct GetArticleInput {
+    #[param(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub id: ArticleId
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ArticleFile {
+    #[schema(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub id: FileId,
+    #[schema(example = "example.png")]
     pub filename: String,
+    #[schema(example = "image/png")]
     pub content_type: String,
+    #[schema(example = "https://s3.example.com/article-assets/987e9dc9-d84c-4ba7-837f-db755a0fdc55/80bbc0bc-4064-420a-b4ed-4f94b4575321")]
     pub url: String,
     
     pub created_at: DateTime<Utc>,
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct GetArticleOutput {
+    #[schema(example = "Super rust tips")]
     pub title: String,
+    #[schema(example = uuid::Uuid::new_v4, value_type=Option<uuid::Uuid>)]
     pub poster: Option<FileId>,
+    #[schema(example = "In this article, we will explore some of the best practices in Rust programming...")]
     pub content: String, // todo: server rendering 
     pub state: ArticleState,
+    #[schema(example = 100)]
     pub views: u32,
+    #[schema(example = -5)]
     pub rating: i64,
+    #[schema(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub author_id: UserId,
+    #[schema(example = json!(vec!["rust", "programming", "tips"]), value_type = Vec<String>)]
     pub tags: Vec<Tag>,
     
     pub self_rate: RateState,

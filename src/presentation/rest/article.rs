@@ -1,5 +1,8 @@
 use crate::app_state::AppState;
 use crate::application::article::create::CreateArticleOutput;
+use crate::application::article::find::FindArticleOutput;
+use crate::application::article::get::GetArticleOutput;
+use crate::application::article::tag::find::FindArticleTagsOutput;
 use crate::application::{
     article::{
         create::CreateArticleInput,
@@ -17,11 +20,10 @@ use crate::application::{
     },
     common::interactor::Interactor
 };
-use crate::domain::models::rate_state::RateState;
+use crate::domain::error::ValidationError;
 use crate::domain::models::{
     article::ArticleId,
-    article_state::ArticleState,
-    file::FileId
+    article_state::ArticleState
 };
 use crate::presentation::rest::error::HttpErrorModel;
 use crate::presentation::{
@@ -32,14 +34,16 @@ use crate::presentation::{
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse};
 use serde::Deserialize;
 use utoipa::ToSchema;
+use utoipa_actix_web::service_config::ServiceConfig;
+use crate::application::article::file::create::CreateArticleFileOutput;
 
-const ARTICLES: &str = "articles";
-const ARTICLES_FILES: &str = "articles/files";
-const ARTICLES_TAGS: &str = "articles/tags";
+pub const ARTICLES: &str = "articles";
+pub const ARTICLES_FILES: &str = "article files";
+pub const ARTICLES_TAGS: &str = "article tags";
 
-pub fn router(cfg: &mut web::ServiceConfig) {
+pub fn router(cfg: &mut ServiceConfig) {
     cfg.service(
-        utoipa_actix_web::scope(ARTICLES)
+        utoipa_actix_web::scope("/articles")
             .service(create_article)
             .service(get_article)
             .service(find_article)
@@ -68,8 +72,31 @@ pub fn router(cfg: &mut web::ServiceConfig) {
 #[utoipa::path(
     tag = ARTICLES,
     responses(
-        (status = 201, description = "Created successfully", body = CreateArticleOutput),
-        (status = 400, description = "Validation error", body = HttpErrorModel)
+        (status = 201, description = "Successfully created", body = CreateArticleOutput),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("title".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        )
     )
 )]
 #[post("")]
@@ -90,19 +117,56 @@ async fn create_article(
 ///
 #[utoipa::path(
     tag = ARTICLES,
+    responses(
+        (
+            status = 204,
+            description = "Successfully deleted",
+            body = (),
+            example = json!({})
+        ),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+        (
+            status = 404,
+            description = "Article not found",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::not_found("id".into()))
+        )
+    ),
+    params(DeleteArticleInput)
 )]
 #[delete("/{id}")]
 async fn delete_article(
-    input: web::Path<ArticleId>,
+    input: web::Path<DeleteArticleInput>,
     ioc: web::Data<dyn InteractorFactory>,
     app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
-    let output = ioc.delete_article(id_provider).execute(
-        DeleteArticleInput { id: input.into_inner() }
-    ).await?;
-    Ok(HttpResponse::Ok().json(output))
+    let output = ioc.delete_article(id_provider).execute(input.into_inner()).await?;
+    Ok(HttpResponse::NoContent().json(output))
 }
 
 /// Get article by id.
@@ -111,17 +175,51 @@ async fn delete_article(
 ///
 #[utoipa::path(
     tag = ARTICLES, 
+    responses(
+        (status = 200, description = "Successfully", body = GetArticleOutput),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+        (
+            status = 404,
+            description = "Article not found",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::not_found("id".into()))
+        )
+    ),
+    params(GetArticleInput)
 )]
-#[get("{id}")]
+#[get("/{id}")]
 async fn get_article(
-    input: web::Path<ArticleId>,
+    input: web::Path<GetArticleInput>,
     ioc: web::Data<dyn InteractorFactory>,
     app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
     let output = ioc.get_article(id_provider).execute(
-        GetArticleInput{ id: input.into_inner()}
+        input.into_inner()
     ).await?;
     Ok(HttpResponse::Ok().json(output))
 }
@@ -132,6 +230,34 @@ async fn get_article(
 /// a list of found `Article` objects.
 #[utoipa::path(
     tag = ARTICLES,
+    responses(
+        (status = 200, description = "Article list", body = FindArticleOutput),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+    ),
+    params(FindArticleInput)
 )]
 #[get("")]
 async fn find_article(
@@ -152,20 +278,56 @@ async fn find_article(
 ///
 #[utoipa::path(
     tag = ARTICLES,
+    responses(
+        (
+            status = 204,
+            description = "Successfully rated",
+            body = (),
+            example = json!({})
+        ),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+        (
+            status = 404,
+            description = "Article not found",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::not_found("id".into()))
+        )
+    ),
+    params(RateArticleInput)
 )]
-#[post("rate/{id}/{state}")]
+#[post("/rate/{id}/{state}")]
 async fn rate_article(
-    input: web::Path<ArticleId>,
-    state: web::Path<RateState>,
+    input: web::Path<RateArticleInput>,
     ioc: web::Data<dyn InteractorFactory>,
     app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
-    let output = ioc.rate_article(id_provider).execute(
-        RateArticleInput { id: input.into_inner(), state: state.into_inner() }
-    ).await?;
-    Ok(HttpResponse::Ok().json(output))
+    let output = ioc.rate_article(id_provider).execute(input.into_inner()).await?;
+    Ok(HttpResponse::NoContent().json(output))
 }
 
 
@@ -175,10 +337,14 @@ async fn rate_article(
 ///
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateArticleInput {
+    #[schema(example = "Updated article title", value_type = String)]
     pub title: String,
+    #[schema(example = "This is the content of the article.", value_type = String)]
     pub content: String,
     pub state: ArticleState,
+    #[schema(example = uuid::Uuid::new_v4, value_type=Option<uuid::Uuid>)]
     pub poster: Option<uuid::Uuid>,
+    #[schema(example = json!(vec!["js", "programming", "tips"]), value_type = Vec<String>)]
     pub tags: Vec<String>
 }
 
@@ -188,8 +354,49 @@ pub struct UpdateArticleInput {
 ///
 #[utoipa::path(
     tag = ARTICLES,
+    responses(
+        (
+            status = 200,
+            description = "Successfully updated",
+            body = (),
+            example = json!(())
+        ),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+        (
+            status = 404,
+            description = "Article or new poster not found",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::not_found("id".into()))
+        )
+    ),
+    params(
+        ("id" = uuid::Uuid, description = "article id", example = uuid::Uuid::new_v4),
+    )
 )]
-#[put("{id}")]
+#[put("/{id}")]
 async fn update_article(
     id: web::Path<ArticleId>,
     body: web::Json<UpdateArticleInput>,
@@ -217,19 +424,56 @@ async fn update_article(
 /// `ArticleFile`.
 #[utoipa::path(
     tag = ARTICLES_FILES,
+    responses(
+        (
+            status = 204,
+            description = "Successfully confirmed",
+            body = (),
+            example = json!({})
+        ),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+        (
+            status = 404,
+            description = "FileId not found or file not uploaded",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::not_found("id".into()))
+        )
+    ),
+    params(ConfirmArticleFileInput)
 )]
-#[post("{id}/confirm")]
+#[post("/{id}/confirm")]
 async fn confirm_article_file(
-    id: web::Json<uuid::Uuid>,
+    input: web::Path<ConfirmArticleFileInput>,
     ioc: web::Data<dyn InteractorFactory>,
     app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
-    let output = ioc.confirm_article_file(id_provider).execute(
-        ConfirmArticleFileInput { id: id.into_inner() }
-    ).await?;
-    Ok(HttpResponse::Ok().json(output))
+    let output = ioc.confirm_article_file(id_provider).execute(input.into_inner()).await?;
+    Ok(HttpResponse::NoContent().json(output))
 }
 
 
@@ -239,7 +483,45 @@ async fn confirm_article_file(
 /// created `FileId` of the article file.
 ///
 #[utoipa::path(
-    tag = ARTICLES_FILES
+    tag = ARTICLES_FILES,
+    responses(
+        (
+            status = 204,
+            description = "Successfully created",
+            body = CreateArticleFileOutput
+        ),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("filename".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+        (
+            status = 404,
+            description = "Article not found",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::not_found("article_id".into()))
+        )
+    ),
+    params(ConfirmArticleFileInput)
 )]
 #[post("")]
 async fn create_article_file(
@@ -260,22 +542,56 @@ async fn create_article_file(
 ///
 #[utoipa::path(
     tag = ARTICLES_FILES,
-    params(
-        ("id" = uuid::Uuid, description = "File ID to delete", example = "123e4567-e89b-12d3-a456-426614174000")
+    responses(
+        (
+            status = 204,
+            description = "Successfully deleted",
+            body = (),
+            example = json!({})
+        ),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        ),
+        (
+            status = 404,
+            description = "File not found",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::not_found("id".into()))
+        )
     ),
+    params(DeleteArticleFileInput)
 )]
-#[delete("{id}")]
+#[delete("/{id}")]
 async fn delete_article_file(
-    id: web::Path<FileId>,
+    input: web::Path<DeleteArticleFileInput>,
     ioc: web::Data<dyn InteractorFactory>,
     app_config: web::Data<AppState>,
     req: HttpRequest
 ) -> Result<HttpResponse, HttpError> {
     let id_provider = new_jwt_id_provider(&req, &app_config).await?;
-    let output = ioc.delete_article_file(id_provider).execute(
-        DeleteArticleFileInput { id: id.into_inner() }
-    ).await?;
-    Ok(HttpResponse::Ok().json(output))
+    let output = ioc.delete_article_file(id_provider).execute(input.into_inner()).await?;
+    Ok(HttpResponse::NoContent().json(output))
 }
 
 /// Find article tags by criteria.
@@ -283,7 +599,39 @@ async fn delete_article_file(
 /// Find article tags by criteria specified in query parameters. Api will return
 /// a list of found `Tag` objects.
 #[utoipa::path(
-    tag = ARTICLES_TAGS
+    tag = ARTICLES_TAGS,
+    responses(
+        (
+            status = 204,
+            description = "Successfully deleted",
+            body = FindArticleTagsOutput
+        ),
+        (
+            status = 400,
+            description = "Validation error",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::validation(vec![("page".into(), ValidationError::InvalidEmpty)]))
+        ),
+        (
+            status = 401,
+            description = "Token invalid (ex. bad structure)",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_invalid("bad structure...".into()))
+        ),
+        (
+            status = 401,
+            description = "Token expired",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::token_expired())
+        ),
+        (
+            status = 403,
+            description = "Access denied",
+            body = HttpErrorModel,
+            example = json!(HttpErrorModel::access_denied())
+        )
+    ),
+    params(FindArticleTagsInput)
 )]
 #[get("")]
 async fn find_article_tags(

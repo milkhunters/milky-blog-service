@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
 use crate::application::common::{
     article_gateway::ArticleReader,
     error::AppError,
@@ -11,8 +13,9 @@ use crate::domain::{
     services::access::ensure_can_update_article
 };
 
-
+#[derive(Deserialize, IntoParams)]
 pub struct ConfirmArticleFileInput {
+    #[param(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub id: FileId
 }
 

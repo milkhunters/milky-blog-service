@@ -10,32 +10,42 @@ use crate::domain::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize)]
-pub enum OrderBy {
+#[derive(Deserialize, ToSchema)]
+pub enum  FindArticleTagsOrderBy {
     ArticleCountDesc,
     ArticleCountAsc,
     CreatedAtDesc,
     CreatedAtAsc,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct FindArticleTagsInput {
+    #[param(example = 1, default = 1)]
     pub page: u32,
+    #[param(example = 10, default = 10)]
     pub per_page: u8,
+    #[param(example = "rust", value_type = Option<String>)]
     pub query: Option<String>,
-    pub order_by: OrderBy
+    #[param(example = "ArticleCountDesc", value_type = String)]
+    pub order_by: FindArticleTagsOrderBy
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct TagItem {
+    #[schema(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub id: TagId,
+    #[schema(example = "rust")]
     pub title: String,
+    /// The number of articles associated with this tag
+    #[schema(example = 42)]
     pub article_count: u32,
     pub created_at: DateTime<Utc>
 }
 
-pub type FindArticleTagsOutput = Vec<TagItem>;
+#[derive(Serialize, ToSchema)]
+pub struct FindArticleTagsOutput(pub Vec<TagItem>);
 
 pub struct FindArticleTags<'interactor> {
     pub id_provider: Box<dyn IdProvider>,
@@ -56,13 +66,13 @@ impl Interactor<FindArticleTagsInput, FindArticleTagsOutput> for FindArticleTags
             input.query
         ).await?;
         
-        Ok(tags.into_iter().map(|(tag, article_count)| {
+        Ok(FindArticleTagsOutput(tags.into_iter().map(|(tag, article_count)| {
             TagItem {
                 id: tag.id,
                 title: tag.title,
                 article_count,
                 created_at: tag.created_at
             }
-        }).collect::<FindArticleTagsOutput>())
+        }).collect::<Vec<_>>()))
     }
 }

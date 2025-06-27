@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use utoipa::IntoParams;
 use crate::application::common::{
     article_gateway::ArticleReader,
     error::AppError,
@@ -10,10 +12,12 @@ use crate::domain::{
     models::article::ArticleId,
     services::access::ensure_can_update_article
 };
+use crate::domain::models::file::FileId;
 
-
+#[derive(Deserialize, IntoParams)]
 pub struct DeleteArticleFileInput {
-    pub id: ArticleId
+    #[param(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
+    pub id: FileId
 }
 
 pub struct DeleteArticleFile<'interactor> {

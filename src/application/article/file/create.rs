@@ -29,7 +29,9 @@ use crate::domain::error::{DomainError, ValidationError};
 pub struct CreateArticleFileInput {
     #[schema(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub article_id: ArticleId,
+    #[schema(example = "example.png")]
     pub filename: String,
+    #[schema(example = "image/png")]
     pub content_type: String
 }
 

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use crate::application::article::find::OrderBy;
+use crate::application::article::find::FindArticleOrderBy;
 use crate::domain::models::{
     article::{Article, ArticleId},
     article_state::ArticleState,
@@ -20,7 +20,7 @@ pub trait ArticleReader {
         query: Option<String>,
         limit: u8,
         offset: u32,
-        order_by: &OrderBy,
+        order_by: &FindArticleOrderBy,
         state: &ArticleState,
         tags: &[TagId],
         author_id: &Option<UserId>,

@@ -1,29 +1,29 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
-use utoipa::{IntoParams, ToResponse, ToSchema};
 use crate::application::common::{
     article_gateway::ArticleWriter,
     error::AppError,
     id_provider::IdProvider,
     interactor::Interactor
 };
+use crate::domain::error::ValidationError;
+use crate::domain::models::tag::Tag;
 use crate::domain::{
     error::DomainError,
     models::{
-        article::{ArticleId, Article},
+        article::{Article, ArticleId},
         article_state::ArticleState
     },
     services::{
         access::ensure_can_create_article,
         validator::{
-            validate_article_title,
-            validate_article_content, 
-            validate_article_tags
+            validate_article_content,
+            validate_article_tags,
+            validate_article_title
         }
     }
 };
-use crate::domain::error::ValidationError;
-use crate::domain::models::tag::Tag;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use utoipa::ToSchema;
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateArticleInput {
@@ -34,7 +34,7 @@ pub struct CreateArticleInput {
     /// When creating, it is better to use Draft
     #[schema(example = "Draft")]
     pub state: ArticleState,
-    #[schema(example = "[rust, programming, tips]")]
+    #[schema(example = json!(vec!["rust", "programming", "tips"]), value_type = Vec<String>)]
     pub tags: Vec<String>
 }
 

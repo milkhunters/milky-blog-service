@@ -9,6 +9,12 @@ use tracing::{error, info};
 use tracing_subscriber::{fmt, EnvFilter, Layer};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use utoipa::OpenApi;
+use utoipa_actix_web::AppExt;
+use utoipa_rapidoc::RapiDoc;
+use utoipa_redoc::{Redoc, Servable};
+use utoipa_scalar::{Scalar, Servable as ScalarServable};
+use utoipa_swagger_ui::SwaggerUi;
 use crate::adapters::database::{postgres, minio};
 use crate::adapters::database::minio::file_storage_gateway::MinioFileStorageGateway;
 use crate::adapters::database::postgres::article_gateway::PostgresArticleGateway;
@@ -17,6 +23,7 @@ use crate::adapters::database::postgres::file_map_gateway::PostgresFileMapGatewa
 use crate::adapters::database::postgres::tag_gateway::PostgresTagGateway;
 use crate::ioc::IoC;
 use crate::presentation::interactor_factory::InteractorFactory;
+use presentation::rest::article::{ARTICLES, ARTICLES_FILES, ARTICLES_TAGS};
 
 mod adapters;
 mod application;
@@ -29,6 +36,18 @@ mod config;
 const LOG_LEVEL_ENV: &str = "LOG_LEVEL";
 const CONSUL_ADDR_ENV: &str = "CONSUL_ADDR";
 const CONSUL_ROOT_ENV: &str = "CONSUL_ROOT";
+
+
+#[derive(OpenApi)]
+#[openapi(
+    tags(
+         (name = ARTICLES, description = "Article management endpoints."),
+         (name = ARTICLES_FILES, description = "Article file management endpoints."),
+         (name = ARTICLES_TAGS, description = "Article tag management endpoints.")
+    ),
+)]
+struct ApiDoc;
+
 
 #[actix_web::main]
 async fn main() {
@@ -101,13 +120,22 @@ async fn main() {
         let ioc: Arc<dyn InteractorFactory> = ioc.clone();
         let ioc_data: web::Data<dyn InteractorFactory> = web::Data::from(ioc.clone());
         App::new()
-            .service(web::scope("/api")
+            .into_utoipa_app()
+            .openapi(ApiDoc::openapi())
+            .map(|app| app.wrap(Logger::default())) // todo
+            .service(utoipa_actix_web::scope("/api")
                 .configure(presentation::rest::article::router)
-                .configure(presentation::rest::comment::router)
+                // .configure(presentation::rest::comment::router)
             )
+            .openapi_service(|api| Redoc::with_url("/redoc", api))
+            .openapi_service(|api| {
+                SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", api)
+            })
+            .map(|app| app.service(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc")))
+            .openapi_service(|api| Scalar::with_url("/scalar", api))
             .app_data(ioc_data)
             .app_data(web::Data::new(app_state.clone()))
-            .wrap(Logger::default()) // todo
+            .into_app()
     };
 
     let tcp_listener = TcpListener::bind(format!(

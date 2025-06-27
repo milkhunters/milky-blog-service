@@ -1,5 +1,5 @@
 use crate::domain::models::tag::Tag;
-use crate::application::article::tag::find::OrderBy;
+use crate::application::article::tag::find::FindArticleTagsOrderBy;
 use async_trait::async_trait;
 
 pub enum TagGatewayError {
@@ -12,7 +12,7 @@ pub trait TagReader {
         &self,
         limit: u8,
         offset: u32,
-        order_by: &OrderBy,
+        order_by: &FindArticleTagsOrderBy,
         query: Option<String>,
     ) -> Result<Vec<(Tag, u32)>, TagGatewayError>;
 }

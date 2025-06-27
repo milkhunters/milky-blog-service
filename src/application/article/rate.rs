@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use utoipa::IntoParams;
 use crate::application::common::article_gateway::ArticleGateway;
 use crate::application::common::{
     article_gateway::{ArticleRater, ArticleReader},
@@ -13,7 +15,9 @@ use crate::domain::{
     services::access::ensure_can_rate_article
 };
 
+#[derive(Deserialize, IntoParams)]
 pub struct RateArticleInput {
+    #[param(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub id: ArticleId,
     pub state: RateState
 }

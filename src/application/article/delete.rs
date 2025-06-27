@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use utoipa::IntoParams;
 use crate::application::common::{
     error::AppError,
     comment_gateway::CommentRemover,
@@ -10,7 +12,9 @@ use crate::domain::{
     services::access::ensure_can_delete_article
 };
 
+#[derive(Deserialize, IntoParams)]
 pub struct DeleteArticleInput {
+    #[param(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
     pub id: ArticleId
 }
 
