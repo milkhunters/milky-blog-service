@@ -1,4 +1,4 @@
-use crate::application::article::tag::find::OrderBy;
+use crate::application::article::tag::find::FindArticleTagsOrderBy;
 use crate::application::common::tag_gateway::{
     TagGateway,
     TagGatewayError,
@@ -36,7 +36,7 @@ impl TagReader for PostgresTagGateway {
         &self,
         limit: u8,
         offset: u32,
-        order_by: &OrderBy,
+        order_by: &FindArticleTagsOrderBy,
         query: Option<String>
     ) -> Result<Vec<(Tag, u32)>, TagGatewayError> {
         let mut sql = String::from(
@@ -62,10 +62,10 @@ impl TagReader for PostgresTagGateway {
         // Sorting
         sql.push_str(" ORDER BY ");
         match order_by {
-            OrderBy::ArticleCountDesc => sql.push_str("article_count DESC"),
-            OrderBy::ArticleCountAsc => sql.push_str("article_count ASC"),
-            OrderBy::CreatedAtDesc => sql.push_str("t.created_at DESC"),
-            OrderBy::CreatedAtAsc => sql.push_str("t.created_at ASC"),
+            FindArticleTagsOrderBy::ArticleCountDesc => sql.push_str("article_count DESC"),
+            FindArticleTagsOrderBy::ArticleCountAsc => sql.push_str("article_count ASC"),
+            FindArticleTagsOrderBy::CreatedAtDesc => sql.push_str("t.created_at DESC"),
+            FindArticleTagsOrderBy::CreatedAtAsc => sql.push_str("t.created_at ASC"),
         }
 
         // Pagination

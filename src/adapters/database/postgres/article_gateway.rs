@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use async_trait::async_trait;
 use crate::application::{
-    article::find::OrderBy,
+    article::find::FindArticleOrderBy,
     common::article_gateway::{
         ArticleGateway, 
         ArticleGatewayError, 
@@ -110,7 +110,7 @@ impl ArticleReader for PostgresArticleGateway {
         query: Option<String>,
         limit: u8,
         offset: u32,
-        order_by: &OrderBy,
+        order_by: &FindArticleOrderBy,
         state: &ArticleState,
         tags: &[TagId],
         author_id: &Option<UserId>
@@ -172,12 +172,12 @@ impl ArticleReader for PostgresArticleGateway {
         // Sorting
         sql.push_str(" ORDER BY ");
         match order_by {
-            OrderBy::CreatedAtDesc => sql.push_str("created_at DESC"),
-            OrderBy::CreatedAtAsc => sql.push_str("created_at ASC"),
-            OrderBy::ViewsDesc => sql.push_str("views DESC"),
-            OrderBy::ViewsAsc => sql.push_str("views ASC"),
-            OrderBy::RatingDesc => sql.push_str("rating DESC"),
-            OrderBy::RatingAsc => sql.push_str("rating ASC"),
+            FindArticleOrderBy::CreatedAtDesc => sql.push_str("created_at DESC"),
+            FindArticleOrderBy::CreatedAtAsc => sql.push_str("created_at ASC"),
+            FindArticleOrderBy::ViewsDesc => sql.push_str("views DESC"),
+            FindArticleOrderBy::ViewsAsc => sql.push_str("views ASC"),
+            FindArticleOrderBy::RatingDesc => sql.push_str("rating DESC"),
+            FindArticleOrderBy::RatingAsc => sql.push_str("rating ASC"),
         }
 
         // Pagination
