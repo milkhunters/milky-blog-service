@@ -69,7 +69,6 @@ impl InteractorFactory for IoC {
         FindArticle {
             id_provider,
             article_gateway: self.article_gateway.as_ref(),
-            file_map_reader: self.file_map_gateway.as_ref(),
             file_storage_linker: self.file_storage_gateway.as_ref(),
         }
     }
