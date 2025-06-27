@@ -3,9 +3,6 @@ name = "milky-blog-service"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "generate_openapi"
-path = "src/openapi.rs"
 
 [dependencies]
 # IO
@@ -32,9 +29,11 @@ base64 = "0.22.1"
 
 # Doc
 utoipa = { version = "5.4", features = ["actix_extras", "uuid", "chrono"] }
-utoipauto = { version = "0.2"}
 utoipa-actix-web = "0.1"
 utoipa-swagger-ui = { version = "9.0", features = ["actix-web"] }
+utoipa-redoc = { version = "6.0", features = ["actix-web"] }
+utoipa-rapidoc = { version = "6.0", features = ["actix-web"] }
+utoipa-scalar = { version = "0.3.0", features = ["actix-web"] }
 
 [build-dependencies]
 tonic-build = "0.13"
