@@ -44,7 +44,7 @@ impl Interactor<DeleteArticleFileInput, ()> for DeleteArticleFile<'_> {
             &article_author
         )?;
         
-        let rem_file_map_fut = self.file_map_gateway.remove(&file.article_id);
+        let rem_file_map_fut = self.file_map_gateway.remove(&file.id);
         let rem_file_storage_fut = self.file_storage_remover.remove(
             &file.article_id,
             &file.id
