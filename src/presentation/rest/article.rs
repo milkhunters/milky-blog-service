@@ -44,22 +44,22 @@ pub const ARTICLES_TAGS: &str = "article tags";
 pub fn router(cfg: &mut ServiceConfig) {
     cfg.service(
         utoipa_actix_web::scope("/articles")
-            .service(create_article)
-            .service(get_article)
-            .service(find_article)
-            .service(update_article)
-            .service(delete_article)
-            .service(rate_article)
+            .service(
+                utoipa_actix_web::scope("/tags")
+                    .service(find_article_tags)
+            )
             .service(
                 utoipa_actix_web::scope("/files")
                     .service(confirm_article_file)
                     .service(create_article_file)
                     .service(delete_article_file)
             )
-            .service(
-                utoipa_actix_web::scope("/tags")
-                    .service(find_article_tags)
-            )
+            .service(create_article)
+            .service(get_article)
+            .service(find_article)
+            .service(update_article)
+            .service(delete_article)
+            .service(rate_article)
     );
 }
 
