@@ -139,7 +139,7 @@ impl ArticleReader for PostgresArticleGateway {
         // Query find by title, content
         if let Some(q) = &query {
             sql.push_str(&format!(" AND (title ILIKE ${} OR content ILIKE ${}) ", param_count, param_count));
-            args.add(q)?;
+            args.add(format!("%{}%", q))?;
             param_count += 1;
         }
 
