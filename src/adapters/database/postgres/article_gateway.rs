@@ -42,18 +42,28 @@ impl ArticleReader for PostgresArticleGateway {
         let article_fut = sqlx::query(
             r#"
                 SELECT
-                    id,
-                    title,
-                    poster,
-                    content,
-                    state,
-                    views,
-                    (SELECT COUNT(*) FROM article_rate WHERE article_id = articles.id) AS rating,
-                    author_id,
-                    created_at,
-                    updated_at
-                FROM articles
-                WHERE id = $1
+                id,
+                title,
+                poster,
+                content,
+                state,
+                views,
+                COALESCE((
+                    SELECT SUM(
+                        CASE state
+                            WHEN 'up' THEN 1
+                            WHEN 'down' THEN -1
+                            ELSE 0
+                        END
+                    )
+                    FROM article_rate 
+                    WHERE article_id = articles.id
+                ), 0) AS rating,
+                author_id,
+                created_at,
+                updated_at
+            FROM articles
+            WHERE id = $1
             "#
         )
         .bind(id)
@@ -122,7 +132,17 @@ impl ArticleReader for PostgresArticleGateway {
                 content,
                 state,
                 views,
-                (SELECT COUNT(*) FROM article_rate WHERE article_id = articles.id) AS rating,
+                COALESCE((
+                    SELECT SUM(
+                        CASE state
+                            WHEN 'up' THEN 1
+                            WHEN 'down' THEN -1
+                            ELSE 0
+                        END
+                    )
+                    FROM article_rate 
+                    WHERE article_id = articles.id
+                ), 0) AS rating,
                 author_id,
                 created_at,
                 updated_at
@@ -413,23 +433,36 @@ impl ArticleRemover for PostgresArticleGateway {
 #[async_trait]
 impl ArticleRater for PostgresArticleGateway {
     async fn rate_article(&self, article_id: &ArticleId, user_id: &UserId, state: &RateState) -> Result<(), ArticleGatewayError> {
-        let result = sqlx::query(
+        if matches!(state, RateState::Neutral) {
+            return sqlx::query(
+                r#"
+                DELETE FROM article_rate
+                WHERE article_id = $1 AND user_id = $2
+            "#,
+            )
+                .bind(article_id)
+                .bind(user_id)
+                .execute(&self.pool)
+                .await
+                .map(|_| ())
+                .map_err(|e| ArticleGatewayError::Critical(e.to_string()));
+        }
+
+        sqlx::query(
             r#"
-                INSERT INTO article_rate (article_id, user_id, state)
-                VALUES ($1, $2, $3)
-                ON CONFLICT DO NOTHING
-            "#
+            INSERT INTO article_rate (article_id, user_id, state)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (article_id, user_id) DO UPDATE 
+                SET state = $3
+        "#,
         )
             .bind(article_id)
             .bind(user_id)
             .bind(state)
             .execute(&self.pool)
-            .await;
-
-        match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(ArticleGatewayError::Critical(e.to_string())),
-        }
+            .await
+            .map(|_| ())
+            .map_err(|e| ArticleGatewayError::Critical(e.to_string()))
     }
 
     async fn user_rate_state(
