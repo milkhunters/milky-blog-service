@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use crate::application::common::presigned_url::PreSignedUrl;
+use crate::application::common::presigned_url::UploadUrl;
 use crate::domain::models::{
     article::ArticleId,
     file::FileId
@@ -23,7 +23,7 @@ pub trait FileStorageLinker {
         content_type: &str,
         content_length: (u64, u64),
         ttl: chrono::Duration,
-    ) -> Result<PreSignedUrl, FileStorageError>;
+    ) -> Result<UploadUrl, FileStorageError>;
     
     fn download_link(
         &self,
