@@ -1,8 +1,6 @@
-use std::fmt;
 use crate::application::common::{
     article_gateway::ArticleGateway,
-    error::AppError
-    ,
+    error::AppError,
     file_storage_gateway::FileStorageLinker,
     id_provider::IdProvider,
     interactor::Interactor
@@ -15,12 +13,17 @@ use crate::domain::{
         tag::Tag,
         user_id::UserId
     },
-    services::access::ensure_can_find_articles
+    error::{DomainError, ValidationError},
+    services::{
+        access::ensure_can_find_articles,
+        validator::{validate_article_tags, validate_page, validate_per_page}
+    }
 };
 use chrono::{DateTime, Utc};
 use serde::{de, Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt;
 use utoipa::{IntoParams, ToSchema};
-use uuid::Uuid;
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, ToSchema)]
 pub enum FindArticleOrderBy {
@@ -44,7 +47,7 @@ pub struct FindArticleInput {
     pub page: u32,
     #[param(example = 10, default = 10)]
     pub per_page: u8,
-    pub query: Option<String>,
+    pub query: Option<String>, // todo validate query length
     #[param(example = json!(vec!["js".to_string()]), value_type = Vec<String>)]
     #[serde(deserialize_with = "deserialize_str_list", default)]
     pub tags: Vec<String>,
@@ -81,7 +84,6 @@ pub struct ArticleItem {
 
 #[derive(Serialize, ToSchema)]
 pub struct FindArticleOutput(pub Vec<ArticleItem>);
-// pub type FindArticleOutput = Vec<ArticleItem>;
 
 pub struct FindArticle<'interactor> {
     pub id_provider: Box<dyn IdProvider>,
@@ -98,6 +100,21 @@ impl Interactor<FindArticleInput, FindArticleOutput> for FindArticle<'_> {
             &input.author_id,
             self.id_provider.user_id(),
         )?;
+
+        let mut validation_err_map = HashMap::<String, ValidationError>::new();
+        if let Err(DomainError::Validation((key, err))) = validate_page(input.page) {
+            validation_err_map.insert(key, err);
+        }
+        if let Err(DomainError::Validation((key, err))) = validate_per_page(input.per_page) {
+            validation_err_map.insert(key, err);
+        }
+        if let Err(DomainError::Validation((key, val))) = validate_article_tags(&input.tags) {
+            validation_err_map.insert(key, val);
+        }
+
+        if !validation_err_map.is_empty() {
+            return Err(AppError::Validation(validation_err_map));
+        }
         
         let articles = self.article_gateway.find_articles(
             input.query,

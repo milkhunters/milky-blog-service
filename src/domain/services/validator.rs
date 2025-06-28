@@ -1,3 +1,4 @@
+use std::ops::Div;
 use crate::domain::error::{DomainError, ValidationError};
 use crate::domain::models::{
     article::{ARTICLE_CONTENT_MAX, ARTICLE_TITLE_MAX, ARTICLE_TITLE_MIN},
@@ -92,6 +93,25 @@ pub fn validate_mime_content_type(content_type: &str) -> Result<(), DomainError>
     if !FILE_MIME_TYPE_REGEX.is_match(content_type) {
         return Err(DomainError::Validation(
             ("content_type".into(), ValidationError::InvalidRegex(FILE_MIME_TYPE_REGEX.to_string()))
+        ));
+    }
+    Ok(())
+}
+
+
+pub fn validate_page(page: u32) -> Result<(), DomainError> {
+    if !(1 <= page && page <= 1_000_000) {
+        return Err(DomainError::Validation(
+            ("page".into(), ValidationError::InvalidRange(1, 1_000_000))
+        ));
+    }
+    Ok(())
+}
+
+pub fn validate_per_page(per_page: u8) -> Result<(), DomainError> {
+    if !(1 <= per_page && per_page <= 100) {
+        return Err(DomainError::Validation(
+            ("per_page".into(), ValidationError::InvalidRange(1, 100))
         ));
     }
     Ok(())
