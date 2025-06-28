@@ -1,2 +1,2 @@
 pub mod postgres;
-pub mod minio;
+pub mod aws_s3;

@@ -23,12 +23,12 @@ pub struct Postgresql {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct S3 {
-    pub host: String,
-    pub port: u16,
     pub access_key: String,
     pub secret_key: String,
     pub bucket: String,
-    pub external_base_url: String
+    pub region: String,
+    pub internal_endpoint: String,
+    pub external_endpoint: String
 }
 
 #[derive(Debug, Clone, Deserialize)]

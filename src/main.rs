@@ -5,7 +5,8 @@ use actix_web::middleware::Logger;
 use std::net::TcpListener;
 use std::num::NonZero;
 use std::thread;
-use tracing::{error, info};
+use tokio::sync::RwLock;
+use tracing::error;
 use tracing_subscriber::{fmt, EnvFilter, Layer};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -15,8 +16,8 @@ use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_scalar::{Scalar, Servable as ScalarServable};
 use utoipa_swagger_ui::SwaggerUi;
-use crate::adapters::database::{postgres, minio};
-use crate::adapters::database::minio::file_storage_gateway::MinioFileStorageGateway;
+use crate::adapters::database::{postgres, aws_s3};
+use crate::adapters::database::aws_s3::file_storage_gateway::AwsS3FileStorageGateway;
 use crate::adapters::database::postgres::article_gateway::PostgresArticleGateway;
 use crate::adapters::database::postgres::comment_gateway::PostgresCommentGateway;
 use crate::adapters::database::postgres::file_map_gateway::PostgresFileMapGateway;
@@ -24,6 +25,7 @@ use crate::adapters::database::postgres::tag_gateway::PostgresTagGateway;
 use crate::ioc::IoC;
 use crate::presentation::interactor_factory::InteractorFactory;
 use presentation::rest::article::{ARTICLES, ARTICLES_FILES, ARTICLES_TAGS};
+use crate::domain::models::permissions::Permission;
 
 mod adapters;
 mod application;
@@ -83,11 +85,11 @@ async fn main() {
         std::process::exit(1);
     });
 
-    let s3_client = minio::new_client(
-        &config.database.s3.host,
-        config.database.s3.port,
+    let s3_client = aws_s3::new_client(
+        &config.database.s3.internal_endpoint,
         &config.database.s3.access_key,
         &config.database.s3.secret_key,
+        &config.database.s3.region
     ).unwrap_or_else(|error| {
         error!("failed to create S3 client: {}", error);
         std::process::exit(1);
@@ -97,10 +99,12 @@ async fn main() {
     let comment_gateway = PostgresCommentGateway::new(postgres_pool.clone());
     let file_map_gateway = PostgresFileMapGateway::new(postgres_pool.clone());
     let tag_gateway = PostgresTagGateway::new(postgres_pool.clone());
-    let file_storage_gateway = MinioFileStorageGateway::new(
+    let file_storage_gateway = AwsS3FileStorageGateway::new(
         s3_client,
         config.database.s3.bucket.clone(),
-        config.database.s3.external_base_url.clone()
+        &config.database.s3.access_key,
+        &config.database.s3.secret_key,
+        config.database.s3.external_endpoint.clone()
     );
 
     let ioc: Arc<dyn InteractorFactory> = Arc::new(IoC::new(
@@ -112,7 +116,29 @@ async fn main() {
     ));
 
     let app_state = app_state::AppState {
-        guest_permissions: Arc::new(Default::default()), // todo
+        guest_permissions: Arc::new(RwLock::new(vec![
+            Permission::CreateArticle,
+            Permission::GetAnyArticle,
+            Permission::GetPubArticle,
+            Permission::GetSelfArticle,
+            Permission::FindAnyArticle,
+            Permission::FindPubArticle,
+            Permission::FindSelfArticle,
+            Permission::UpdateAnyArticle,
+            Permission::UpdateSelfArticle,
+            Permission::DeleteAnyArticle,
+            Permission::DeleteSelfArticle,
+            Permission::RateArticle,
+            Permission::FindTag,
+            Permission::CreateComment,
+            Permission::GetAnyComment,
+            Permission::GetPubComment,
+            Permission::UpdateAnyComment,
+            Permission::UpdateSelfComment,
+            Permission::DeleteAnyComment,
+            Permission::DeleteSelfComment,
+            Permission::RateComment
+        ])), // todo get guest perms from ums by grpc gateway
         jwt_verify_key: config.general.jwt_verify_key,
     };
     
