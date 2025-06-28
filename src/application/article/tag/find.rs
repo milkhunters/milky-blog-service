@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::application::common::{
     error::AppError,
     id_provider::IdProvider,
@@ -10,6 +11,8 @@ use crate::domain::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+use crate::domain::error::{DomainError, ValidationError};
+use crate::domain::services::validator::{validate_page, validate_per_page};
 
 #[derive(Deserialize, ToSchema)]
 pub enum  FindArticleTagsOrderBy {
@@ -26,7 +29,7 @@ pub struct FindArticleTagsInput {
     #[param(example = 10, default = 10)]
     pub per_page: u8,
     #[param(example = "rust", value_type = Option<String>)]
-    pub query: Option<String>,
+    pub query: Option<String>, // todo validate query length
     #[param(example = "ArticleCountDesc", value_type = String)]
     pub order_by: FindArticleTagsOrderBy
 }
@@ -55,6 +58,18 @@ impl Interactor<FindArticleTagsInput, FindArticleTagsOutput> for FindArticleTags
             self.id_provider.permissions(),
             self.id_provider.user_state(),
         )?;
+
+        let mut validation_err_map = HashMap::<String, ValidationError>::new();
+        if let Err(DomainError::Validation((key, err))) = validate_page(input.page) {
+            validation_err_map.insert(key, err);
+        }
+        if let Err(DomainError::Validation((key, err))) = validate_per_page(input.per_page) {
+            validation_err_map.insert(key, err);
+        }
+
+        if !validation_err_map.is_empty() {
+            return Err(AppError::Validation(validation_err_map));
+        }
 
         let tags = self.tag_reader.find_tags(
             input.per_page,
