@@ -236,7 +236,7 @@ async fn get_article(
             status = 400,
             description = "Validation error",
             body = HttpErrorModel,
-            example = json!(HttpErrorModel::validation(vec![("id".into(), ValidationError::InvalidEmpty)]))
+            example = json!(HttpErrorModel::validation(vec![("page".into(), ValidationError::InvalidEmpty)]))
         ),
         (
             status = 401,
