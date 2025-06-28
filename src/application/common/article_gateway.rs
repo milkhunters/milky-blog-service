@@ -3,7 +3,6 @@ use crate::application::article::find::FindArticleOrderBy;
 use crate::domain::models::{
     article::{Article, ArticleId},
     article_state::ArticleState,
-    tag::TagId,
     user_id::UserId
 };
 use crate::domain::models::rate_state::RateState;
@@ -22,7 +21,7 @@ pub trait ArticleReader {
         offset: u32,
         order_by: &FindArticleOrderBy,
         state: &ArticleState,
-        tags: &[TagId],
+        tags: &[String],
         author_id: &Option<UserId>,
     ) -> Result<Vec<Article>, ArticleGatewayError>;
     async fn get_article_author(&self, article_id: &ArticleId) -> Result<Option<UserId>, ArticleGatewayError>;

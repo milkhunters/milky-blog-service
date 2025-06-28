@@ -5,7 +5,6 @@ use crate::application::common::{
     tag_gateway::TagReader
 };
 use crate::domain::{
-    models::tag::TagId,
     services::access::ensure_can_find_tags
 };
 use chrono::{DateTime, Utc};
@@ -34,8 +33,6 @@ pub struct FindArticleTagsInput {
 
 #[derive(Serialize, ToSchema)]
 pub struct TagItem {
-    #[schema(example = uuid::Uuid::new_v4, value_type=uuid::Uuid)]
-    pub id: TagId,
     #[schema(example = "rust")]
     pub title: String,
     /// The number of articles associated with this tag
@@ -68,7 +65,6 @@ impl Interactor<FindArticleTagsInput, FindArticleTagsOutput> for FindArticleTags
         
         Ok(FindArticleTagsOutput(tags.into_iter().map(|(tag, article_count)| {
             TagItem {
-                id: tag.id,
                 title: tag.title,
                 article_count,
                 created_at: tag.created_at

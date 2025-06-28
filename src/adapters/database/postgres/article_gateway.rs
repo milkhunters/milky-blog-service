@@ -228,16 +228,16 @@ impl ArticleReader for PostgresArticleGateway {
             let id: ArticleId = row.try_get("id")?;
             Ok(Article {
                 id,
-                title: row.get("title"),
-                poster: row.get("poster"),
-                content: row.get("content"),
+                title: row.try_get("title")?,
+                poster: row.try_get("poster")?,
+                content: row.try_get("content")?,
                 state: row.try_get("state")?,
-                views: row.get::<i32, _>("views") as u32,
-                rating: row.get::<i64, _>("rating"),
-                author_id: row.get("author_id"),
+                views: row.try_get::<i64, _>("views")? as u32,
+                rating: row.try_get::<i64, _>("rating")?,
+                author_id: row.try_get("author_id")?,
                 tags: tags_map.remove(&id).unwrap_or_default(),
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
+                created_at: row.try_get("created_at")?,
+                updated_at: row.try_get("updated_at")?,
             })
         }).collect::<Result<Vec<_>, ArticleGatewayError>>()?;
 
@@ -462,7 +462,7 @@ impl ArticleRater for PostgresArticleGateway {
             r#"
             SELECT
                 a.id AS article_id,
-                COALESCE(ar.state, 'neutral'::rate_state) AS "state: RateState"
+                COALESCE(ar.state, 'neutral'::rate_state) AS state
             FROM unnest($1::uuid[]) WITH ORDINALITY AS a(id, idx)
             LEFT JOIN article_rate ar 
                 ON a.id = ar.article_id 

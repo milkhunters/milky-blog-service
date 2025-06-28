@@ -85,7 +85,7 @@ impl Interactor<UpdateArticleInput, ()> for UpdateArticle<'_> {
         
         let mut article = self.article_gateway.get_article(&input.id).await?
             .ok_or_else(|| AppError::Critical("UpdateArticle article author found, but get_article not found".into()))?;
-        
+
         article.update(
             input.title,
             input.poster,

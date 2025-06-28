@@ -7,7 +7,6 @@ use crate::application::common::{
     id_provider::IdProvider,
     interactor::Interactor
 };
-use crate::domain::models::tag::TagId;
 use crate::domain::{
     models::{
         article::ArticleId,
@@ -46,9 +45,9 @@ pub struct FindArticleInput {
     #[param(example = 10, default = 10)]
     pub per_page: u8,
     pub query: Option<String>,
-    #[param(example = json!(vec![Uuid::new_v4()]), value_type = Vec<Uuid>)]
-    #[serde(deserialize_with = "deserialize_uuid_list", default)]
-    pub tags: Vec<TagId>,
+    #[param(example = json!(vec!["js".to_string()]), value_type = Vec<String>)]
+    #[serde(deserialize_with = "deserialize_str_list", default)]
+    pub tags: Vec<String>,
     pub state: ArticleState,
     #[param(example = "CreatedAtDesc", value_type = String)]
     pub order_by: FindArticleOrderBy,
@@ -140,17 +139,17 @@ impl Interactor<FindArticleInput, FindArticleOutput> for FindArticle<'_> {
     }
 }
 
-pub fn deserialize_uuid_list<'de, D>(deserializer: D) -> Result<Vec<Uuid>, D::Error>
+pub fn deserialize_str_list<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
 where
     D: de::Deserializer<'de>,
 {
     struct StringVecVisitor;
 
     impl<'de> de::Visitor<'de> for StringVecVisitor {
-        type Value = Vec<Uuid>;
+        type Value = Vec<String>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a string containing a list of UUIDs")
+            formatter.write_str("a string containing a list of Strings")
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -159,8 +158,8 @@ where
         {
             Ok(
                 v.split(";")
-                    .map(|s| Uuid::parse_str(s.trim()).map_err(E::custom))
-                    .collect::<Result<Vec<_>, _>>()?
+                    .map(|s| s.trim().to_string())
+                    .collect::<Vec<_>>()
             )
         }
 

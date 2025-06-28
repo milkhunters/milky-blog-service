@@ -41,8 +41,7 @@ impl TagReader for PostgresTagGateway {
     ) -> Result<Vec<(Tag, u32)>, TagGatewayError> {
         let mut sql = String::from(
             r#"
-            SELECT 
-                t.id, 
+            SELECT
                 t.title, 
                 t.created_at,
                 COUNT(at.tag_id) AS article_count
@@ -96,7 +95,6 @@ impl TagReader for PostgresTagGateway {
         let result = rows.into_iter()
             .map(|row| {
                 let tag = Tag {
-                    id: row.get("id"),
                     title: row.get("title"),
                     created_at: row.get("created_at"),
                 };
