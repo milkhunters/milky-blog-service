@@ -136,7 +136,7 @@ impl FileStorageLinker for AwsS3FileStorageGateway {
         let request = SignableRequest::new(
             "PUT",
             url.as_str(),
-            headers,
+            headers.clone(),
             SignableBody::UnsignedPayload
         ).map_err(|e| FileStorageError::Critical(format!("create signable request: {}", e)))?;
         
@@ -151,9 +151,12 @@ impl FileStorageLinker for AwsS3FileStorageGateway {
         Ok(UploadUrl {
             url: url.to_string(),
             method: "PUT".into(),
-            headers: instructions.headers().map(|(k, v)| {
+            headers: headers.map(|(k, v)| {
                 (k.to_string(), v.to_string())
-            }).collect::<HashMap<_, _>>()
+            }).collect::<HashMap<_, _>>(),
+            // headers: instructions.headers().map(|(k, v)| {
+            //     (k.to_string(), v.to_string())
+            // }).collect::<HashMap<_, _>>()
         })
     }
 
