@@ -14,7 +14,7 @@ use crate::application::{
 use crate::domain::models::{
     article::{Article, ArticleId},
     article_state::ArticleState,
-    tag::{Tag, TagId},
+    tag::Tag,
     user_id::UserId,
     rate_state::RateState
 };
@@ -46,7 +46,7 @@ impl ArticleReader for PostgresArticleGateway {
                     title,
                     poster,
                     content,
-                    state as "state: ArticleState",
+                    state,
                     views,
                     (SELECT COUNT(*) FROM article_rate WHERE article_id = articles.id) AS rating,
                     author_id,
@@ -61,8 +61,7 @@ impl ArticleReader for PostgresArticleGateway {
 
         let tags_fut = sqlx::query(
             r#"
-                SELECT tags.id, tags.title, tags.created_at
-                FROM tags
+                SELECT tags.title, tags.created_at FROM tags
                 INNER JOIN articles_tags ON tags.id = articles_tags.tag_id
                 WHERE articles_tags.article_id = $1
             "#
@@ -83,7 +82,6 @@ impl ArticleReader for PostgresArticleGateway {
         let tags = tags.into_iter()
             .map(|row| {
                 Ok::<_, ArticleGatewayError>(Tag {
-                    id: row.try_get("id")?,
                     title: row.try_get("title")?,
                     created_at: row.try_get("created_at")?,
                 })
@@ -112,25 +110,25 @@ impl ArticleReader for PostgresArticleGateway {
         offset: u32,
         order_by: &FindArticleOrderBy,
         state: &ArticleState,
-        tags: &[TagId],
+        tags: &[String],
         author_id: &Option<UserId>
     ) -> Result<Vec<Article>, ArticleGatewayError> {
         let mut sql = String::from(
             r#"
-        SELECT
-            id,
-            title,
-            poster,
-            content,
-            state,
-            views,
-            (SELECT COUNT(*) FROM article_rate WHERE article_id = articles.id) AS rating,
-            author_id,
-            created_at,
-            updated_at
-        FROM articles
-        WHERE state = $1
-    "#
+            SELECT
+                id,
+                title,
+                poster,
+                content,
+                state,
+                views,
+                (SELECT COUNT(*) FROM article_rate WHERE article_id = articles.id) AS rating,
+                author_id,
+                created_at,
+                updated_at
+            FROM articles
+            WHERE state = $1
+        "#
         );
         
         let mut args = PgArguments::default();
@@ -156,12 +154,13 @@ impl ArticleReader for PostgresArticleGateway {
         if !tags.is_empty() {
             sql.push_str(&format!(
                 " AND id IN (
-            SELECT article_id
-            FROM articles_tags
-            WHERE tag_id = ANY(${}::uuid[])
-            GROUP BY article_id
-            HAVING COUNT(DISTINCT tag_id) = ${}
-        )",
+                SELECT at.article_id
+                FROM articles_tags at
+                JOIN tags t ON at.tag_id = t.id
+                WHERE t.title = ANY(${}::varchar[])
+                GROUP BY at.article_id
+                HAVING COUNT(DISTINCT t.title) = ${}
+            )",
                 param_count, param_count + 1
             ));
             args.add(tags)?;
@@ -202,7 +201,7 @@ impl ArticleReader for PostgresArticleGateway {
         
         let tags_rows = sqlx::query(
             r#"
-            SELECT t.id, t.title, t.created_at, at.article_id
+            SELECT t.title, t.created_at, at.article_id
             FROM tags t
             INNER JOIN articles_tags at ON t.id = at.tag_id
             WHERE at.article_id = ANY($1)
@@ -218,7 +217,6 @@ impl ArticleReader for PostgresArticleGateway {
         for row in tags_rows {
             let article_id: ArticleId = row.get("article_id");
             let tag = Tag {
-                id: row.get("id"),
                 title: row.get("title"),
                 created_at: row.get("created_at"),
             };
@@ -316,36 +314,57 @@ impl ArticleWriter for PostgresArticleGateway {
             .bind(article.updated_at)
             .execute(&mut *transaction)
             .await
-            .map_err(|e| ArticleGatewayError::Critical(e.to_string()))?;
+            .map_err(|e| ArticleGatewayError::Critical(
+                format!("on article save: {}", e.to_string())
+            ))?;
 
-        // Handle tags
+        // Handle tags -----------------------------------------------------------------------------
+        // todo optimize this
+        sqlx::query(
+            r#"DELETE FROM articles_tags WHERE article_id = $1"#
+        )
+            .bind(article.id)
+            .execute(&mut *transaction)
+            .await
+            .map_err(|e| ArticleGatewayError::Critical(
+                format!("on delete articles_tags: {}", e.to_string())
+            ))?;
+
         for tag in &article.tags {
-            sqlx::query(
+            let tag_id: uuid::Uuid = sqlx::query_scalar(
                 r#"
-                    INSERT INTO tags (id, title, created_at)
-                    VALUES ($1, $2, $3)
-                    ON CONFLICT (id) DO NOTHING
+                    WITH new_tag AS (
+                        INSERT INTO tags (id, title, created_at)
+                        VALUES (gen_random_uuid(), $1, $2)
+                        ON CONFLICT (title) DO NOTHING
+                        RETURNING id
+                    )
+                    SELECT id FROM new_tag
+                    UNION
+                    SELECT id FROM tags WHERE title = $1
                 "#
             )
-                .bind(tag.id)
                 .bind(&tag.title)
                 .bind(tag.created_at)
-                .execute(&mut *transaction)
+                .fetch_one(&mut *transaction)
                 .await
-                .map_err(|e| ArticleGatewayError::Critical(e.to_string()))?;
+                .map_err(|e| ArticleGatewayError::Critical(
+                    format!("on insert/get new_tag: {}", e.to_string())
+                ))?;
 
             sqlx::query(
                 r#"
                     INSERT INTO articles_tags (article_id, tag_id)
                     VALUES ($1, $2)
-                    ON CONFLICT DO NOTHING
                 "#
             )
                 .bind(article.id)
-                .bind(tag.id)
+                .bind(tag_id)
                 .execute(&mut *transaction)
                 .await
-                .map_err(|e| ArticleGatewayError::Critical(e.to_string()))?;
+                .map_err(|e| ArticleGatewayError::Critical(
+                    format!("on insert articles_tags: {}", e.to_string())
+                ))?;
         }
 
         transaction.commit().await.map_err(|e| ArticleGatewayError::Critical(e.to_string()))?;
