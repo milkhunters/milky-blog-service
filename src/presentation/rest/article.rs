@@ -520,8 +520,7 @@ async fn confirm_article_file(
             body = HttpErrorModel,
             example = json!(HttpErrorModel::not_found("article_id".into()))
         )
-    ),
-    params(ConfirmArticleFileInput)
+    )
 )]
 #[post("")]
 async fn create_article_file(

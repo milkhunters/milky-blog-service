@@ -108,7 +108,7 @@ impl Interactor<GetArticleInput, GetArticleOutput> for GetArticle<'_> {
             tags: article.tags,
 
             self_rate: self_rate?,
-            files: files?.into_iter().map(|file| {
+            files: files?.into_iter().filter(|f| f.is_uploaded).map(|file| {
                 ArticleFile {
                     id: file.id,
                     filename: file.filename,
