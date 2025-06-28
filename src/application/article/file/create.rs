@@ -1,15 +1,14 @@
-use std::collections::HashMap;
-use serde::Deserialize;
-use utoipa::ToSchema;
 use crate::application::common::{
     article_gateway::ArticleReader,
     error::AppError,
     file_map_gateway::FileMapGateway,
-    file_storage_gateway::FileStorageLinker,
-    presigned_url::PreSignedUrl,
+    file_storage_gateway::FileStorageLinker
+    ,
     id_provider::IdProvider,
     interactor::Interactor
 };
+use crate::domain::error::{DomainError, ValidationError};
+use crate::domain::models::file::FileId;
 use crate::domain::{
     models::{
         article::ArticleId,
@@ -23,7 +22,9 @@ use crate::domain::{
         }
     }
 };
-use crate::domain::error::{DomainError, ValidationError};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use utoipa::ToSchema;
 
 #[derive(Deserialize, ToSchema)]
 pub struct CreateArticleFileInput {
@@ -35,7 +36,17 @@ pub struct CreateArticleFileInput {
     pub content_type: String
 }
 
-pub type CreateArticleFileOutput = PreSignedUrl;
+#[derive(Serialize, ToSchema)]
+pub struct CreateArticleFileOutput {
+    #[schema(value_type = uuid::Uuid, example = uuid::Uuid::new_v4)]
+    pub id: FileId,
+    #[schema(example = "https://s3.example.com/article-assets/987e9dc9-d84c-4ba7-837f-db755a0fdc55/80bbc0bc-4064-420a-b4ed-4f94b4575321")]
+    pub url: String,
+    #[schema(example = "PUT")]
+    pub method: String,
+    #[schema(example = json!({"Content-Type": "image/png"}), value_type = HashMap<String, String>)]
+    pub headers: HashMap<String, String>
+}
 
 pub struct CreateArticleFile<'interactor> {
     pub id_provider: Box<dyn IdProvider>,
@@ -87,6 +98,12 @@ impl Interactor<CreateArticleFileInput, CreateArticleFileOutput> for CreateArtic
         );
         
         res?;
-        Ok(url?)
+        let url_parts = url?;
+        Ok(CreateArticleFileOutput {
+            id: file.id,
+            url: url_parts.url,
+            method: url_parts.method,
+            headers: url_parts.headers
+        })
     }
 }
