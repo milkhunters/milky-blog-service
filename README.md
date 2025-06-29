@@ -3,11 +3,11 @@
 # Milky blog
 
 ## Env
-| Variable    | Description                                              |
-|-------------|----------------------------------------------------------|
-| LOG_LEVEL   | Log level for the service (default: none)                |
-| CONSUL_ADDR | Address of the Consul server (ex: http://localhost:8500) |
-| CONSUL_ROOT | Root path in Consul for service config (ex: `milk-blog`) |
+| Variable    | Description                                               |
+|-------------|-----------------------------------------------------------|
+| LOG_LEVEL   | Log level for the service (default: none)                 |
+| CONSUL_ADDR | Address of the Consul server (ex: http://localhost:8500)  |
+| CONSUL_ROOT | Root path in Consul for service config (ex: `milky-blog`) |
 
 ## Consul config
 
