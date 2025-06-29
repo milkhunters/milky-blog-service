@@ -33,7 +33,7 @@ impl From<Box<dyn serde::de::StdError + Send + Sync>> for CommentGatewayError {
 }
 
 impl Decode<'_, Postgres> for CommentState {
-    fn decode(value: sqlx::postgres::PgValueRef<'_>) -> Result<Self, sqlx::error::BoxDynError> {
+    fn decode(value: sqlx::postgres::PgValueRef<'_>) -> Result<Self, BoxDynError> {
         let state: String = Decode::<'_, Postgres>::decode(value)?;
         match state.as_str() {
             "Deleted" => Ok(CommentState::Deleted),
@@ -76,8 +76,18 @@ impl CommentReader for PostgresCommentGateway {
                 SELECT
                     id,
                     content,
-                    state as "state: CommentState",
-                    (SELECT COUNT(*) FROM article_rate WHERE article_id = comments.id) AS rating,
+                    state,
+                    COALESCE((
+                        SELECT SUM(
+                            CASE state
+                                WHEN 'up' THEN 1
+                                WHEN 'down' THEN -1
+                                ELSE 0
+                            END
+                        )
+                        FROM comment_rate 
+                        WHERE comment_id = id
+                    ), 0) AS rating,
                     parent_id,
                     author_id,
                     article_id,
@@ -115,8 +125,18 @@ impl CommentReader for PostgresCommentGateway {
                 SELECT
                     c.id,
                     c.content,
-                    c.state as "state: CommentState",
-                    (SELECT COUNT(*) FROM comment_rate WHERE comment_id = c.id) AS rating,
+                    c.state,
+                    COALESCE((
+                        SELECT SUM(
+                            CASE state
+                                WHEN 'up' THEN 1
+                                WHEN 'down' THEN -1
+                                ELSE 0
+                            END
+                        )
+                        FROM comment_rate 
+                        WHERE comment_id = c.id
+                    ), 0) AS rating,
                     c.parent_id,
                     c.author_id,
                     c.article_id,
@@ -124,8 +144,8 @@ impl CommentReader for PostgresCommentGateway {
                     c.updated_at,
                     ct.level
                 FROM comments c
-                JOIN public.comment_tree ct on c.id = ct.child_id
-                WHERE ct.article_id = $1 AND ct.parent_id = c.parent_id
+                JOIN comment_tree ct on c.id = ct.child_id
+                WHERE ct.article_id = $1 AND c.id = ct.parent_id
                 ORDER BY c.created_at
             "#
         )
@@ -179,6 +199,7 @@ impl CommentWriter for PostgresCommentGateway {
             WHERE id = $1
             "#
         )
+                .bind(&comment.id)
                 .bind(&comment.content)
                 .bind(&comment.state)
                 .bind(&comment.author_id)
@@ -257,23 +278,37 @@ impl CommentRemover for PostgresCommentGateway {
 #[async_trait]
 impl CommentRater for PostgresCommentGateway {
     async fn rate_comment(&self, comment_id: &ArticleId, user_id: &UserId, state: &RateState) -> Result<(), CommentGatewayError> {
-        let result = sqlx::query(
+        if matches!(state, RateState::Neutral) {
+            return sqlx::query(
+                r#"
+                DELETE FROM comment_rate
+                WHERE comment_id = $1 AND user_id = $2
+            "#,
+            )
+                .bind(comment_id)
+                .bind(user_id)
+                .execute(&self.pool)
+                .await
+                .map(|_| ())
+                .map_err(|e| CommentGatewayError::Critical(e.to_string()));
+        }
+
+        sqlx::query(
             r#"
-                INSERT INTO comment_rate (comment_id, user_id, state)
-                VALUES ($1, $2, $3)
-                ON CONFLICT DO NOTHING
-            "#
+            INSERT INTO comment_rate (comment_id, user_id, state)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (comment_id, user_id) DO UPDATE 
+                SET state = $3
+        "#,
         )
             .bind(comment_id)
             .bind(user_id)
             .bind(state)
             .execute(&self.pool)
-            .await;
-
-        match result {
-            Ok(_) => Ok(()),
-            Err(e) => Err(CommentGatewayError::Critical(e.to_string())),
-        }
+            .await
+            .map(|_| ())
+            .map_err(|e| CommentGatewayError::Critical(e.to_string()))
+        
     }
 
     async fn user_rate_state(
@@ -306,7 +341,7 @@ impl CommentRater for PostgresCommentGateway {
             r#"
             SELECT
                 a.id AS comment_id,
-                COALESCE(ar.state, 'neutral'::rate_state) AS "state: RateState"
+                COALESCE(ar.state, 'neutral'::rate_state) AS state
             FROM unnest($1::uuid[]) WITH ORDINALITY AS a(id, idx)
             LEFT JOIN comment_rate ar 
                 ON a.id = ar.comment_id 

@@ -285,7 +285,7 @@ impl ArticleReader for PostgresArticleGateway {
     async fn get_article_state(&self, article_id: &ArticleId) -> Result<Option<ArticleState>, ArticleGatewayError> {
         let state_fut = sqlx::query(
             r#"
-                SELECT state as "state: ArticleState"
+                SELECT state
                 FROM articles
                 WHERE id = $1
             "#
