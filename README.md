@@ -14,7 +14,7 @@
 Example:
 ```yaml
 general:
-    host: localhost
+    host: 0.0.0.0
     port: 8080
     jwt_verify_key: MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPnvzPHFBcMFK81z16B8G6Ckn6BUcozMXu/DdLy9o3JeKb7Q8Fl2ITGVfeG61JX3zkO4kE0UpMy4Q+dy7kN2jcw==
 database:
