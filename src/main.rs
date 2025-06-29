@@ -151,7 +151,7 @@ async fn main() {
             .map(|app| app.wrap(Logger::default())) // todo
             .service(utoipa_actix_web::scope("/api")
                 .configure(presentation::rest::article::router)
-                // .configure(presentation::rest::comment::router)
+                .configure(presentation::rest::comment::router)
             )
             .openapi_service(|api| Redoc::with_url("/redoc", api))
             .openapi_service(|api| {
