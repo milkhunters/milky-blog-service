@@ -39,7 +39,7 @@ database:
 ```bash
 export LOG_LEVEL=info
 export CONSUL_ADDR=http://localhost:8500
-export CONSUL_ROOT=milk-blog-dev
+export CONSUL_ROOT=milky-blog
 
 cargo run --release --bin milky-blog-service
 ```
