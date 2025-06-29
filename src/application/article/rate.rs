@@ -2,7 +2,6 @@ use serde::Deserialize;
 use utoipa::IntoParams;
 use crate::application::common::article_gateway::ArticleGateway;
 use crate::application::common::{
-    article_gateway::{ArticleRater, ArticleReader},
     error::AppError,
     id_provider::IdProvider,
     interactor::Interactor

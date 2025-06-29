@@ -140,7 +140,7 @@ impl FileStorageLinker for AwsS3FileStorageGateway {
             SignableBody::UnsignedPayload
         ).map_err(|e| FileStorageError::Critical(format!("create signable request: {}", e)))?;
         
-        let (instructions, signature) = sign(request, &params.into())
+        let (instructions, _) = sign(request, &params.into())
             .map_err(|e| FileStorageError::Critical(format!("sign request: {}", e)))?
             .into_parts();
         

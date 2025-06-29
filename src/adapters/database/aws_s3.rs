@@ -1,6 +1,6 @@
 use std::error::Error;
 use aws_sdk_s3::{Client};
-use aws_sdk_s3::config::{AppName, Credentials, Region, SharedCredentialsProvider, endpoint::ResolveEndpoint};
+use aws_sdk_s3::config::{AppName, Credentials, Region, SharedCredentialsProvider};
 
 pub mod file_storage_gateway;
 

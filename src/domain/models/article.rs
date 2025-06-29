@@ -65,8 +65,4 @@ impl Article {
         self.tags = tags;
         self.updated_at = Some(Utc::now());
     }
-    
-    pub fn increment_views(&mut self) {
-        self.views += 1;
-    }
 }

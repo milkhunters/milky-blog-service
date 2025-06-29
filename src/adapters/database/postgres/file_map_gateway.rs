@@ -10,9 +10,7 @@ use crate::domain::models::{
     file::{File, FileId}
 };
 use async_trait::async_trait;
-use sqlx::{
-    Arguments, Database, Row
-};
+use sqlx::Row;
 
 impl From<sqlx::Error> for FileMapGatewayError {
     fn from(err: sqlx::Error) -> Self {

@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::IntoParams;
 use crate::application::common::{
     article_gateway::ArticleReader,
     error::AppError,
