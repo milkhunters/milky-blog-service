@@ -28,7 +28,7 @@ database:
         host: minio
         port: 9000
         access_key: blog-user
-        secret_key: blog-testpassword
+        secret_key: blog-secret
         bucket: article-assets
         external_base_url: http://localhost:9000
 ```
