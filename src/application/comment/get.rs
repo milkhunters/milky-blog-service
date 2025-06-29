@@ -1,12 +1,8 @@
-use crate::application::common::comment_gateway::CommentGateway;
 use crate::application::common::{
     article_gateway::ArticleReader,
-    comment_gateway::{
-        CommentRater,
-        CommentReader
-    },
     error::AppError,
     id_provider::IdProvider,
+    comment_gateway::CommentGateway,
     interactor::Interactor
 };
 use crate::domain::{
@@ -20,19 +16,28 @@ use crate::domain::{
     services::access::ensure_can_get_comment
 };
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, ToSchema};
 
+#[derive(Deserialize, IntoParams)]
 pub struct GetCommentInput {
+    #[param(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub id: CommentId
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct GetCommentOutput {
+    #[schema(example = "This is a message content")]
     pub content: String,
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub author_id: UserId,
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub article_id: ArticleId,
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid, nullable = true)]
     pub parent_id: Option<CommentId>,
+    #[schema(example = 10)]
     pub rating: i64,
+    #[schema(example = "Published")]
     pub state: CommentState,
     
     pub self_rate: RateState,

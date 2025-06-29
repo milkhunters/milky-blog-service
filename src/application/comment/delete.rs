@@ -1,11 +1,9 @@
-use crate::application::common::comment_gateway::CommentGateway;
+use serde::Deserialize;
+use utoipa::IntoParams;
 use crate::application::common::{
     article_gateway::ArticleReader,
-    comment_gateway::{
-        CommentReader,
-        CommentWriter
-    },
     error::AppError,
+    comment_gateway::CommentGateway,
     id_provider::IdProvider,
     interactor::Interactor
 };
@@ -14,7 +12,9 @@ use crate::domain::{
     services::access::ensure_can_delete_comment
 };
 
+#[derive(Deserialize, IntoParams)]
 pub struct DeleteCommentInput {
+    #[param(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub id: CommentId
 }
 

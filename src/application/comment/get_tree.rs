@@ -19,22 +19,32 @@ use crate::domain::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use utoipa::{IntoParams, ToSchema};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, IntoParams)]
 pub struct GetCommentsTreeInput {
+    #[param(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub article_id: ArticleId
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct GetCommentsTreeItem {
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub id: CommentId,
+    #[schema(example = "This is a message content")]
     pub content: String,
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub author_id: UserId,
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub article_id: ArticleId,
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid, nullable = true)]
     pub parent_id: Option<CommentId>,
+    #[schema(example = "[]", value_type = Vec<GetCommentsTreeItem>, no_recursion)]
     pub children: Vec<GetCommentsTreeItem>,
+    #[schema(example = 10)]
     pub rating: i64,
     pub state: CommentState,
+    #[schema(example = 2)]
     pub level: u32,
     pub self_rate: RateState,
     
@@ -43,7 +53,8 @@ pub struct GetCommentsTreeItem {
 
 }
 
-pub type GetCommentsTreeOutput = Vec<GetCommentsTreeItem>;
+#[derive(Serialize, ToSchema)]
+pub struct GetCommentsTreeOutput(pub Vec<GetCommentsTreeItem>);
 
 
 pub struct GetCommentsTree<'interactor> {
@@ -125,6 +136,6 @@ impl Interactor<GetCommentsTreeInput, GetCommentsTreeOutput> for GetCommentsTree
         for root in &mut roots {
             attach_children(root, &mut map); // todo check max recursion depth
         }
-        Ok(roots)
+        Ok(GetCommentsTreeOutput(roots))
     }
 }

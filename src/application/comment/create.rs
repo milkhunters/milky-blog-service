@@ -1,13 +1,9 @@
-use crate::application::common::comment_gateway::CommentGateway;
 use crate::application::common::{
     article_gateway::ArticleReader,
-    comment_gateway::{
-        CommentReader,
-        CommentWriter
-    },
     error::AppError,
     id_provider::IdProvider,
-    interactor::Interactor
+    interactor::Interactor,
+    comment_gateway::CommentGateway
 };
 use crate::domain::error::ValidationError;
 use crate::domain::models::comment_state::CommentState;
@@ -24,16 +20,21 @@ use crate::domain::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use utoipa::ToSchema;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CreateCommentInput {
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub article_id: ArticleId,
+    #[schema(example = "This is a message content")]
     pub content: String,
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid, nullable = true)]
     pub parent_id: Option<CommentId>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct CreateCommentOutput {
+    #[schema(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub id: CommentId
 }
 

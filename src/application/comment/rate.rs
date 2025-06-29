@@ -1,3 +1,5 @@
+use serde::Deserialize;
+use utoipa::IntoParams;
 use crate::application::common::comment_gateway::CommentGateway;
 use crate::application::common::{
     article_gateway::ArticleReader,
@@ -11,7 +13,9 @@ use crate::domain::{
     services::access::ensure_can_rate_comment
 };
 
+#[derive(Deserialize, IntoParams)]
 pub struct RateCommentInput {
+    #[param(example = uuid::Uuid::new_v4, value_type = uuid::Uuid)]
     pub id: CommentId,
     pub state: RateState
 }
