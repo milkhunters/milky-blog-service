@@ -287,7 +287,7 @@ async fn get_tree_comment(
     ),
     params(RateCommentInput)
 )]
-#[post("rate/{id}/{state}")]
+#[post("/rate/{id}/{state}")]
 async fn rate_comment(
     input: web::Path<RateCommentInput>,
     ioc: web::Data<dyn InteractorFactory>,
